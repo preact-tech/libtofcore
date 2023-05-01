@@ -1,0 +1,1 @@
+option(BUILD_PYTHON_BINDINGS "Build Python bindings" ON)

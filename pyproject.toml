@@ -1,0 +1,4 @@
+[tool.pytest.ini_options]
+markers = [
+    "functional: Should be performed with hardware plugged into host PC"
+]

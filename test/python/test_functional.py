@@ -1,0 +1,459 @@
+import time
+import struct
+import pytest
+import pytofcore
+import threading
+from typing import List
+
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers", "functional: mark test to run only on named environment"
+    )
+
+@pytest.fixture(scope="function")
+def dut(request) -> pytofcore.Sensor:
+    args = {}
+
+    if request.config.getoption('--sensor-port-name'):
+        args['port_name'] = request.config.getoption('--sensor-port-name')
+    if request.config.getoption('--sensor-baud-rate'):
+        args['baud_rate'] = request.config.getoption('--sensor-baud-rate')
+
+    sensor = pytofcore.Sensor(**args)
+    yield sensor
+    sensor.stop_stream()
+    sensor = None
+
+
+@pytest.mark.functional
+def test_set_dll(dut: pytofcore.Sensor):
+    
+    # Register Definitions
+    DLL_CONTROL_REG = 0xAE
+
+    DLL_FINE_STEP_REG   = 0x71
+    DLL_FINEST_STEP_REG = 0x72
+    DLL_COARSE_STEP_REG = 0x73
+
+    regs = [DLL_CONTROL_REG, DLL_COARSE_STEP_REG, DLL_FINE_STEP_REG, DLL_FINEST_STEP_REG]
+    
+    # Test settings
+    dll_enable      = 0x01
+    dll_coarse_step = 0x13
+    dll_fine_step   = 0x02
+    dll_finest_step = 0x78
+
+    writeVals = [dll_enable, dll_coarse_step, dll_fine_step, dll_finest_step]
+
+    # Write DLL settings
+    set_dll_successful = dut.set_dll_step(dll_enable, dll_coarse_step, dll_fine_step, dll_finest_step)
+
+    assert set_dll_successful == True
+
+    for regIndex, register in enumerate(regs):
+        read_register = dut.read_sensor_register(register)
+        if regIndex == 0:
+            print("")
+            continue
+        assert read_register[1] == writeVals[regIndex]
+        print("Reg (" + str(hex(register)) + "), write value: " + str(hex(writeVals[regIndex])) + ", read value: " + str(hex(read_register[1])))
+
+
+@pytest.mark.functional
+def test_read_write_registers(dut: pytofcore.Sensor):
+    DLL_FINEST_STEP_REG = 0x72
+    testReg = DLL_FINEST_STEP_REG
+    testVal = 0xE7
+    dut.write_sensor_register(testReg, testVal)
+
+    # read back write value
+    readVal = dut.read_sensor_register(testReg)
+
+    assert readVal[1] == testVal
+    print("\nTest Write then Read")
+    print("Reg (" + str(hex(testReg)) + "), write value: " + str(hex(testVal)) + ", read value: " + str(hex(readVal[1])))
+
+@pytest.mark.functional
+def test_set_vled_enables(dut: pytofcore.Sensor):
+
+    testVal = 0x0F
+
+    print("Testing set VLED enables. Value: " + str(hex(testVal)))
+
+    dut.set_vled_enables(testVal)
+
+    # read back write value
+    readVal = dut.get_vled_enables()
+
+    assert readVal == testVal
+    print("\nTest Write then Read")
+    print("write value: " + str(hex(testVal)) + ", read value: " + str(hex(readVal)))
+
+
+@pytest.mark.functional
+def test_stream_distance_amplitude_frames(dut: pytofcore.Sensor):
+    def callback(measurement: pytofcore.Measurement, **kwargs):
+        if not callback.measurement and (measurement.data_type == pytofcore.Measurement.DataType.DISTANCE_AMPLITUDE):
+            callback.measurement = measurement
+
+    callback.measurement = None
+    dut.subscribe_measurement(callback)
+    dut.stream_distance_amplitude()
+    
+    time.sleep(1.0)
+    assert callback.measurement is not None, "No Distance & Amplitude measurements received"
+
+
+@pytest.mark.functional
+def test_stream_grayscale(dut: pytofcore.Sensor):
+    
+    def callback(measurement: pytofcore.Measurement, **kwargs):
+        if not callback.measurement and (measurement.data_type == pytofcore.Measurement.DataType.GRAYSCALE):
+            callback.measurement = measurement
+
+    callback.measurement = None
+    dut.subscribe_measurement(callback)
+    dut.stream_grayscale()
+    
+    time.sleep(1.0)
+    assert callback.measurement is not None, "No Grayscale measurements received"
+
+
+@pytest.mark.functional
+def test_stream_distance(dut: pytofcore.Sensor):
+
+    def callback(measurement: pytofcore.Measurement, **kwargs):
+        if not callback.measurement and (measurement.data_type == pytofcore.Measurement.DataType.DISTANCE):
+            callback.measurement = measurement
+
+    callback.measurement = None
+    dut.subscribe_measurement(callback)
+    dut.stream_distance()
+    
+    time.sleep(1.0)
+    assert callback.measurement is not None, "No Distance measurements received"
+
+
+@pytest.mark.functional
+def test_stream_dcs(dut: pytofcore.Sensor):
+
+    def callback(measurement: pytofcore.Measurement, **kwargs):
+        if not callback.measurement and (measurement.data_type == pytofcore.Measurement.DataType.DCS):
+            callback.measurement = measurement
+
+    callback.measurement = None
+    dut.subscribe_measurement(callback)
+    dut.stream_dcs()
+    
+    time.sleep(1.0)
+    assert callback.measurement is not None, "No DCS measurements received"
+
+
+@pytest.mark.functional
+def test_stream_dcs_ambient(dut: pytofcore.Sensor):
+    
+    def callback(measurement: pytofcore.Measurement, **kwargs):
+        if not callback.dcs_measurement and (measurement.data_type == pytofcore.Measurement.DataType.DCS):
+            callback.dcs_measurement = measurement
+        if not callback.grayscale_measurement and (measurement.data_type == pytofcore.Measurement.DataType.GRAYSCALE):
+            callback.grayscale_measurement = measurement
+
+    callback.dcs_measurement = None
+    callback.grayscale_measurement = None
+    dut.subscribe_measurement(callback)
+    dut.stream_dcs_ambient()
+    time.sleep(1.0)
+    assert callback.dcs_measurement is not None, "No DCS measurements received"
+    assert callback.grayscale_measurement is not None, "No Grayscale (ambient) measurements received"
+
+
+@pytest.mark.functional
+def test_get_software_version(dut: pytofcore.Sensor):
+    version = dut.get_software_version
+
+    print("\nSoftware Version: " + version.softwareVersion)
+    assert version._fields == ('softwareVersion',)
+    assert isinstance(version.softwareVersion, str)
+
+@pytest.mark.functional
+def test_get_sensor_info(dut: pytofcore.Sensor):
+    
+    versionInfo = dut.get_sensor_info()
+
+    print("\n")
+    print("Serial number: " + versionInfo.serialNumber)
+    print("Model number: " + versionInfo.modelNumber)
+    print("Model name: " + versionInfo.modelName)
+
+    print("Software Source ID: " + versionInfo.softwareId)
+    print("Sensor Description: " + versionInfo.softwareVersion)
+
+    print("CPU Board Hardware Version: " + str(versionInfo.cpuVersion))
+    print("Illuminator Version: " + versionInfo.illuminatorSwVersion + "." + versionInfo.illuminatorSwId)
+    print("Backpack Module/Version: " + str(versionInfo.backpackModule))
+
+    assert versionInfo._fields == ('serialNumber', 'modelNumber', 'modelName', 'softwareId', 'softwareVersion', 'cpuVersion', 'illuminatorSwVersion', 'illuminatorSwId', 'illuminatorHwCfg' ,'backpackModule')
+
+
+@pytest.mark.functional
+def test_get_chip_info(dut: pytofcore.Sensor):
+    chip_info = dut.chip_info
+
+    print(chip_info)
+
+    assert chip_info._fields == ('wafer_id', 'chip_id')
+    assert isinstance(chip_info.wafer_id, int)
+    assert isinstance(chip_info.chip_id, int)
+
+
+@pytest.mark.functional
+def test_get_accelerometer_data(dut: pytofcore.Sensor):
+    """Getting accelerometer data fails at the time of writing this test"""
+
+    with pytest.raises(Exception):
+        accel_info = dut.accelerometer_data
+        assert accel_info._fields == ('x', 'y', 'z', 'g_range')
+
+
+@pytest.mark.functional
+def test_get_lens_rays(dut: pytofcore.Sensor):
+
+    pixel_rays = dut.pixel_rays
+    
+    assert pixel_rays._fields == ('x', 'y', 'z')
+    assert isinstance(pixel_rays.x, list)
+    assert isinstance(pixel_rays.y, list)
+    assert isinstance(pixel_rays.z, list)
+    assert len(pixel_rays.x) == (320*240)
+    assert len(pixel_rays.y) == (320*240)
+    assert len(pixel_rays.z) == (320*240)
+
+
+@pytest.mark.functional
+def test_meta_data_sensor_temperature(dut: pytofcore.Sensor):
+    def callback(measurement: pytofcore.Measurement, **kwargs):
+        with callback.mutex:
+            if measurement.data_type == measurement.DataType.DISTANCE and not callback.measurement:
+                callback.measurement = measurement
+
+    callback.mutex = threading.Lock()
+    callback.measurement = None
+    dut.subscribe_measurement(callback)
+    dut.stream_distance()
+    count = 0 # we will wait for upto 1 second in 0.1 second increments
+    while count != 10:
+        count += 1
+        time.sleep(0.1)
+        with callback.mutex:
+            if callback.measurement:
+                count = 10
+
+    dut.stop_stream()
+        
+    assert callback.measurement, "No measurement received"
+
+    #check for temperature data, note there is no good way to check for actual
+    # values so we just check for 4 floats in a reasonable range.
+    sensor_temps = callback.measurement.sensor_temperatures
+    assert sensor_temps, "No sensor temperature data included with the measurement"
+    assert len(sensor_temps) == 4, "Not enough sensor temperature values in the meta-data"
+    for v in sensor_temps:
+        assert isinstance(v, float), "Sensor temperature value is not a float"
+        assert 0 < v < 60.0, "Sensor temperature value appears to be out of range"
+
+
+@pytest.mark.functional
+def test_meta_data_integration_times(dut: pytofcore.Sensor):
+
+    def run(TEST_VALUES: List[int]):
+        def callback(measurement: pytofcore.Measurement, **kwargs):
+            with callback.mutex:
+                callback.count += 1
+                #Note: for some reason it seems to take at least 2 measurement iterations 
+                # for new integration time settings to take effect
+                # this is probably a bug in the sensor firmware but it's not import ATM
+                if callback.count > 2:
+                    if measurement.data_type == measurement.DataType.DISTANCE and not callback.measurement:
+                        callback.measurement = measurement
+
+        callback.mutex = threading.Lock()
+        callback.count = 0
+        callback.measurement = None
+        dut.set_integration_time(*TEST_VALUES)
+        dut.subscribe_measurement(callback)
+        dut.stream_distance()
+        count = 0 # we will wait for upto 1 second in 0.1 second increments
+        while count != 10:
+            count += 1
+            time.sleep(0.1)
+            with callback.mutex:
+                if callback.measurement:
+                    count = 10
+        dut.stop_stream()
+        
+        assert callback.measurement, "No measurement received"
+
+        #check for integration time data with the measurement.
+        int_times = callback.measurement.integration_times
+        assert int_times, "No integration time data included with the measurement"
+        assert len(int_times) == 4, "Not enough integration time values in the meta-data"
+        assert TEST_VALUES == int_times, "Incorrect integration time values included in meta-data"
+
+    run([11, 22, 33, 44])
+    run([100, 0, 0, 500])
+    run([111, 222, 333, 444])
+
+
+@pytest.mark.functional
+def test_meta_data_modulation_frequencies(dut: pytofcore.Sensor):
+
+    def run(TEST_VALUE: int):
+        def callback(measurement: pytofcore.Measurement, **kwargs):
+            with callback.mutex:
+                callback.count += 1
+                #Note: for some reason it seems to take at least 2 measurement iterations 
+                # for new integration time settings to take effect
+                # this is probably a bug in the sensor firmware but it's not import ATM
+                if callback.count > 1:
+                    if measurement.data_type == measurement.DataType.DISTANCE and not callback.measurement:
+                        callback.measurement = measurement
+
+        callback.mutex = threading.Lock()
+        callback.count = 0
+        callback.measurement = None
+
+        #TODO: remove this translation once we fix the set_modulation accessor to simply take the mod frequency. 
+        if TEST_VALUE == 12000000:
+            index = 0
+        elif TEST_VALUE == 24000000:
+            index = 1
+        elif TEST_VALUE == 6000000:
+            index = 2
+        elif TEST_VALUE == 3000000:
+            index = 3
+        elif TEST_VALUE == 1500000:
+            index = 4
+        elif TEST_VALUE == 750000:
+            index = 5
+        else:
+            assert False, "Unsupported modulation frequency requested"
+ 
+        dut.set_modulation(index, 0)
+        dut.subscribe_measurement(callback)
+        dut.stream_distance()
+        count = 0 # we will wait for upto 1 second in 0.1 second increments
+        while count != 10:
+            count += 1
+            time.sleep(0.1)
+            with callback.mutex:
+                if callback.measurement:
+                    count = 10
+        dut.stop_stream()
+        
+        assert callback.measurement, "No measurement received"
+
+        mod_freqs = callback.measurement.modulation_frequencies
+        assert mod_freqs, "No modulation frequency data included with the measurement"
+        assert len(mod_freqs) == 1, "Not enough modulation frequency values in the meta-data"
+        assert TEST_VALUE == mod_freqs[0], "Incorrect modulation frequency values included in meta-data"
+
+    run(750000)
+    run(1500000)
+    run(3000000)
+    run(6000000)
+    run(12000000)
+    run(24000000)
+
+
+@pytest.mark.functional
+def test_meta_data_binning(dut: pytofcore.Sensor):
+
+    def run(TEST_VALUE: List[int]):
+        def callback(measurement: pytofcore.Measurement, **kwargs):
+            with callback.mutex:
+                callback.count += 1
+                #Note: for some reason it seems to take at least 2 measurement iterations 
+                # for new settings to take effect this is probably a bug in the sensor
+                # firmware but it's not import ATM
+                if callback.count > 2:
+                    if measurement.data_type == measurement.DataType.DISTANCE and not callback.measurement:
+                        callback.measurement = measurement
+
+        callback.mutex = threading.Lock()
+        callback.count = 0
+        callback.measurement = None
+
+        h_setting = TEST_VALUE[0] == 2
+        v_setting = TEST_VALUE[1] == 2
+        dut.set_binning(v_setting, h_setting)
+        dut.subscribe_measurement(callback)
+        dut.stream_distance()
+        count = 0 # we will wait for upto 1 second in 0.1 second increments
+        while count != 10:
+            count += 1
+            time.sleep(0.1)
+            with callback.mutex:
+                if callback.measurement:
+                    count = 10
+        dut.stop_stream()
+        
+        assert callback.measurement, "No measurement received"
+
+        horizontal_binning = callback.measurement.horizontal_binning
+        assert horizontal_binning is not None, "No horizontal binning data included with the measurement"
+        assert TEST_VALUE[0] == horizontal_binning, "Incorrect horizontal binning value included in meta-data"
+
+        vertical_binning = callback.measurement.vertical_binning
+        assert vertical_binning is not None, "No vertical binning data included with the measurement"
+        assert TEST_VALUE[1] == vertical_binning, "Incorrect vertical binning value included in meta-data"
+
+    run([2, 2])
+    run([0, 2])
+    run([2, 0])
+    run([0, 0])
+
+
+
+@pytest.mark.functional
+def test_meta_data_dll(dut: pytofcore.Sensor):
+
+    def run(enable_dll, coarse_step, fine_step, finest_step):
+        def callback(measurement: pytofcore.Measurement, **kwargs):
+            with callback.mutex:
+                callback.count += 1
+                #Note: for some reason it seems to take at least 2 measurement iterations 
+                # for new settings to take effect this is probably a bug in the sensor
+                # firmware but it's not import ATM
+                if callback.count > 2:
+                    if measurement.data_type == measurement.DataType.DISTANCE and not callback.measurement:
+                        callback.measurement = measurement
+
+        callback.mutex = threading.Lock()
+        callback.count = 0
+        callback.measurement = None
+
+        dut.set_dll_step(enable_dll=enable_dll, coarse_step=coarse_step, fine_step=fine_step, finest_step=finest_step)
+        dut.subscribe_measurement(callback)
+        dut.stream_distance()
+        count = 0 # we will wait for upto 1 second in 0.1 second increments
+        while count != 10:
+            count += 1
+            time.sleep(0.1)
+            with callback.mutex:
+                if callback.measurement:
+                    count = 10
+        dut.stop_stream()
+        
+        assert callback.measurement, "No measurement received"
+
+        dll_settings = callback.measurement.dll_settings
+        assert dll_settings is not None, "No DLL settings data included with the measurement"
+        assert dll_settings.enabled == enable_dll, "Incorrect DLL enabled value included in meta-data"
+        assert dll_settings.coarse_step == coarse_step, "Incorrect DLL coarse step value included in meta-data"
+        assert dll_settings.fine_step == fine_step, "Incorrect DLL fine step value included in meta-data"
+        assert dll_settings.finest_step == finest_step, "Incorrect DLL finest step value included in meta-data"
+
+    run(**{'enable_dll': True, 'coarse_step': 15, 'fine_step': 1, 'finest_step': 2})
+    run(**{'enable_dll': True, 'coarse_step': 0, 'fine_step': 0, 'finest_step': 0})
+    run(**{'enable_dll': False, 'coarse_step': 0, 'fine_step': 0, 'finest_step': 0})
+
