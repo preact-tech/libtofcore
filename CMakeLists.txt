@@ -125,7 +125,7 @@ export(PACKAGE ToFCore)
 
 ###############################################
 ## Python bindings
-if(BUILD_PY_BINDINGS)
+if(BUILD_PYTHON_BINDINGS)
     include(FetchContent)
     FetchContent_Declare(
         pybind11
@@ -140,7 +140,7 @@ if(BUILD_PY_BINDINGS)
 
     target_compile_definitions(pytofcore
                             PRIVATE VERSION_INFO=${VERSION_PACKAGE})
-endif()
+endif(BUILD_PYTHON_BINDINGS)
 
 ##############################################
 ## Add test
