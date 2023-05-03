@@ -69,7 +69,7 @@ constexpr uint16_t MAX_PROTOCOL_VERSION = 1;
 constexpr uint32_t V0_CMD_CID_INDEX = 1;
 constexpr uint32_t V0_CMD_PROLOG_SIZE = V0_CMD_CID_INDEX + sizeof(uint16_t);
 constexpr uint32_t V0_CMD_PAYLOAD_SIZE = 32;
-constexpr uint8_t V0_CMD_START_MARK = 0XF5;
+constexpr auto V0_CMD_START_MARK = std::byte{0XF5};
 /*
  * Values for version 1 commands
  */
@@ -78,18 +78,18 @@ constexpr uint32_t V1_CMD_CID_INDEX    = V1_CMD_PID_INDEX + sizeof(uint8_t);
 constexpr uint32_t V1_CMD_LENGTH_INDEX = V1_CMD_CID_INDEX + sizeof(uint16_t);
 constexpr uint32_t V1_CMD_PROLOG_SIZE  = V1_CMD_LENGTH_INDEX + sizeof(uint32_t);
 constexpr uint32_t V1_CMD_MAX_PAYLOAD_SIZE = 4 * 1024;
-constexpr uint8_t V1_CMD_START_MARK = 0XF6;
+constexpr auto V1_CMD_START_MARK = std::byte{0XF6};
 /*
  * Values for version 0 responses
  */
-constexpr uint8_t V0_RESP_START_MARK = 0XFA;
+constexpr auto V0_RESP_START_MARK = std::byte{0XFA};
 constexpr uint32_t V0_RESP_PROLOG_TYPE_OFFSET   = 0;
 constexpr uint32_t V0_RESP_PROLOG_LENGTH_OFFSET = V0_RESP_PROLOG_TYPE_OFFSET + sizeof(uint8_t);
 constexpr uint32_t V0_RESP_PROLOG_SIZE = V0_RESP_PROLOG_LENGTH_OFFSET  + sizeof(uint32_t);
 /*
  * Values for version 1 responses
  */
-constexpr uint8_t V1_RESP_START_MARK = 0XFB;
+constexpr auto V1_RESP_START_MARK = std::byte{0XFB};
 constexpr uint32_t V1_RESP_PROLOG_PID_OFFSET    = 0;
 constexpr uint32_t V1_RESP_PROLOG_TYPE_OFFSET   = V1_RESP_PROLOG_PID_OFFSET  + sizeof(uint8_t);
 constexpr uint32_t V1_RESP_PROLOG_LENGTH_OFFSET = V1_RESP_PROLOG_TYPE_OFFSET + sizeof(uint8_t);
@@ -101,19 +101,19 @@ struct SerialConnection::Impl
     boost::asio::steady_timer response_timer_;
     uint16_t protocol_version_ { 0 };
 
-    std::vector<uint8_t> payload_{};
-    std::array<uint8_t, V1_RESP_PROLOG_SIZE> prolog_epilog_buf_ {};
+    std::vector<std::byte> payload_{};
+    std::array<std::byte, V1_RESP_PROLOG_SIZE> prolog_epilog_buf_ {};
 
-    uint8_t response_type_ { 0 };
-    uint8_t response_marker_ { 0 };
-    uint8_t response_pid_ { 0 };
-    uint8_t v1_cmd_pid_ { 0xFF };   ///< PID of most recent command (V1 protocol)
+    std::byte response_type_ { 0 };
+    std::byte response_marker_ { 0 };
+    std::uint8_t response_pid_ { 0 };
+    std::uint8_t v1_cmd_pid_ { 0xFF };   ///< PID of most recent command (V1 protocol)
     uint16_t v1_cmd_cid_ { 0 };        ///< CID of most recent command (V1 protocol)
 
     uint32_t response_crc_accum_ { 0 };
 
-    std::function<void(const std::vector<uint8_t>&)> on_measurement_data_ {};
-    std::function<void(bool, const std::vector<uint8_t>&)> on_command_response_ {};
+    std::function<void(const std::vector<std::byte>&)> on_measurement_data_ {};
+    std::function<void(bool, const std::vector<std::byte>&)> on_command_response_ {};
 
     Impl(io_service &io, const std::string &portName, uint32_t baud_rate, uint16_t protocolVersion) :
                 port_(io, portName), response_timer_(io), protocol_version_(protocolVersion)
@@ -182,7 +182,8 @@ void SerialConnection::send(uint16_t command, const std::vector<uint8_t> &buf)
 
 void SerialConnection::send(uint16_t command, const uint8_t *data, uint32_t size)
 {
-    const std::vector<ScatterGatherElement> singleDataChunk { { data, size } };
+    const auto tmp = ScatterGatherElement{(std::byte*)data, (size_t)size};
+    const std::vector<ScatterGatherElement> singleDataChunk { tmp };
     this->send(command, singleDataChunk);
 }
 
@@ -198,28 +199,28 @@ void SerialConnection::send(uint16_t command, const std::vector<ScatterGatherEle
     }
 }
 
-std::tuple<bool, std::vector<uint8_t> > SerialConnection::send_receive(uint16_t command, const std::vector<uint8_t> &buf,
+std::optional<std::vector<std::byte> > SerialConnection::send_receive(uint16_t command, const std::vector<uint8_t> &buf,
                                                                        std::chrono::steady_clock::duration timeout)
 {
     return this->send_receive(command, buf.data(), buf.size(), timeout);
 }
 
-std::tuple<bool, std::vector<uint8_t> > SerialConnection::send_receive(uint16_t command, const uint8_t *data, uint32_t size,
+std::optional<std::vector<std::byte> > SerialConnection::send_receive(uint16_t command, const uint8_t *data, uint32_t size,
                                                                        std::chrono::steady_clock::duration timeout)
 {
-    const std::vector<ScatterGatherElement> singleDataChunk { { data, size } };
+    const std::vector<ScatterGatherElement> singleDataChunk { { (std::byte*)data, (size_t)size } };
     return this->send_receive(command, singleDataChunk, timeout);
 }
 
-std::tuple<bool, std::vector<uint8_t> > SerialConnection::send_receive(uint16_t command, const std::vector<ScatterGatherElement>& data,
+std::optional<std::vector<std::byte> > SerialConnection::send_receive(uint16_t command, const std::vector<ScatterGatherElement>& data,
                                                                        std::chrono::steady_clock::duration timeout)
 {
     std::mutex m;
     std::condition_variable cv;
     bool ready = false;
     bool errOccurred = false;
-    std::vector<uint8_t> retval;
-    auto f = [&](bool err, const std::vector<uint8_t> &response_payload)
+    std::vector<std::byte> retval;
+    auto f = [&](bool err, const std::vector<std::byte> &response_payload)
     {
         {
             std::unique_lock<std::mutex> lk(m);
@@ -234,7 +235,11 @@ std::tuple<bool, std::vector<uint8_t> > SerialConnection::send_receive(uint16_t 
     std::unique_lock<std::mutex> lk(m);
     this->send_receive_async(command, data, timeout, f);
     cv.wait(lk, [&] { return ready; });
-    return std::make_tuple(!errOccurred, retval);
+    if(errOccurred) 
+    {
+        return std::nullopt;
+    }
+    return std::make_optional(retval);
 }
 
 bool SerialConnection::set_protocol_version(uint16_t version)
@@ -275,12 +280,12 @@ void SerialConnection::sendv0(uint16_t command, const std::vector<ScatterGatherE
      * | (1 byte) | (2 bytes) |  (32 bytes) |      (4 bytes)      |
      *  ---------- ----------- ------------- ---------------------
      */
-    std::array<uint8_t, V0_CMD_PROLOG_SIZE> prolog { V0_CMD_START_MARK };
+    std::array<std::byte, V0_CMD_PROLOG_SIZE> prolog { V0_CMD_START_MARK };
     BE_Put(&prolog[V0_CMD_CID_INDEX], command);
     uint32_t size { 0 };
     for (const auto& d: data)
     {
-        size += d.m_size;
+        size += d.size();
     }
     if (size > V0_CMD_PAYLOAD_SIZE)
     {
@@ -288,15 +293,15 @@ void SerialConnection::sendv0(uint16_t command, const std::vector<ScatterGatherE
         return;
     }
 
-    static std::array<uint8_t, V0_CMD_PAYLOAD_SIZE> filler; // 0 fill for unused part
+    static std::array<std::byte, V0_CMD_PAYLOAD_SIZE> filler; // 0 fill for unused part
     auto filler_size = filler.size() - size; // pad payload to always send V0_CMD_PAYLOAD_SIZE
 
-    static const std::array<uint8_t, sizeof(uint32_t)> epilog { 0xbe, 0xba, 0xfe, 0xca };
+    static const auto epilog = std::array<std::byte, sizeof(uint32_t)> { std::byte{0xbe}, std::byte{0xba}, std::byte{0xfe}, std::byte{0xca} };
 
     std::vector<boost::asio::const_buffer> bufs { buffer(prolog) };
     for (const auto& d: data)
     {
-        bufs.push_back(buffer(d.m_ptr, d.m_size));
+        bufs.push_back(buffer(d.begin(), d.size()));
     }
     bufs.push_back(buffer(filler, filler_size));
     bufs.push_back(buffer(epilog));
@@ -311,24 +316,24 @@ void SerialConnection::sendv1(uint16_t command, const std::vector<ScatterGatherE
      * | (1 byte) | (1 byte) | (2 bytes) |  (4 bytes)  | (LEN bytes) |  (4 bytes) |
      *  ---------- ---------- ----------- ------------- ------------- ------------
      */
-    std::array<uint8_t, V1_CMD_PROLOG_SIZE> prolog { V1_CMD_START_MARK, ++pimpl->v1_cmd_pid_ };
+    std::array<std::byte, V1_CMD_PROLOG_SIZE> prolog { V1_CMD_START_MARK, (std::byte)(++pimpl->v1_cmd_pid_) };
     pimpl->v1_cmd_cid_ = command;
     BE_Put(&prolog[V1_CMD_CID_INDEX], command);
     uint32_t size { 0 };
     for (const auto& d: data)
     {
-        size += d.m_size;
+        size += d.size();
     }
     BE_Put(&prolog[V1_CMD_LENGTH_INDEX], size);
 
     //Calculate the CRC32 of everything but the CRC32 epilog
-    uint32_t crc32 { calcCrc32(&prolog[0], V1_CMD_PROLOG_SIZE) };
+    uint32_t crc32 { calcCrc32((uint8_t*)&prolog[0], V1_CMD_PROLOG_SIZE) };
 
     std::vector<boost::asio::const_buffer> bufs { buffer(prolog) };
     for (const auto& d: data)
     {
-        crc32 = updateCrc32(crc32, d.m_ptr, d.m_size);
-        bufs.push_back(buffer(d.m_ptr, d.m_size));
+        crc32 = updateCrc32(crc32, (const uint8_t*)d.begin(), d.size());
+        bufs.push_back(buffer(d.begin(), d.size()));
     }
     std::array<uint8_t, sizeof(crc32)> epilog {};
     BE_Put(&epilog[0], crc32);
@@ -362,7 +367,7 @@ void SerialConnection::Impl::on_response_timeout(const system::error_code &error
     //Oops timeout occured
     if (this->on_command_response_)
     {
-        std::vector<uint8_t> tmp;
+        std::vector<std::byte> tmp;
         this->on_command_response_(true, tmp);
         this->on_command_response_ = nullptr;
     }
@@ -374,7 +379,7 @@ void SerialConnection::Impl::begin_receive_start()
     {
         this->on_receive_start(error);
     };
-    this->response_marker_ = 0; // invalidate any previous marker
+    this->response_marker_ = (std::byte)0; // invalidate any previous marker
     async_read(this->port_, buffer(&this->response_marker_, 1), f);
 }
 
@@ -391,7 +396,7 @@ void SerialConnection::Impl::on_receive_start(const system::error_code &error)
     }
     else if (V1_RESP_START_MARK == this->response_marker_)
     {
-        this->response_crc_accum_ = calcCrc32(&this->response_marker_, sizeof(this->response_marker_));
+        this->response_crc_accum_ = calcCrc32((uint8_t*)&this->response_marker_, sizeof(this->response_marker_));
         this->begin_receive_v1_prolog();
     }
     else
@@ -449,9 +454,9 @@ void SerialConnection::Impl::on_receive_v1_prolog(const system::error_code &erro
      * | (1 byte) | (1 byte) | (1 byte) |  (4 bytes)  | (Length bytes) | (4 bytes)  |
      *  ---------- ---------- ---------- ------------- ---------------- ------------
      */
-    this->response_crc_accum_ = updateCrc32(this->response_crc_accum_, &this->prolog_epilog_buf_[0], V1_RESP_PROLOG_SIZE);
+    this->response_crc_accum_ = updateCrc32(this->response_crc_accum_,  (const uint8_t*)&this->prolog_epilog_buf_[0], V1_RESP_PROLOG_SIZE);
 
-    this->response_pid_ = this->prolog_epilog_buf_[V1_RESP_PROLOG_PID_OFFSET];
+    this->response_pid_ = (uint8_t)this->prolog_epilog_buf_[V1_RESP_PROLOG_PID_OFFSET];
     this->response_type_ = this->prolog_epilog_buf_[V1_RESP_PROLOG_TYPE_OFFSET];
     uint32_t payload_length; BE_Get(payload_length, &this->prolog_epilog_buf_[V1_RESP_PROLOG_LENGTH_OFFSET]);
     DBG("Received V1 type: " << (unsigned)this->response_type_ << "; size: " << payload_length);
@@ -475,7 +480,7 @@ void SerialConnection::Impl::on_receive_payload(const system::error_code &error)
     {
         return;
     }
-    this->response_crc_accum_ = updateCrc32(this->response_crc_accum_, &this->payload_[0], this->payload_.size());
+    this->response_crc_accum_ = updateCrc32(this->response_crc_accum_, (const uint8_t*)&this->payload_[0], this->payload_.size());
     //Now wait for the end bytes before acknowledging the data and passing it off to clients. 
     this->begin_receive_end();
 }
@@ -521,7 +526,7 @@ void SerialConnection::Impl::on_receive_end(const system::error_code &error)
 void SerialConnection::Impl::process_v0_response()
 {
     DBG(__FUNCTION__ << ": type: " << (unsigned)this->response_type_ << "; payload size: " << this->payload_.size());
-    switch (this->response_type_)
+    switch (std::to_integer<uint8_t>(this->response_type_))
     {
         case 0: //command answer
             if (this->on_command_response_)
@@ -570,8 +575,8 @@ bool SerialConnection::Impl::is_valid_v1_response()
             ERR("CID in response (0X" << std::hex << (unsigned)responseCID << " does not match CID in command (0X" << this->v1_cmd_cid_);
             isValid = false;
         }
-        const uint8_t resultCode { this->payload_[sizeof(uint16_t)] };
-        if (resultCode != 0)
+        const auto resultCode { this->payload_[sizeof(uint16_t)] };
+        if (resultCode != std::byte{0})
         {
             DBG("Non-zero result code for CID 0X" << std::hex << responseCID << ": " << (unsigned)resultCode);
             isValid = false;
@@ -588,7 +593,7 @@ void SerialConnection::Impl::process_v1_response()
 {
     DBG(__FUNCTION__ << ": type: " << (unsigned)this->response_type_ << "; payload size: " << this->payload_.size());
     uint32_t response_crc { 0 }; BE_Get(response_crc, &this->prolog_epilog_buf_[0]);
-    switch (this->response_type_)
+    switch (std::to_integer<uint8_t>(this->response_type_))
     {
         case 0: //command answer
         {

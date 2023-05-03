@@ -66,7 +66,7 @@ struct BufferView : public std::tuple<const T*, std::size_t>
 class Measurement_T
 {
 public:
-    using byte_t = uint8_t;
+    using byte_t = std::byte;
     
     enum class DataType:int16_t
     {
@@ -182,7 +182,7 @@ public:
 /// @brief Factory function to create new Measurement_T derived object from a std vector of bytes
 /// @param buffer vector of bytes containing raw recieved measurement data
 /// @return Shared pointer to concrete measurement instance
-std::shared_ptr<tofcore::Measurement_T> create_measurement(const std::vector<uint8_t>& buffer);
+std::shared_ptr<tofcore::Measurement_T> create_measurement(const std::vector<std::byte>& buffer);
 
 } //end namespace tofcore
 

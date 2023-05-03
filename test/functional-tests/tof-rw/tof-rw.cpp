@@ -46,10 +46,10 @@ static bool doErase(tofcore::Sensor& sensor)
     return ok;
 }
 
-static std::tuple<bool, std::vector<uint8_t>> doRead(tofcore::Sensor& sensor, const uint32_t offset, const uint32_t size)
+static std::tuple<bool, std::vector<std::byte>> doRead(tofcore::Sensor& sensor, const uint32_t offset, const uint32_t size)
 {
     bool ok { true };
-    std::vector<uint8_t> data {};
+    std::vector<std::byte> data {};
 
     uint32_t totalBytesRead { 0 };
 
@@ -62,7 +62,7 @@ static std::tuple<bool, std::vector<uint8_t>> doRead(tofcore::Sensor& sensor, co
 
         const auto readResult = sensor.storageRead(storageId, storageMode, offset + totalBytesRead, bytesToRead);
 
-        ok = std::get<bool>(readResult);
+        ok = readResult.has_value();
         if (!ok)
         {
             break; // done if there was an error
@@ -70,7 +70,7 @@ static std::tuple<bool, std::vector<uint8_t>> doRead(tofcore::Sensor& sensor, co
         /*
          * Append the data read to the result.
          */
-        const std::vector<uint8_t>& v = std::get<1>(readResult);
+        const auto& v = *readResult;
         data.insert(data.end(), v.begin(), v.end()); // Append to vector that will be returned
         const size_t bytesRead { v.size() };
         totalBytesRead += bytesRead;
@@ -91,15 +91,15 @@ static std::tuple<bool, std::vector<uint8_t>> doRead(tofcore::Sensor& sensor, co
     return std::make_tuple(ok, data);
 }
 
-static void outputBinary(const std::vector<uint8_t>& pData)
+static void outputBinary(const std::vector<std::byte>& pData)
 {
     for (auto b : pData)
     {
-        std::cout << b;
+        std::cout << std::to_integer<uint8_t>(b);
     }
 }
 
-static void outputHex(const std::vector<uint8_t>& pData)
+static void outputHex(const std::vector<std::byte>& pData)
 {
     uint32_t count { 0 };
     std::string pchars { "  " };
@@ -123,7 +123,7 @@ static void outputHex(const std::vector<uint8_t>& pData)
     std::cout << std::endl << std::dec;
 }
 
-static void outputText(const std::vector<uint8_t>& pData)
+static void outputText(const std::vector<std::byte>& pData)
 {
     std::cout << reinterpret_cast<const char*>(pData.data()) << std::endl;
 }
@@ -399,7 +399,7 @@ int main(int argc, char *argv[])
 
             if (std::get<bool>(readResult))
             {
-                const std::vector<uint8_t> &pData = std::get<1>(readResult);
+                const auto &pData = std::get<1>(readResult);
                 if (OutputMode_e::BINARY == outputMode)
                 {
                     outputBinary(pData);

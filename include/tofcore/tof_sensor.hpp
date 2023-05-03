@@ -9,10 +9,12 @@
  */
 #include "CommandTypes.hpp"
 #include "Measurement_T.hpp"
+#include "span.hpp"
 #include <cstdint>
 #include <functional>
 #include <memory>
 #include <tuple>
+#include <optional>
 
 namespace tofcore
 {
@@ -67,7 +69,7 @@ public:
     bool stopStream();
     bool storeSettings();
 
-    std::tuple<bool, std::vector<uint8_t>> storageRead(TofComm::StorageId_e id, TofComm::StorageMode_e mode,
+    std::optional<std::vector<std::byte> > storageRead(TofComm::StorageId_e id, TofComm::StorageMode_e mode,
                                                        uint32_t storageOffset, uint32_t numBytes);
 
     bool storageWriteData(TofComm::StorageId_e id, TofComm::StorageMode_e mode,
@@ -105,6 +107,21 @@ public:
     bool setTestVal(uint16_t testVal);
     bool getTestVal(uint8_t& testVal);
     bool getTestVal(uint16_t& testVal);
+
+
+protected:
+    typedef std::optional<std::vector<std::byte>> send_receive_result_t;
+    typedef tcb::span<std::byte> send_receive_payload_t;
+    send_receive_result_t send_receive(const uint16_t command, const std::vector<send_receive_payload_t>& payload) const;
+    send_receive_result_t send_receive(const uint16_t command, const send_receive_payload_t& payload) const;
+
+    send_receive_result_t send_receive(const uint16_t command) const;
+    send_receive_result_t send_receive(const uint16_t command, uint32_t value) const;
+    send_receive_result_t send_receive(const uint16_t command, int32_t value) const;
+    send_receive_result_t send_receive(const uint16_t command, uint16_t value) const;
+    send_receive_result_t send_receive(const uint16_t command, int16_t value) const;
+    send_receive_result_t send_receive(const uint16_t command, uint8_t value) const;
+    send_receive_result_t send_receive(const uint16_t command, int8_t value) const;
 
 private:
     struct Impl;

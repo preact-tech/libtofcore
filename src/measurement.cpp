@@ -267,8 +267,8 @@ protected:
         auto begin = input.begin();
         auto end = input.end();
         //The header is always at the beginning of the data, the header version tells us about the data in the header, it's size, etc. 
-        uint8_t version = *(begin + TofComm::V0_T1_VERSION_INDEX);
-        switch(version)
+        auto version = *(begin + TofComm::V0_T1_VERSION_INDEX);
+        switch(std::to_integer<uint8_t>(version))
         {
             case 2:
             case 3:
@@ -334,7 +334,7 @@ protected:
 };
 
 
-std::shared_ptr<tofcore::Measurement_T> create_measurement(const std::vector<uint8_t>& buffer)
+std::shared_ptr<tofcore::Measurement_T> create_measurement(const std::vector<std::byte>& buffer)
 {
     return std::make_shared<tofcore::Measurement>(buffer);
 }

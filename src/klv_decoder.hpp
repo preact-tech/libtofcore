@@ -18,7 +18,7 @@ class KLVDecoder
 public:
     using key_type = std::uint16_t;
     using length_type = std::uint16_t;
-    using buf_ptrtype = std::uint8_t*;
+    using buf_ptrtype = std::byte*;
     using size_type = std::size_t;
 
     KLVDecoder(buf_ptrtype begin, const buf_ptrtype end);

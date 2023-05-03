@@ -47,7 +47,7 @@ std::optional<std::array<uint8_t, 2>> decode_binning(const KLVDecoder& klv)
     {
         return std::nullopt;
     }
-    return {{data.first[0], data.first[1]}};
+    return {{std::to_integer<uint8_t>(data.first[0]), std::to_integer<uint8_t>(data.first[1])}};
 }
 
 
@@ -59,7 +59,7 @@ std::optional<std::array<uint8_t, 4>> decode_dll_settings(const KLVDecoder& klv)
         return std::nullopt;
     }
     std::array<uint8_t, 4> retval {};
-    std::copy(data.first, data.second, retval.begin());
+    std::copy((uint8_t*)data.first, (uint8_t*)data.second, retval.begin());
     return retval;
 }
 
@@ -116,12 +116,12 @@ std::optional<std::array<float, 4>> decode_sensor_temperatures(const KLVDecoder&
     // - 4 int16_t big endian temperature values.
     // - 4 uin8_t temperature calibration values.
     int16_t* raw_values {(int16_t*)data.first};
-    uint8_t* cal_values {data.first + (sizeof(int16_t)*4)};
+    auto cal_values {data.first + (sizeof(int16_t)*4)};
     std::array<float, 4> temp_degC; 
     for(std::size_t i = 0; i != temp_degC.size(); ++i) 
     {
         int16_t raw_value {0};
-        uint8_t calibration_val {cal_values[i]};
+        auto calibration_val = std::to_integer<uint8_t>(cal_values[i]);
         TofComm::BE_Get(raw_value, (uint8_t*)(raw_values + i));
         float normalizedTempDegC = calibration_val/4.7f - 299;
         temp_degC[i] = (raw_value - 0x2000) * 0.134 + normalizedTempDegC;
