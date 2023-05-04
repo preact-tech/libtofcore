@@ -26,7 +26,6 @@ constexpr uint16_t      DEFAULT_PROTOCOL_VERSION    { 1 };
 class Sensor
 {
 public:
-
     Sensor(uint16_t protocolVersion = DEFAULT_PROTOCOL_VERSION,
            const std::string &portName = DEFAULT_PORT_NAME,
            uint32_t baudrate = DEFAULT_BAUD_RATE);
@@ -41,16 +40,10 @@ public:
     bool getSensorInfo(TofComm::versionData_t &versionData);
     bool getSettings(std::string& jsonSettings);
     bool getSoftwareVersion(std::string& version);
-    std::tuple<bool, TofComm::StorageMetadata_T> getStorageMetadata(TofComm::StorageId_e id, TofComm::StorageMode_e mode);
 
     void jumpToBootloader();
 
-    std::tuple<bool, uint16_t> sequencerGetVersion() const;
-    std::tuple<bool, bool> sequencerIsVersionSupported(uint16_t version) const;
-    bool sequencerSetVersion(uint16_t version);
-
     bool setBinning(const bool vertical, const bool horizontal);
-    bool setFactoryMode(bool enable);
     bool setFilter(const bool medianFilter, const bool averageFilter, const uint16_t temporalFactor,
                    const uint16_t temporalThreshold, const uint16_t edgeThreshold, const uint16_t temporalEdgeThresholdLow,
                    const uint16_t temporalEdgeThresholdHigh, const uint16_t interferenceDetectionLimit,
@@ -60,24 +53,10 @@ public:
     bool setMinAmplitude(uint16_t minAmplitude);
     bool setModulation(const uint8_t index, const uint8_t channel);
     bool setOffset(int16_t offset);
-    bool setProtocolVersion(uint16_t version);
     bool setRoi(const uint16_t x0, const uint16_t y0, const uint16_t x1, const uint16_t y1);
-
-    bool startDrnuCalibration();
-    bool startProductionCalibration();
 
     bool stopStream();
     bool storeSettings();
-
-    std::optional<std::vector<std::byte> > storageRead(TofComm::StorageId_e id, TofComm::StorageMode_e mode,
-                                                       uint32_t storageOffset, uint32_t numBytes);
-
-    bool storageWriteData(TofComm::StorageId_e id, TofComm::StorageMode_e mode,
-                          uint32_t storageOffset, const uint8_t *data, uint32_t numBytes);
-
-    bool storageWriteFinish(TofComm::StorageId_e id, TofComm::StorageMode_e mode, uint32_t totalSize, uint32_t crc32);
-
-    bool storageWriteStart(TofComm::StorageId_e id, TofComm::StorageMode_e mode);
 
     bool streamDCS();
     bool streamGrayscale();
@@ -87,34 +66,14 @@ public:
 
     void subscribeMeasurement(on_measurement_ready_t);
 
-    bool setDllStep(bool enable, uint8_t coarseStep, uint8_t fineStep, uint8_t finestStep);
-    bool readRegister(uint8_t regAddress, uint8_t &regData);
-    bool writeRegister(uint8_t regAddress, uint8_t regData);
-
-    //Illuminator board commands
-    bool setVledEnables(uint8_t vledEnables);
-    bool getVledEnables(uint8_t& vledEnables);
-    bool setVled(uint16_t vledMv);
-    bool getVled(uint16_t& vledMv);
-    bool getIb5V(uint16_t& v5Mv);
-    bool getIllmnTemperature(int16_t& tempMdegC);
-    bool getIbPd(uint16_t& photodiodeMv);
-    bool getIbSerial(uint32_t& serialNum);
-    bool setIbSerial(uint32_t serialNum);
-    bool setIbRgb(uint8_t rgbBitmap, uint16_t rgbBlinkMs);
-    bool getIbRgb(uint8_t& rgbBitmap);
-    bool setTestVal(uint8_t testVal);
-    bool setTestVal(uint16_t testVal);
-    bool getTestVal(uint8_t& testVal);
-    bool getTestVal(uint16_t& testVal);
-
-
 protected:
     typedef std::optional<std::vector<std::byte>> send_receive_result_t;
     typedef tcb::span<std::byte> send_receive_payload_t;
+
+    uint16_t getProtocolVersion() const;
+    bool setProtocolVersion(uint16_t version);
     send_receive_result_t send_receive(const uint16_t command, const std::vector<send_receive_payload_t>& payload) const;
     send_receive_result_t send_receive(const uint16_t command, const send_receive_payload_t& payload) const;
-
     send_receive_result_t send_receive(const uint16_t command) const;
     send_receive_result_t send_receive(const uint16_t command, uint32_t value) const;
     send_receive_result_t send_receive(const uint16_t command, int32_t value) const;

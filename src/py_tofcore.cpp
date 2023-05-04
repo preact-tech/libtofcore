@@ -137,68 +137,6 @@ public:
         return PixelRays_type(rays_x, rays_y, rays_z);
     }
 
-    auto setDllStep(bool enableDll, uint16_t courseStep, uint16_t fineStep, uint16_t finestStep)
-    {
-        if(!tofcore::Sensor::setDllStep(enableDll, courseStep, fineStep, finestStep))
-        {
-            throw std::runtime_error("An error occured while setting DLL manual enable state and DLL step");
-        }
-
-        return true;
-    }
-
-    auto readRegister(uint8_t regAddress)
-    {        
-        //Use static and a lambda to create the RegRead namedtuple type only once. 
-        static auto RegRead_type = []() {
-            auto namedTuple_attr = pybind11::module::import("collections").attr("namedtuple");
-            py::list fields;
-            fields.append("address");
-            fields.append("data");
-            return namedTuple_attr("RegRead", fields);
-        }();
-
-        uint8_t regData;
-        if (!tofcore::Sensor::readRegister(regAddress, regData))
-        {
-            throw std::runtime_error("An error occcured trying to read a sensor register");
-        }
-
-        return RegRead_type(regAddress, regData);
-    }
-
-    auto writeRegister(uint8_t regAddress, uint8_t regData){
-
-        if (!tofcore::Sensor::writeRegister(regAddress, regData)){
-
-            throw std::runtime_error("An error occcured trying to write a sensor register");
-        }
-
-    }
-
-    auto setVledEnables(uint8_t vledEnables){
-
-        if (!tofcore::Sensor::setVledEnables(vledEnables)){
-
-            throw std::runtime_error("An error occcured trying to VLED enables");
-        }
-
-        return true;
-
-    }
-
-    auto getVledEnables()
-    {        
-
-        uint8_t vledEnables;
-        if (!tofcore::Sensor::getVledEnables(vledEnables))
-        {
-            throw std::runtime_error("An error occcured trying to read state of VLED enables");
-        }
-
-        return vledEnables;
-    }
-
     auto getSensorInfo()
     {
 
@@ -240,42 +178,6 @@ public:
                                 versionData.m_illuminatorSwSourceId,
                                 versionData.m_illuminatorHwCfg,
                                 (uint8_t)versionData.m_backpackModule);
-    }
-
-
-    auto getSequencerVersion() const
-    {
-        const auto result { tofcore::Sensor::sequencerGetVersion() };
-        if (std::get<bool>(result))
-        {
-            return std::get<uint16_t>(result);
-        }
-        else
-        {
-            throw std::runtime_error("An error occcured trying to read the sequencer version blahh");
-        }
-    }
-
-    void setSequencerVersion(uint16_t version)
-    {
-        bool ok = false;
-        ok = tofcore::Sensor::sequencerSetVersion(version);
-        if(!ok)
-        {
-            throw std::runtime_error("An error occcured setting sequencer version");
-        }
-    }
-
-    auto sequencerIsVersionSupported(uint16_t version) const
-    {
-        bool ok = false;
-        bool supported = false;
-        std::tie(ok, supported) = tofcore::Sensor::sequencerIsVersionSupported(version);
-        if(!ok)
-        {
-            throw std::runtime_error("An error occcured querying sequencer support");
-        }
-        return supported;
     }
 
 };
@@ -380,8 +282,6 @@ PYBIND11_MODULE(pytofcore, m) {
         .def_property_readonly("chip_info", &PySensor::getChipInformation, "Obtain chip info. Returns namedtuple with fields wafer_id and chip_id", py::call_guard<py::gil_scoped_release>())
         .def_property_readonly("accelerometer_data", &PySensor::getAccelerometerData, "Obtain acceleromter info. Each call turns a new sample from the accelerometer. The same is a namedtuple with fields x, y, z, range_g", py::call_guard<py::gil_scoped_release>())
         .def_property_readonly("pixel_rays", &PySensor::getPixelRays, "Obtain unit vector ray information for all pixels based on the lens information stored on the sensor. Returns a namedtuple with fields x, y, z. Each field is a list of floats of length width x height.", py::call_guard<py::gil_scoped_release>())
-        .def_property("sequencer_version", &PySensor::getSequencerVersion, &PySensor::setSequencerVersion, "Get or set the sequencer version used by imaging chip. A sensor reboot is required for a change to take effect", py::call_guard<py::gil_scoped_release>())
-        .def("is_sequencer_version_supported", &PySensor::sequencerIsVersionSupported, "Check if a specific sequencer version is supported by the sensor", py::call_guard<py::gil_scoped_release>())
         .def("stop_stream", &PySensor::stopStream, "Command the sensor to stop streaming", py::call_guard<py::gil_scoped_release>())
         .def("stream_dcs", &PySensor::streamDCS, "Command the sensor to stream DCS frames", py::call_guard<py::gil_scoped_release>())
         .def("stream_dcs_ambient", &PySensor::streamDCSAmbient, "Command the sensor to stream DCS and Ambient frames. Ambient frames are of type Frame::DataType::GRAYSCALE", py::call_guard<py::gil_scoped_release>())
@@ -396,13 +296,7 @@ PYBIND11_MODULE(pytofcore, m) {
         .def("set_hdr_mode", &PySensor::setHDRMode, "Set the High Dynamic Range modeon the sensor", py::arg("mode"), py::call_guard<py::gil_scoped_release>())
         .def("set_modulation", &PySensor::setModulation, "Set the modulation frequency to use during TOF measurements", py::arg("index"), py::arg("channel"), py::call_guard<py::gil_scoped_release>())
         .def("set_filter", &PySensor::setFilter, "Configure filter applied by sensor on data returned", py::call_guard<py::gil_scoped_release>())
-        .def("set_dll_step", &PySensor::setDllStep, "Set the DLL (delayed lock loop) step of the sensor", py::arg("enable_dll"), py::arg("coarse_step"), py::arg("fine_step"), py::arg("finest_step"), py::call_guard<py::gil_scoped_release>())
         .def("subscribe_measurement", &PySensor::subscribeMeasurement, "Set a function object to be called when new measurement data is received", py::arg("callback"))
-        .def("read_sensor_register", &PySensor::readRegister, "Read sensor register. Returns byte data from register", py::arg("reg_address"))
-        .def("write_sensor_register", &PySensor::writeRegister, "Write sensor register. Provide register address and data to be writen", py::arg("reg_address"), py::arg("reg_data"), py::call_guard<py::gil_scoped_release>())
-        .def("set_vled_enables", &PySensor::setVledEnables, "Set the individual VLED enables", py::arg("vled_enables"), py::call_guard<py::gil_scoped_release>())
-        .def("get_vled_enables", &PySensor::getVledEnables, "Get the state of individual VLED enables")
-        .def("get_sensor_info", &PySensor::getSensorInfo, "Get the sensor version and build info")
         .def_property_readonly_static("DEFAULT_PORT_NAME", [](py::object /* self */){return tofcore::DEFAULT_PORT_NAME;})
         .def_property_readonly_static("DEFAULT_BAUD_RATE", [](py::object /* self */){return tofcore::DEFAULT_BAUD_RATE;})
         .def_property_readonly_static("DEFAULT_PROTOCOL_VERSION", [](py::object /* self */){return tofcore::DEFAULT_PROTOCOL_VERSION;});

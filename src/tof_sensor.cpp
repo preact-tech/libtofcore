@@ -158,91 +158,10 @@ bool Sensor::getSoftwareVersion(std::string& version)
     return true;
 }
 
-std::tuple<bool, StorageMetadata_T> Sensor::getStorageMetadata(TofComm::StorageId_e id, TofComm::StorageMode_e mode)
-{
-    StorageMetadata_T metaData { .m_storageId = id, .m_mode = mode };
-    bool isOk { false };
-    uint16_t startProtocol = pimpl->connection.get_protocol_version();
-    if (0 == startProtocol)
-    {
-        pimpl->connection.set_protocol_version(1); // cannot use version 0 protocol for storage commands
-    }
-    auto result = pimpl->connection.send_receive(COMMAND_STORAGE_GET_METADATA, (const uint8_t*)&metaData, sizeof(metaData), 5s);
-    if (0 == startProtocol)
-    {
-        pimpl->connection.set_protocol_version(startProtocol);
-    }
-    isOk = bool{result};
-    if (isOk)
-    {
-        const auto data = (*result).data();
-        {
-            uint32_t v32;
-            BE_Get(v32, data + offsetof(StorageMetadata_T, m_dataSize));
-            metaData.m_dataSize = v32;
-            BE_Get(v32, data + offsetof(StorageMetadata_T, m_dataCrc32));
-            metaData.m_dataCrc32 = v32;
-        }
-        {
-            uint16_t v16;
-            BE_Get(v16, data + offsetof(StorageMetadata_T, m_dataType));
-            metaData.m_dataType = v16;
-            BE_Get(v16, data + offsetof(StorageMetadata_T, m_typeVersion));
-            metaData.m_typeVersion = v16;
-        }
-    }
-    return std::make_tuple(isOk, metaData);
-}
 
 void Sensor::jumpToBootloader()
 {
     this->send_receive(COMMAND_JUMP_TO_BOOLOADER);
-}
-
-std::tuple<bool, uint16_t> Sensor::sequencerGetVersion() const
-{
-    auto result = this->send_receive(COMMAND_SEQU_GET_VERSION);
-
-    auto ok = bool{result};
-    const auto& payload = *result;
-
-    ok &= (payload.size() == sizeof(uint16_t));
-    uint16_t version { 0 };
-    if (ok)
-    {
-        BE_Get(version, &payload[0]);
-    }
-
-    return std::make_tuple(ok, version);
-}
-
-std::tuple<bool, bool> Sensor::sequencerIsVersionSupported(uint16_t version) const
-{
-    auto result = this->send_receive(COMMAND_SEQU_VERSION_IS_SUPPORTED, version);
-
-    auto ok = bool {result};
-    const auto& payload = *result;
-
-    ok &= (payload.size() == sizeof(uint8_t));
-    bool isSupported { false };
-    if (ok)
-    {
-        isSupported = (payload[0] != (std::byte)0);
-    }
-
-    return std::make_tuple(ok, isSupported);
-}
-
-bool Sensor::sequencerSetVersion(uint16_t version)
-{
-    auto result = this->send_receive(COMMAND_SEQU_SET_VERSION, version);
-
-    bool ok = bool{result};
-    const auto& payload = *result;
-
-    ok &= (payload.size() == sizeof(uint8_t)) && ((std::byte)0 == payload[0]);
-
-    return ok;
 }
 
 bool Sensor::setBinning(const bool vertical, const bool horizontal)
@@ -262,12 +181,6 @@ bool Sensor::setBinning(const bool vertical, const bool horizontal)
     }
 
     return bool{this->send_receive(COMMAND_SET_BINNING, byte)};
-}
-
-bool Sensor::setFactoryMode(bool enable)
-{
-    std::vector<uint8_t> payload { enable };
-    return pimpl->connection.send_receive(COMMAND_FACTORY_MODE, payload, 5s).has_value();
 }
 
 bool Sensor::setFilter(const bool medianFilter, const bool averageFilter, const uint16_t temporalFactor, const uint16_t temporalThreshold, const uint16_t edgeThreshold, const uint16_t temporalEdgeThresholdLow, const uint16_t temporalEdgeThresholdHigh, const uint16_t interferenceDetectionLimit, const bool interferenceDetectionUseLastValue)
@@ -322,108 +235,25 @@ bool Sensor::setOffset(int16_t offset)
     return this->send_receive(COMMAND_SET_OFFSET, offset).has_value();
 }
 
-bool Sensor::setProtocolVersion(uint16_t version)
-{
-    return pimpl->connection.set_protocol_version(version);
-}
-
 bool Sensor::setRoi(const uint16_t x0, const uint16_t y0, const uint16_t x1, const uint16_t y1)
 {
     uint16_t params[4] = {native_to_big(x0), native_to_big(y0), native_to_big(x1), native_to_big(y1)};
     return this->send_receive(COMMAND_SET_ROI, {(std::byte*)params, sizeof(params)}).has_value();
 }
 
-bool Sensor::startDrnuCalibration()
+bool Sensor::setProtocolVersion(uint16_t version)
 {
-    return this->send_receive(COMMAND_CALIBRATE).has_value();
+    return pimpl->connection.set_protocol_version(version);
 }
 
-bool Sensor::startProductionCalibration()
+uint16_t Sensor::getProtocolVersion() const
 {
-    return this->send_receive(COMMAND_CALIBRATE_PRODUCTION).has_value();
+    return pimpl->connection.get_protocol_version();
 }
 
 bool Sensor::stopStream()
 {
     return this->send_receive(COMMAND_STOP_STREAM).has_value();
-}
-
-std::optional<std::vector<std::byte> > Sensor::storageRead(StorageId_e id, TofComm::StorageMode_e mode,
-                                                           uint32_t storageOffset, uint32_t numBytes)
-{
-    StorageReadCommand_T readCommand { .m_storageId = id, .m_mode = mode };
-    BE_Put(&readCommand.m_offset, storageOffset);
-    BE_Put(&readCommand.m_numBytes, numBytes);
-    uint16_t startProtocol = pimpl->connection.get_protocol_version();
-    if (0 == startProtocol)
-    {
-        pimpl->connection.set_protocol_version(1); // cannot use version 0 protocol for storage commands
-    }
-    // guarantee we return to starting protocol even if exception is thrown
-    BOOST_SCOPE_EXIT(startProtocol, this_)
-    {
-        if (0 == startProtocol)
-        {
-            this_->pimpl->connection.set_protocol_version(startProtocol);
-        }
-    }
-    BOOST_SCOPE_EXIT_END
-
-    return this->send_receive(COMMAND_STORAGE_READ, {(std::byte*)&readCommand, sizeof(readCommand)});
-}
-
-bool Sensor::storageWriteData(StorageId_e id, TofComm::StorageMode_e mode,
-                              uint32_t storageOffset, const uint8_t *data, uint32_t numBytes)
-{
-    const WriteContinueCommand_T cmd { id, mode, htonl(storageOffset) };
-    const std::vector<ScatterGatherElement> cmdAndData
-    {
-        { (std::byte*)&cmd, sizeof(cmd) },
-        { (std::byte*)data,       numBytes    }
-    };
-    uint16_t startProtocol = pimpl->connection.get_protocol_version();
-    if (0 == startProtocol)
-    {
-        pimpl->connection.set_protocol_version(1); // cannot use version 0 protocol for storage commands
-    }
-    auto result = pimpl->connection.send_receive(COMMAND_STORAGE_WRITE, cmdAndData, 5s);
-    if (0 == startProtocol)
-    {
-        pimpl->connection.set_protocol_version(startProtocol);
-    }
-    return result.has_value();
-}
-
-bool Sensor::storageWriteFinish(TofComm::StorageId_e id, TofComm::StorageMode_e mode, uint32_t totalSize, uint32_t crc32)
-{
-    const WriteFinishCommand_T cmd { id, mode, htonl(totalSize), htonl(crc32) };
-    uint16_t startProtocol = pimpl->connection.get_protocol_version();
-    if (0 == startProtocol)
-    {
-        pimpl->connection.set_protocol_version(1); // cannot use version 0 protocol for storage commands
-    }
-    auto result = pimpl->connection.send_receive(COMMAND_STORAGE_WRITE, (const uint8_t*)&cmd, sizeof(cmd), 5s);
-    if (0 == startProtocol)
-    {
-        pimpl->connection.set_protocol_version(startProtocol);
-    }
-    return result.has_value();
-}
-
-bool Sensor::storageWriteStart(TofComm::StorageId_e id, TofComm::StorageMode_e mode)
-{
-    const WriteStartCommand_T cmd { id, mode };
-    uint16_t startProtocol = pimpl->connection.get_protocol_version();
-    if (0 == startProtocol)
-    {
-        pimpl->connection.set_protocol_version(1); // cannot use version 0 protocol for storage commands
-    }
-    auto result = pimpl->connection.send_receive(COMMAND_STORAGE_WRITE, (const uint8_t*)&cmd, sizeof(cmd), 5s);
-    if (0 == startProtocol)
-    {
-        pimpl->connection.set_protocol_version(startProtocol);
-    }
-    return result.has_value();
 }
 
 bool Sensor::storeSettings()
@@ -463,216 +293,6 @@ void Sensor::subscribeMeasurement(std::function<void (std::shared_ptr<Measuremen
     pimpl->measurementReady = onMeasurementReady;
 }
 
-bool Sensor::setDllStep(bool enable, uint8_t coarseStep, uint8_t fineStep, uint8_t finestStep){
-
-    uint8_t params[] = {(uint8_t)enable, coarseStep, fineStep, finestStep};
-
-    return this->send_receive(COMMAND_SET_DLL_STEP, {(std::byte*)params, sizeof(params)}).has_value();  
-}
-
-bool Sensor::readRegister(uint8_t regAddress, uint8_t& regData){
-
-    auto result = this->send_receive(COMMAND_READ_REGISTER, regAddress);
-
-    auto ok = bool{result};
-
-    const auto& payload = *result;
-
-    ok &= (payload.size() == READ_REGISTER_DATA_SIZE); // Data type field is 6 for REG READ
-
-    if (ok)
-    {
-        regData = (uint8_t)payload[READ_REGISTER_DATA_OFFSET];
-    }
-
-    return ok;
-}
-
-bool Sensor::writeRegister(uint8_t regAddress, uint8_t regData){
-
-    uint8_t params[] = {regAddress, regData};
-
-    return this->send_receive(COMMAND_WRITE_REGISTER, {(std::byte*)params, sizeof(params)}).has_value();
-}
-
-
-/* #########################################################################
-* 
-* Illuminator Board Commands
-*
-* ########################################################################## */
-
-bool Sensor::setVledEnables(uint8_t vledEnables)
-{
-    return this->send_receive(COMMAND_SET_VLED_ENABLES, vledEnables).has_value();
-}
-
-bool Sensor::getVledEnables(uint8_t& vledEnables)
-{
-    auto result = this->send_receive(COMMAND_GET_VLED_ENABLES);
-
-    auto ok = bool{result};
-
-    const auto& payload = *result;
-
-    ok &= (payload.size() == VLED_ENABLES_DATA_SIZE); 
-
-    if (ok)
-    {
-        vledEnables = (uint8_t)payload[VLED_ENABLES_DATA_OFFSET];
-    }
-
-    return ok;
-}
-
-bool Sensor::setVled(uint16_t vledMv)
-{
-    return this->send_receive(COMMAND_SET_VLED, vledMv).has_value();
-}
-
-bool Sensor::getVled(uint16_t& vledMv)
-{
-    auto result = this->send_receive(COMMAND_GET_VLED);
-
-    auto ok = bool{result};
-    const auto& payload = *result;
-    ok &= (payload.size() == VLED_DATA_SIZE);
-    if (ok)
-    {
-        BE_Get(vledMv, &payload[VLED_DATA_OFFSET]);
-    }
-
-    return ok;
-}
-
-bool Sensor::getIb5V(uint16_t& v5Mv)
-{
-    auto result = this->send_receive(COMMAND_GET_IB_5V);
-
-    auto ok = bool{result};
-    const auto& payload = *result;
-    ok &= (payload.size() == IB_5V_DATA_SIZE);
-    if (ok)
-    {
-        BE_Get(v5Mv, &payload[IB_5V_DATA_OFFSET]);
-    }
-
-    return ok;
-}
-
-bool Sensor::getIllmnTemperature(int16_t& tempMdegC)
-{
-    auto result = this->send_receive(COMMAND_GET_IB_TEMPERATURE);
-
-    auto ok = bool{result};
-    const auto& payload = *result;
-    ok &= (payload.size() == IB_TEMPERATURE_DATA_SIZE);
-    if (ok)
-    {
-        BE_Get(tempMdegC, &payload[IB_TEMPERATURE_DATA_OFFSET]);
-    }
-
-    return ok;
-}
-
-bool Sensor::getIbPd(uint16_t& photodiodeMv)
-{
-    auto result = this->send_receive(COMMAND_GET_IB_PD);
-
-    auto ok = bool{result};
-    const auto& payload = *result;
-    ok &= (payload.size() == IB_PD_DATA_SIZE);
-    if (ok)
-    {
-        BE_Get(photodiodeMv, &payload[IB_PD_DATA_OFFSET]);
-    }
-
-    return ok;
-}
-
-bool Sensor::getIbSerial(uint32_t& serialNum)
-{
-    auto result = this->send_receive(COMMAND_GET_SERIAL_NUM);
-
-    auto ok = bool{result};
-    const auto& payload = *result;
-    ok &= (payload.size() == SERIAL_NUM_DATA_SIZE);
-    if (ok)
-    {
-        BE_Get(serialNum, &payload[SERIAL_NUM_DATA_OFFSET]);
-    }
-
-    return ok;
-}
-
-bool Sensor::setIbSerial(uint32_t serialNum)
-{
-    return this->send_receive(COMMAND_SET_SERIAL_NUM, serialNum).has_value();
-}
-
-bool Sensor::setIbRgb(uint8_t rgbBitmap, uint16_t rgbBlinkMs)
-{
-    uint8_t params[sizeof(rgbBitmap) + sizeof(rgbBlinkMs)];
-    params[0] = rgbBitmap;
-    BE_Put(&params[sizeof(rgbBitmap)], rgbBlinkMs);
-
-    return this->send_receive(COMMAND_SET_RGB, {(std::byte*)params, sizeof(params)}).has_value();
-}
-
-bool Sensor::getIbRgb(uint8_t& rgbBitmap)
-{
-    auto result = this->send_receive(COMMAND_GET_RGB);
-
-    auto ok = bool{result};
-    const auto& payload = *result;
-    ok &= (payload.size() == RGB_DATA_SIZE);
-    if (ok)
-    {
-        rgbBitmap = (uint8_t)payload[RGB_DATA_OFFSET];
-    }
-
-    return ok;
-}
-
-bool Sensor::setTestVal(uint8_t testVal)
-{
-    return this->send_receive(COMMAND_SET_IB_TEST_8BIT, testVal).has_value();
-}
-
-bool Sensor::setTestVal(uint16_t testVal)
-{
-    return this->send_receive(COMMAND_SET_IB_TEST_16BIT, testVal).has_value();
-}
-
-bool Sensor::getTestVal(uint8_t& testVal)
-{
-    auto result = this->send_receive(COMMAND_GET_IB_TEST_8BIT);
-
-    auto ok = bool{result};
-    const auto& payload = *result;
-    ok &= (payload.size() == IB_TEST_8BIT_SIZE);
-    if (ok)
-    {
-        BE_Get(testVal, &payload[IB_TEST_8BIT_OFFSET]);
-    }
-
-    return ok;
-}
-
-bool Sensor::getTestVal(uint16_t& testVal)
-{
-    auto result = this->send_receive(COMMAND_GET_IB_TEST_16BIT);
-
-    auto ok = bool{result};
-    const auto& payload = *result;
-    ok &= (payload.size() == IB_TEST_16BIT_SIZE);
-    if (ok)
-    {
-        BE_Get(testVal, &payload[IB_TEST_16BIT_OFFSET]);
-    }
-
-    return ok;
-}
 
 bool Sensor::getSensorInfo(TofComm::versionData_t &versionData){
 
