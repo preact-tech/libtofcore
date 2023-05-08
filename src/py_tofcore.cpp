@@ -314,7 +314,9 @@ PYBIND11_MODULE(pytofcore, m) {
         .def_property_readonly("dll_settings", &get_dll_settings, "get the dll settings used during capture as a named tuple of (enabled, coarseStep, fineStep, finestStep)")
         ;
 
-    py::enum_<tofcore::Measurement_T::DataType>(m, "DataType")
+
+    py::enum_<tofcore::Measurement_T::DataType> data_type_enum(measurement, "DataType");
+    data_type_enum
         .value("UNKNOWN", tofcore::Measurement_T::DataType::UNKNOWN)
         .value("DISTANCE_AMPLITUDE", tofcore::Measurement_T::DataType::DISTANCE_AMPLITUDE)
         .value("DISTANCE", tofcore::Measurement_T::DataType::DISTANCE)
@@ -322,6 +324,8 @@ PYBIND11_MODULE(pytofcore, m) {
         .value("GRAYSCALE", tofcore::Measurement_T::DataType::GRAYSCALE)
         .value("DCS", tofcore::Measurement_T::DataType::DCS)
         .export_values();
+
+    m.attr("DataType") = data_type_enum;
 
     #ifdef VERSION_INFO
         m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);
