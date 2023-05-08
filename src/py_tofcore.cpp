@@ -22,165 +22,156 @@ constexpr auto DCS_DATA_DOCSTRING =
 
 namespace py = pybind11;
 
-/// @brief Utility class to allow overriding some methods from tofcore::Sensor 
-///  with Python specific functionality
-class PySensor : public tofcore::Sensor
+/// @brief Wrap python callback with lambda that will catch exceptions and handle them safely
+/// @param py_callback client callback functor
+static void subscribeMeasurement(tofcore::Sensor& s, tofcore::Sensor::on_measurement_ready_t py_callback)
 {
-public:
-    using Sensor::Sensor;
-
-    /// @brief Wrap python callback with lambda that will catch exceptions and handle them safely
-    /// @param py_callback client callback functor
-    void subscribeMeasurement(on_measurement_ready_t py_callback)
+    auto f = [py_callback](auto measurement)
     {
-        auto f = [py_callback](auto measurement)
-        {
-            py::gil_scoped_acquire aquire;
-            py::scoped_estream_redirect redirect;
-            try {
-                py_callback(measurement);
-            } catch(py::error_already_set& e) {
-                std::cerr << "uncaught exception from user callback:\n" << e.what() << std::flush;
-                #if PYBIND11_VERSION_MAJOR >= 2 && PYBIND11_VERSION_MINOR >= 6
-                e.discard_as_unraisable("uncaught exception from user callback");
-                #endif
-            }
-        };
-        tofcore::Sensor::subscribeMeasurement(f);
-    }
-
-   auto getSoftwareVersion()
-   {
-       //Use static and a lambda to create the softwareVersion namedtuple type only once.
-       static auto softwareVersion_type = []() {
-           auto namedTuple_attr = pybind11::module::import("collections").attr("namedtuple");
-           py::list fields;
-           fields.append("softwareVersion");
-           return namedTuple_attr("version", fields);
-       }();
-
-       std::string softwareVersion;
-
-       if (!tofcore::Sensor::getSoftwareVersion(softwareVersion))
-       {
-           throw std::runtime_error("An error occcured trying to get firmware version");
-       }
-
-       return softwareVersion_type(softwareVersion);
-   }
-
-    auto getChipInformation()
-    {
-        //Use static and a lambda to create the ChipInfo namedtuple type only once.
-        static auto ChipInfo_type = []() {
-            auto namedTuple_attr = pybind11::module::import("collections").attr("namedtuple");
-            py::list fields;
-            fields.append("wafer_id");
-            fields.append("chip_id");
-            return namedTuple_attr("ChipInfo", fields);
-        }();
-
-        uint16_t waferId, chipId;
-        if (!tofcore::Sensor::getChipInformation(waferId, chipId)) 
-        {
-            throw std::runtime_error("An error occurred while trying to get chip information.");
+        py::gil_scoped_acquire aquire;
+        py::scoped_estream_redirect redirect;
+        try {
+            py_callback(measurement);
+        } catch(py::error_already_set& e) {
+            std::cerr << "uncaught exception from user callback:\n" << e.what() << std::flush;
+            #if PYBIND11_VERSION_MAJOR >= 2 && PYBIND11_VERSION_MINOR >= 6
+            e.discard_as_unraisable("uncaught exception from user callback");
+            #endif
         }
+    };
+    s.subscribeMeasurement(f);
+}
 
-        return ChipInfo_type(waferId, chipId);
-    }
+static auto getSoftwareVersion(tofcore::Sensor& s)
+{
+    //Use static and a lambda to create the softwareVersion namedtuple type only once.
+    static auto softwareVersion_type = []() {
+        auto namedTuple_attr = pybind11::module::import("collections").attr("namedtuple");
+        py::list fields;
+        fields.append("softwareVersion");
+        return namedTuple_attr("version", fields);
+    }();
 
-    auto getAccelerometerData() 
+    std::string softwareVersion;
+
+    if (!s.getSoftwareVersion(softwareVersion))
     {
-
-        //Use static and a lambda to create the AccelerometerData namedtuple type only once.
-        static auto AccelerometerData_type = []() {
-            auto namedTuple_attr = pybind11::module::import("collections").attr("namedtuple");
-            py::list fields;
-            fields.append("x");
-            fields.append("y");
-            fields.append("z");
-            fields.append("g_range");
-            return namedTuple_attr("AccelerometerData", fields);
-        }();
-
-        int16_t x, y, z;
-        uint8_t g_range;
-        if (!tofcore::Sensor::getAccelerometerData(x, y, z, g_range)) 
-        {
-            throw std::runtime_error("An error occured while getting accelerometer data");
-        }
-
-        return AccelerometerData_type(x, y, z, g_range);
+        throw std::runtime_error("An error occcured trying to get firmware version");
     }
 
-    auto getPixelRays()
+    return softwareVersion_type(softwareVersion);
+}
+
+static auto getChipInformation(tofcore::Sensor& s)
+{
+    //Use static and a lambda to create the ChipInfo namedtuple type only once.
+    static auto ChipInfo_type = []() {
+        auto namedTuple_attr = pybind11::module::import("collections").attr("namedtuple");
+        py::list fields;
+        fields.append("wafer_id");
+        fields.append("chip_id");
+        return namedTuple_attr("ChipInfo", fields);
+    }();
+
+    uint16_t waferId, chipId;
+    if (!s.getChipInformation(waferId, chipId)) 
     {
-        //Use static and a lambda to create the AccelerometerData namedtuple type only once.
-        static auto PixelRays_type = []() {
-            auto namedTuple_attr = pybind11::module::import("collections").attr("namedtuple");
-            py::list fields;
-            fields.append("x");
-            fields.append("y");
-            fields.append("z");
-            return namedTuple_attr("PixelRays", fields);
-        }();
-
-        std::vector<double> rays_x;
-        std::vector<double> rays_y;
-        std::vector<double> rays_z;
-
-        if(!tofcore::Sensor::getLensInfo(rays_x, rays_y, rays_z))
-        {
-            throw std::runtime_error("An error occured while getting pixel ray information");
-        }
-
-        return PixelRays_type(rays_x, rays_y, rays_z);
+        throw std::runtime_error("An error occurred while trying to get chip information.");
     }
 
-    auto getSensorInfo()
+    return ChipInfo_type(waferId, chipId);
+}
+
+static auto getAccelerometerData(tofcore::Sensor& s) 
+{
+
+    //Use static and a lambda to create the AccelerometerData namedtuple type only once.
+    static auto AccelerometerData_type = []() {
+        auto namedTuple_attr = pybind11::module::import("collections").attr("namedtuple");
+        py::list fields;
+        fields.append("x");
+        fields.append("y");
+        fields.append("z");
+        fields.append("g_range");
+        return namedTuple_attr("AccelerometerData", fields);
+    }();
+
+    int16_t x, y, z;
+    uint8_t g_range;
+    if (!s.getAccelerometerData(x, y, z, g_range)) 
     {
-
-        //Use static and a lambda to create the VersionData namedtuple type only once. 
-        static auto VersionData_type = []() {
-            auto namedTuple_attr = pybind11::module::import("collections").attr("namedtuple");
-            py::list fields;
-            fields.append("serialNumber");
-            fields.append("modelNumber");
-            fields.append("modelName");
-
-            fields.append("softwareId");
-            fields.append("softwareVersion");
-
-            // Mojave platform only
-            fields.append("cpuVersion");
-            fields.append("illuminatorSwVersion");
-            fields.append("illuminatorSwId");
-            fields.append("illuminatorHwCfg");
-            fields.append("backpackModule");
-
-            return namedTuple_attr("VersionData", fields);
-        }();
-
-        TofComm::versionData_t versionData;
-
-        if (!tofcore::Sensor::getSensorInfo(versionData))
-        {
-            throw std::runtime_error("An error occcured trying to read sensor version info");
-        }
-
-        return VersionData_type(versionData.m_serialNumber, 
-                                versionData.m_modelNumber, 
-                                versionData.m_modelName, 
-                                versionData.m_softwareSourceID, 
-                                versionData.m_softwareVersion,
-                                versionData.m_cpuVersion, 
-                                versionData.m_illuminatorSwVersion,
-                                versionData.m_illuminatorSwSourceId,
-                                versionData.m_illuminatorHwCfg,
-                                (uint8_t)versionData.m_backpackModule);
+        throw std::runtime_error("An error occured while getting accelerometer data");
     }
 
-};
+    return AccelerometerData_type(x, y, z, g_range);
+}
+
+static auto getPixelRays(tofcore::Sensor& s)
+{
+    //Use static and a lambda to create the AccelerometerData namedtuple type only once.
+    static auto PixelRays_type = []() {
+        auto namedTuple_attr = pybind11::module::import("collections").attr("namedtuple");
+        py::list fields;
+        fields.append("x");
+        fields.append("y");
+        fields.append("z");
+        return namedTuple_attr("PixelRays", fields);
+    }();
+
+    std::vector<double> rays_x;
+    std::vector<double> rays_y;
+    std::vector<double> rays_z;
+
+    if(!s.getLensInfo(rays_x, rays_y, rays_z))
+    {
+        throw std::runtime_error("An error occured while getting pixel ray information");
+    }
+
+    return PixelRays_type(rays_x, rays_y, rays_z);
+}
+
+static auto getSensorInfo(tofcore::Sensor& s)
+{
+
+    //Use static and a lambda to create the VersionData namedtuple type only once. 
+    static auto VersionData_type = []() {
+        auto namedTuple_attr = pybind11::module::import("collections").attr("namedtuple");
+        py::list fields;
+        fields.append("serialNumber");
+        fields.append("modelNumber");
+        fields.append("modelName");
+
+        fields.append("softwareId");
+        fields.append("softwareVersion");
+
+        // Mojave platform only
+        fields.append("cpuVersion");
+        fields.append("illuminatorSwVersion");
+        fields.append("illuminatorSwId");
+        fields.append("illuminatorHwCfg");
+        fields.append("backpackModule");
+
+        return namedTuple_attr("VersionData", fields);
+    }();
+
+    TofComm::versionData_t versionData;
+
+    if (!s.getSensorInfo(versionData))
+    {
+        throw std::runtime_error("An error occcured trying to read sensor version info");
+    }
+
+    return VersionData_type(versionData.m_serialNumber, 
+                            versionData.m_modelNumber, 
+                            versionData.m_modelName, 
+                            versionData.m_softwareSourceID, 
+                            versionData.m_softwareVersion,
+                            versionData.m_cpuVersion, 
+                            versionData.m_illuminatorSwVersion,
+                            versionData.m_illuminatorSwSourceId,
+                            versionData.m_illuminatorHwCfg,
+                            (uint8_t)versionData.m_backpackModule);
+}
 
 
 /// @brief Helper function to obtain a memoryview of the distance data in
@@ -276,27 +267,28 @@ static py::object get_dll_settings(const tofcore::Measurement_T &m)
 PYBIND11_MODULE(pytofcore, m) {
     m.doc() = "Sensor object that represents a connect to a TOF depth sensor.";
 
-    py::class_<PySensor>(m, "Sensor")
+    py::class_<tofcore::Sensor>(m, "Sensor")
         .def(py::init<uint16_t, const std::string&, uint32_t>(), py::arg("protocol_version")=tofcore::DEFAULT_PROTOCOL_VERSION, py::arg("port_name")=tofcore::DEFAULT_PORT_NAME, py::arg("baud_rate")=tofcore::DEFAULT_BAUD_RATE)
-        .def_property_readonly("get_software_version", &PySensor::getSoftwareVersion, "Obtain the software build version string", py::call_guard<py::gil_scoped_release>())
-        .def_property_readonly("chip_info", &PySensor::getChipInformation, "Obtain chip info. Returns namedtuple with fields wafer_id and chip_id", py::call_guard<py::gil_scoped_release>())
-        .def_property_readonly("accelerometer_data", &PySensor::getAccelerometerData, "Obtain acceleromter info. Each call turns a new sample from the accelerometer. The same is a namedtuple with fields x, y, z, range_g", py::call_guard<py::gil_scoped_release>())
-        .def_property_readonly("pixel_rays", &PySensor::getPixelRays, "Obtain unit vector ray information for all pixels based on the lens information stored on the sensor. Returns a namedtuple with fields x, y, z. Each field is a list of floats of length width x height.", py::call_guard<py::gil_scoped_release>())
-        .def("stop_stream", &PySensor::stopStream, "Command the sensor to stop streaming", py::call_guard<py::gil_scoped_release>())
-        .def("stream_dcs", &PySensor::streamDCS, "Command the sensor to stream DCS frames", py::call_guard<py::gil_scoped_release>())
-        .def("stream_dcs_ambient", &PySensor::streamDCSAmbient, "Command the sensor to stream DCS and Ambient frames. Ambient frames are of type Frame::DataType::GRAYSCALE", py::call_guard<py::gil_scoped_release>())
-        .def("stream_grayscale", &PySensor::streamGrayscale, "Command the sensor to stream grayscale frames", py::call_guard<py::gil_scoped_release>())
-        .def("stream_distance", &PySensor::streamDistance, "Command the sensor to stream distance frames", py::call_guard<py::gil_scoped_release>())
-        .def("stream_distance_amplitude", &PySensor::streamDistanceAmplitude, "Command the sensor to stream distance and amplitude frames", py::call_guard<py::gil_scoped_release>())
-        .def("set_offset", &PySensor::setOffset, py::arg("offset"), "Apply milimeter offest to very distance pixel returned by the sensor", py::call_guard<py::gil_scoped_release>())
-        .def("set_min_amplitude", &PySensor::setMinAmplitude, py::arg("min_amplitude"), "Set minimum amplitude for distance pixel to be treated as good", py::call_guard<py::gil_scoped_release>())
-        .def("set_binning", &PySensor::setBinning, "Set horizontal and vertical binning settings on sensor", py::arg("vertical"), py::arg("horizontal"), py::call_guard<py::gil_scoped_release>())
-        .def("set_roi", &PySensor::setRoi, "Set region of interest pixel area on the sensor", py::arg("x0"), py::arg("y0"), py::arg("x1"), py::arg("y1"), py::call_guard<py::gil_scoped_release>())
-        .def("set_integration_time", &PySensor::setIntegrationTime, "Set the integration time parameters on the sensor", py::arg("low"), py::arg("mid"), py::arg("high"), py::arg("gray"), py::call_guard<py::gil_scoped_release>())
-        .def("set_hdr_mode", &PySensor::setHDRMode, "Set the High Dynamic Range modeon the sensor", py::arg("mode"), py::call_guard<py::gil_scoped_release>())
-        .def("set_modulation", &PySensor::setModulation, "Set the modulation frequency to use during TOF measurements", py::arg("index"), py::arg("channel"), py::call_guard<py::gil_scoped_release>())
-        .def("set_filter", &PySensor::setFilter, "Configure filter applied by sensor on data returned", py::call_guard<py::gil_scoped_release>())
-        .def("subscribe_measurement", &PySensor::subscribeMeasurement, "Set a function object to be called when new measurement data is received", py::arg("callback"))
+        .def_property_readonly("get_software_version", &getSoftwareVersion, "Obtain the software build version string", py::call_guard<py::gil_scoped_release>())
+        .def_property_readonly("chip_info", &getChipInformation, "Obtain chip info. Returns namedtuple with fields wafer_id and chip_id", py::call_guard<py::gil_scoped_release>())
+        .def_property_readonly("accelerometer_data", &getAccelerometerData, "Obtain acceleromter info. Each call turns a new sample from the accelerometer. The same is a namedtuple with fields x, y, z, range_g", py::call_guard<py::gil_scoped_release>())
+        .def_property_readonly("pixel_rays", &getPixelRays, "Obtain unit vector ray information for all pixels based on the lens information stored on the sensor. Returns a namedtuple with fields x, y, z. Each field is a list of floats of length width x height.", py::call_guard<py::gil_scoped_release>())
+        .def("stop_stream", &tofcore::Sensor::stopStream, "Command the sensor to stop streaming", py::call_guard<py::gil_scoped_release>())
+        .def("stream_dcs", &tofcore::Sensor::streamDCS, "Command the sensor to stream DCS frames", py::call_guard<py::gil_scoped_release>())
+        .def("stream_dcs_ambient", &tofcore::Sensor::streamDCSAmbient, "Command the sensor to stream DCS and Ambient frames. Ambient frames are of type Frame::DataType::GRAYSCALE", py::call_guard<py::gil_scoped_release>())
+        .def("stream_grayscale", &tofcore::Sensor::streamGrayscale, "Command the sensor to stream grayscale frames", py::call_guard<py::gil_scoped_release>())
+        .def("stream_distance", &tofcore::Sensor::streamDistance, "Command the sensor to stream distance frames", py::call_guard<py::gil_scoped_release>())
+        .def("stream_distance_amplitude", &tofcore::Sensor::streamDistanceAmplitude, "Command the sensor to stream distance and amplitude frames", py::call_guard<py::gil_scoped_release>())
+        .def("set_offset", &tofcore::Sensor::setOffset, py::arg("offset"), "Apply milimeter offest to very distance pixel returned by the sensor", py::call_guard<py::gil_scoped_release>())
+        .def("set_min_amplitude", &tofcore::Sensor::setMinAmplitude, py::arg("min_amplitude"), "Set minimum amplitude for distance pixel to be treated as good", py::call_guard<py::gil_scoped_release>())
+        .def("set_binning", &tofcore::Sensor::setBinning, "Set horizontal and vertical binning settings on sensor", py::arg("vertical"), py::arg("horizontal"), py::call_guard<py::gil_scoped_release>())
+        .def("set_roi", &tofcore::Sensor::setRoi, "Set region of interest pixel area on the sensor", py::arg("x0"), py::arg("y0"), py::arg("x1"), py::arg("y1"), py::call_guard<py::gil_scoped_release>())
+        .def("set_integration_time", &tofcore::Sensor::setIntegrationTime, "Set the integration time parameters on the sensor", py::arg("low"), py::arg("mid"), py::arg("high"), py::arg("gray"), py::call_guard<py::gil_scoped_release>())
+        .def("set_hdr_mode", &tofcore::Sensor::setHDRMode, "Set the High Dynamic Range modeon the sensor", py::arg("mode"), py::call_guard<py::gil_scoped_release>())
+        .def("set_modulation", &tofcore::Sensor::setModulation, "Set the modulation frequency to use during TOF measurements", py::arg("index"), py::arg("channel"), py::call_guard<py::gil_scoped_release>())
+        .def("set_filter", &tofcore::Sensor::setFilter, "Configure filter applied by sensor on data returned", py::call_guard<py::gil_scoped_release>())
+        .def("subscribe_measurement", &subscribeMeasurement, "Set a function object to be called when new measurement data is received", py::arg("callback"))
+        .def("get_sensor_info", &getSensorInfo, "Get the sensor version and build info")
         .def_property_readonly_static("DEFAULT_PORT_NAME", [](py::object /* self */){return tofcore::DEFAULT_PORT_NAME;})
         .def_property_readonly_static("DEFAULT_BAUD_RATE", [](py::object /* self */){return tofcore::DEFAULT_BAUD_RATE;})
         .def_property_readonly_static("DEFAULT_PROTOCOL_VERSION", [](py::object /* self */){return tofcore::DEFAULT_PROTOCOL_VERSION;});
@@ -322,7 +314,7 @@ PYBIND11_MODULE(pytofcore, m) {
         .def_property_readonly("dll_settings", &get_dll_settings, "get the dll settings used during capture as a named tuple of (enabled, coarseStep, fineStep, finestStep)")
         ;
 
-    py::enum_<tofcore::Measurement_T::DataType>(measurement, "DataType")
+    py::enum_<tofcore::Measurement_T::DataType>(m, "DataType")
         .value("UNKNOWN", tofcore::Measurement_T::DataType::UNKNOWN)
         .value("DISTANCE_AMPLITUDE", tofcore::Measurement_T::DataType::DISTANCE_AMPLITUDE)
         .value("DISTANCE", tofcore::Measurement_T::DataType::DISTANCE)
