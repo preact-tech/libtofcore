@@ -17,12 +17,6 @@ cmake -Bbuild
 cmake --build build
 ```
 
-or 
-
-```
-python3 setup.py build
-```
-
 Normal installation:
 
 ```bash
@@ -33,7 +27,7 @@ _See [CMake documentaion](https://cmake.org/cmake/help/latest/variable/CMAKE_INS
 
 ## Python Bindings installation
 
-From wrappers/python directory run setup.py: 
+From a python wrappers directory run setup.py:
 
 ```
 cd tofcore/wrappers/python
