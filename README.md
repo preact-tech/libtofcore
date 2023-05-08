@@ -33,24 +33,27 @@ _See [CMake documentaion](https://cmake.org/cmake/help/latest/variable/CMAKE_INS
 
 ## Python Bindings installation
 
-At project's root directory, run:
+From wrappers/python directory run setup.py: 
 
 ```
- pip install --user .
+cd tofcore/wrappers/python
+python3 setup.py install --user
 ```
 
-This will install the python package `pytofcore` in your python site-packages directory. 
+This will install the python package `pytofcore` in your personal python site-packages directory. 
 
 
 # Testing
-NOTE: For tests to run successfully, create a symbolic link to `pytofcore.xxx.so` inside `tests` directory. The `.so` file is in build directory. Alternatively, you can install the `pytofcore` package using `pip`
+NOTE: For tests to run successfully python needs to know where to find the `pytofcore.xxx.so` file. 
+Either install the module as described above or add the build location for the .so file(s) to the PYTHONPATH
+environment variable. 
 
 To run unit tests, use the following commnad from project's root directory: 
 ```
 python3 -m pytest -m "not functional" -v .
 ```
 
- Those set of tests can run when there is no camera connected to PC. 
+Those set of tests can run when there is no camera connected to PC. 
 
 Functional tests with a camera connected to PC can be executed with the following command 
 ```

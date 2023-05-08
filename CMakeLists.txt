@@ -123,26 +123,8 @@ export(EXPORT tofcore-targets
 #Register package in the User Package Registry
 export(PACKAGE ToFCore)
 
-###############################################
-## Python bindings
-if(BUILD_PYTHON_BINDINGS)
-    include(FetchContent)
-    FetchContent_Declare(
-        pybind11
-        GIT_REPOSITORY https://github.com/pybind/pybind11
-        GIT_TAG        v2.10.4
-    )
-
-    FetchContent_MakeAvailable(pybind11)
-
-    pybind11_add_module(pytofcore src/py_tofcore.cpp)
-    target_link_libraries(pytofcore PRIVATE tofcore)
-
-    target_compile_definitions(pytofcore
-                            PRIVATE VERSION_INFO=${VERSION_PACKAGE})
-endif(BUILD_PYTHON_BINDINGS)
-
 ##############################################
 ## Add test
 enable_testing()
 add_subdirectory(test)
+add_subdirectory(wrappers)
