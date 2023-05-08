@@ -55,8 +55,10 @@ void TcpConnection::sendCommand(const std::vector<uint8_t> &data, std::vector<ui
 
   auto len = boost::asio::read(socket, boost::asio::buffer(buf));
   assert(len == buf.size());
+  (void)(len);
   uint32_t start_marker = ::ntohl(*reinterpret_cast<uint32_t*>(buf.data()+0));
   assert(start_marker == 0xFFFFAA55);
+  (void)(start_marker);
   // assert(buf[0] == 0xFF);
   // assert(buf[1] == 0xFF);
   // assert(buf[2] == 0xAA);

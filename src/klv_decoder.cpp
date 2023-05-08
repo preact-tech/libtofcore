@@ -76,7 +76,7 @@ std::optional<std::array<uint16_t,4>> decode_integration_times(const KLVDecoder&
     std::array<uint16_t, 4> values;
     for(size_t i = 0; i != values.size(); ++i)
     {
-        uint16_t temp;
+        auto temp = uint16_t{0};
         TofComm::BE_Get(temp, data.first + (i*2));
         values[i] = temp;
     }
