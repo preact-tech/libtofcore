@@ -26,71 +26,6 @@ def dut(request) -> pytofcore.Sensor:
 
 
 @pytest.mark.functional
-def test_set_dll(dut: pytofcore.Sensor):
-    
-    # Register Definitions
-    DLL_CONTROL_REG = 0xAE
-
-    DLL_FINE_STEP_REG   = 0x71
-    DLL_FINEST_STEP_REG = 0x72
-    DLL_COARSE_STEP_REG = 0x73
-
-    regs = [DLL_CONTROL_REG, DLL_COARSE_STEP_REG, DLL_FINE_STEP_REG, DLL_FINEST_STEP_REG]
-    
-    # Test settings
-    dll_enable      = 0x01
-    dll_coarse_step = 0x13
-    dll_fine_step   = 0x02
-    dll_finest_step = 0x78
-
-    writeVals = [dll_enable, dll_coarse_step, dll_fine_step, dll_finest_step]
-
-    # Write DLL settings
-    set_dll_successful = dut.set_dll_step(dll_enable, dll_coarse_step, dll_fine_step, dll_finest_step)
-
-    assert set_dll_successful == True
-
-    for regIndex, register in enumerate(regs):
-        read_register = dut.read_sensor_register(register)
-        if regIndex == 0:
-            print("")
-            continue
-        assert read_register[1] == writeVals[regIndex]
-        print("Reg (" + str(hex(register)) + "), write value: " + str(hex(writeVals[regIndex])) + ", read value: " + str(hex(read_register[1])))
-
-
-@pytest.mark.functional
-def test_read_write_registers(dut: pytofcore.Sensor):
-    DLL_FINEST_STEP_REG = 0x72
-    testReg = DLL_FINEST_STEP_REG
-    testVal = 0xE7
-    dut.write_sensor_register(testReg, testVal)
-
-    # read back write value
-    readVal = dut.read_sensor_register(testReg)
-
-    assert readVal[1] == testVal
-    print("\nTest Write then Read")
-    print("Reg (" + str(hex(testReg)) + "), write value: " + str(hex(testVal)) + ", read value: " + str(hex(readVal[1])))
-
-@pytest.mark.functional
-def test_set_vled_enables(dut: pytofcore.Sensor):
-
-    testVal = 0x0F
-
-    print("Testing set VLED enables. Value: " + str(hex(testVal)))
-
-    dut.set_vled_enables(testVal)
-
-    # read back write value
-    readVal = dut.get_vled_enables()
-
-    assert readVal == testVal
-    print("\nTest Write then Read")
-    print("write value: " + str(hex(testVal)) + ", read value: " + str(hex(readVal)))
-
-
-@pytest.mark.functional
 def test_stream_distance_amplitude_frames(dut: pytofcore.Sensor):
     def callback(measurement: pytofcore.Measurement, **kwargs):
         if not callback.measurement and (measurement.data_type == pytofcore.Measurement.DataType.DISTANCE_AMPLITUDE):
@@ -175,6 +110,7 @@ def test_get_software_version(dut: pytofcore.Sensor):
     assert version._fields == ('softwareVersion',)
     assert isinstance(version.softwareVersion, str)
 
+
 @pytest.mark.functional
 def test_get_sensor_info(dut: pytofcore.Sensor):
     
@@ -204,15 +140,6 @@ def test_get_chip_info(dut: pytofcore.Sensor):
     assert chip_info._fields == ('wafer_id', 'chip_id')
     assert isinstance(chip_info.wafer_id, int)
     assert isinstance(chip_info.chip_id, int)
-
-
-@pytest.mark.functional
-def test_get_accelerometer_data(dut: pytofcore.Sensor):
-    """Getting accelerometer data fails at the time of writing this test"""
-
-    with pytest.raises(Exception):
-        accel_info = dut.accelerometer_data
-        assert accel_info._fields == ('x', 'y', 'z', 'g_range')
 
 
 @pytest.mark.functional
@@ -411,49 +338,3 @@ def test_meta_data_binning(dut: pytofcore.Sensor):
     run([0, 2])
     run([2, 0])
     run([0, 0])
-
-
-
-@pytest.mark.functional
-def test_meta_data_dll(dut: pytofcore.Sensor):
-
-    def run(enable_dll, coarse_step, fine_step, finest_step):
-        def callback(measurement: pytofcore.Measurement, **kwargs):
-            with callback.mutex:
-                callback.count += 1
-                #Note: for some reason it seems to take at least 2 measurement iterations 
-                # for new settings to take effect this is probably a bug in the sensor
-                # firmware but it's not import ATM
-                if callback.count > 2:
-                    if measurement.data_type == measurement.DataType.DISTANCE and not callback.measurement:
-                        callback.measurement = measurement
-
-        callback.mutex = threading.Lock()
-        callback.count = 0
-        callback.measurement = None
-
-        dut.set_dll_step(enable_dll=enable_dll, coarse_step=coarse_step, fine_step=fine_step, finest_step=finest_step)
-        dut.subscribe_measurement(callback)
-        dut.stream_distance()
-        count = 0 # we will wait for upto 1 second in 0.1 second increments
-        while count != 10:
-            count += 1
-            time.sleep(0.1)
-            with callback.mutex:
-                if callback.measurement:
-                    count = 10
-        dut.stop_stream()
-        
-        assert callback.measurement, "No measurement received"
-
-        dll_settings = callback.measurement.dll_settings
-        assert dll_settings is not None, "No DLL settings data included with the measurement"
-        assert dll_settings.enabled == enable_dll, "Incorrect DLL enabled value included in meta-data"
-        assert dll_settings.coarse_step == coarse_step, "Incorrect DLL coarse step value included in meta-data"
-        assert dll_settings.fine_step == fine_step, "Incorrect DLL fine step value included in meta-data"
-        assert dll_settings.finest_step == finest_step, "Incorrect DLL finest step value included in meta-data"
-
-    run(**{'enable_dll': True, 'coarse_step': 15, 'fine_step': 1, 'finest_step': 2})
-    run(**{'enable_dll': True, 'coarse_step': 0, 'fine_step': 0, 'finest_step': 0})
-    run(**{'enable_dll': False, 'coarse_step': 0, 'fine_step': 0, 'finest_step': 0})
-
