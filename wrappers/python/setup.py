@@ -136,7 +136,7 @@ setup(
     author_email="miguel.gonzalez@preact-tech.com",
     description="Module for interfacing with with PreAct ToF devices",
     long_description="",
-    ext_modules=[CMakeExtension("cmake_example", sourcedir=libtofcore_root)],
+    ext_modules=[CMakeExtension("pytofcore", sourcedir=libtofcore_root)],
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
     extras_require={"test": ["pytest>=6.0"]},
