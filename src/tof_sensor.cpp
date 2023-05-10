@@ -164,6 +164,13 @@ void Sensor::jumpToBootloader()
     this->send_receive(COMMAND_JUMP_TO_BOOLOADER);
 }
 
+
+void Sensor::jumpToBootloader(uint16_t token)
+{
+    this->send_receive(COMMAND_JUMP_TO_BOOLOADER, token);
+}
+
+
 bool Sensor::setBinning(const bool vertical, const bool horizontal)
 {
     uint8_t byte = 0;

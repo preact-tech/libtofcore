@@ -74,6 +74,15 @@ static void measurement_callback(std::shared_ptr<tofcore::Measurement_T> pData)
                           << (pData->pixel_buffer().size()) << std::endl;
             }
             break;
+        case DataType::AMBIENT:
+            ++amplitudeCount;
+            if (verbosity > 0)
+            {
+                std::cout << "received AMBIENT measurement data, packet size "
+                          << (pData->pixel_buffer().size()) << std::endl;
+            }
+            break;
+        
         default:
             std::cout << "UNRECOGNIZED data type: " << static_cast<int16_t>(pData->type()) << std::endl;
     }

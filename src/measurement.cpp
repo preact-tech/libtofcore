@@ -182,11 +182,11 @@ public:
     /// @brief Obtain a view of the grayscale (ambient) data from a grayscale measurement
     /// @return view of grayscale data
     /// @return empty view if not a grayscale measurement
-    virtual BufferView<uint16_t> grayscale() const override
+    virtual BufferView<int16_t> ambient() const override
     {
         //TODO check DataType
         std::size_t size = width() * height();
-        auto ptr = reinterpret_cast<uint16_t*>(m_pixel_data.data());
+        auto ptr = reinterpret_cast<int16_t*>(m_pixel_data.data());
         return {ptr, size};
     }
 

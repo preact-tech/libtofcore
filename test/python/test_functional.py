@@ -90,16 +90,16 @@ def test_stream_dcs_ambient(dut: pytofcore.Sensor):
     def callback(measurement: pytofcore.Measurement, **kwargs):
         if not callback.dcs_measurement and (measurement.data_type == pytofcore.Measurement.DataType.DCS):
             callback.dcs_measurement = measurement
-        if not callback.grayscale_measurement and (measurement.data_type == pytofcore.Measurement.DataType.GRAYSCALE):
-            callback.grayscale_measurement = measurement
+        if not callback.ambient_measurement and (measurement.data_type == pytofcore.Measurement.DataType.AMBIENT):
+            callback.ambient_measurement = measurement
 
     callback.dcs_measurement = None
-    callback.grayscale_measurement = None
+    callback.ambient_measurement = None
     dut.subscribe_measurement(callback)
     dut.stream_dcs_ambient()
     time.sleep(1.0)
     assert callback.dcs_measurement is not None, "No DCS measurements received"
-    assert callback.grayscale_measurement is not None, "No Grayscale (ambient) measurements received"
+    assert callback.ambient_measurement is not None, "No ambient measurements received"
 
 
 @pytest.mark.functional

@@ -42,6 +42,7 @@ public:
     bool getSoftwareVersion(std::string& version);
 
     void jumpToBootloader();
+    void jumpToBootloader(uint16_t token);
 
     bool setBinning(const bool vertical, const bool horizontal);
     bool setFilter(const bool medianFilter, const bool averageFilter, const uint16_t temporalFactor,

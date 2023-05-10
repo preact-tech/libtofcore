@@ -75,7 +75,8 @@ public:
         DISTANCE = 1,
         AMPLITUDE = 2,
         GRAYSCALE = 3,
-        DCS = 4
+        DCS = 4,
+        AMBIENT = 5
     };
 
     virtual ~Measurement_T() = default;
@@ -102,7 +103,7 @@ public:
     /// @brief Obtain a view of the grayscale (ambient) data from a grayscale measurement
     /// @return view of grayscale data
     /// @return empty view if not a grayscale measurement
-    virtual BufferView<uint16_t> grayscale() const = 0;
+    virtual BufferView<int16_t> ambient() const = 0;
 
     /// @brief Obtain a view of the meta_data associated with the measurement
     /// @return view of meta data

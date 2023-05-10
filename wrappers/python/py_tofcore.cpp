@@ -203,11 +203,11 @@ static auto get_amplitude_view(const tofcore::Measurement_T &m)
 }
 
 
-/// @brief Helper function to obtain a memoryview of the grayscale data in
+/// @brief Helper function to obtain a memoryview of the ambient data in
 ///   a Measurement object
-static auto get_grayscale_view(const tofcore::Measurement_T &m)
+static auto get_ambient_view(const tofcore::Measurement_T &m)
 {
-    const auto view = m.grayscale();
+    const auto view = m.ambient();
     const auto* ptr = view.data();
     const auto element_size = sizeof(*ptr);
     return py::memoryview::from_buffer(
@@ -303,7 +303,7 @@ PYBIND11_MODULE(pytofcore, m) {
         .def_property_readonly("data_type", &tofcore::Measurement_T::type, "the type of the measurement data")
         .def_property_readonly("distance_data", &get_distance_view, "obtain memoryview of the distance frame in the measurement")
         .def_property_readonly("amplitude_data", &get_amplitude_view, "obtain memoryview of the amplitude frame in the measurement")
-        .def_property_readonly("grayscale_data", &get_grayscale_view, "obtain memoryview of the grayscale (aka ambient) frame in the measurement")
+        .def_property_readonly("ambient_data", &get_ambient_view, "obtain memoryview of the ambient frame in the measurement")
         .def_property_readonly("dcs_data", &get_dcs_view, DCS_DATA_DOCSTRING)
         .def_property_readonly("meta_data", &get_meta_data_view, "obtain memoryview of the raw block of meta-data associated with the measurement (useful for custom decoding of data not otherwise available via the API)")
         .def_property_readonly("sensor_temperatures", &tofcore::Measurement_T::sensor_temperatures, "get imaging sensor temperature data")
@@ -323,6 +323,7 @@ PYBIND11_MODULE(pytofcore, m) {
         .value("AMPLITUDE", tofcore::Measurement_T::DataType::AMPLITUDE)
         .value("GRAYSCALE", tofcore::Measurement_T::DataType::GRAYSCALE)
         .value("DCS", tofcore::Measurement_T::DataType::DCS)
+        .value("AMBIENT", tofcore::Measurement_T::DataType::AMBIENT)
         .export_values();
 
     m.attr("DataType") = data_type_enum;
