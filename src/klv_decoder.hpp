@@ -1,6 +1,7 @@
 #if !defined(_TOFCORE_KLV_DECODER_HPP_)
 #define _TOFCORE_KLV_DECODER_HPP_
 
+#include "MetaDataTypes.hpp"
 #include "TofEndian.hpp"
 #include <array>
 #include <cstddef>
@@ -13,6 +14,7 @@
 namespace tofcore
 {
 
+/// @brief Utility class to quickly search a buffer of data for a specific KLV entity
 class KLVDecoder
 {
 public:
@@ -47,6 +49,12 @@ std::optional<std::array<uint8_t, 4>> decode_dll_settings(const KLVDecoder& klv)
 /// @return std::nullopt if the data is not found.
 /// @return std::option<[int0,int1,int2,grayscale_int]> when the data is found
 std::optional<std::array<uint16_t, 4>> decode_integration_times(const KLVDecoder& klv);
+
+/// @brief Search the provided KLV data for the illuminator info settings and return provide values.
+/// @param klv 
+/// @return std::nullopt if the data is not found.
+/// @return std::option<illuminator_info_t> when the data is found
+std::optional<TofComm::illuminator_info_t> decode_illuminator_info(const KLVDecoder& klv);
 
 /// @brief Search the provided KLV data for the modulation frequency setting.
 /// @param klv 

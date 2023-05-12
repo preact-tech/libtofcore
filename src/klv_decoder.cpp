@@ -84,6 +84,32 @@ std::optional<std::array<uint16_t,4>> decode_integration_times(const KLVDecoder&
 }
 
 
+std::optional<TofComm::illuminator_info_t> decode_illuminator_info(const KLVDecoder& klv)
+{
+    auto data = klv.find(TofComm::KLV_ILLUMINATOR_INFO_KEY);
+    if(data.first == data.second || std::distance(data.first, data.second) < 7) 
+    {
+        return std::nullopt;
+    }
+    //The illumination info key value field consists of the following: 
+    // - 1 byte: LED segment enable mask 
+    // - 1 int16_t: LED temperature in centa degrees C, convert to floating point degree C
+    // - 1 uint16_t: vled voltage in mV - convert to floating point volts
+    // - 1 uint16_t: photodiode voltage in mV - convert to floating point volts
+    TofComm::illuminator_info_t illum_info;
+    illum_info.led_segments_enabled = static_cast<uint8_t>(*data.first);
+    int16_t i16 {0};
+    TofComm::BE_Get(i16, data.first + 1);
+    illum_info.temperature_c = i16 / 100.0;
+    uint16_t u16 {0};
+    TofComm::BE_Get(u16, data.first + 3);
+    illum_info.vled_v = u16 / 1000.0;
+    TofComm::BE_Get(u16, data.first + 5);
+    illum_info.photodiode_v = u16 / 1000.0;
+    return {illum_info};
+}
+
+
 std::optional<std::vector<uint32_t>> decode_modulation_frequencies(const KLVDecoder& klv)
 {
     auto data = klv.find(TofComm::KLV_MODULATION_FREQUENCY_KEY);

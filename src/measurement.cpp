@@ -258,6 +258,12 @@ public:
         return decode_dll_settings(decoder);
     }
 
+    /// @brief 
+    virtual std::optional<TofComm::illuminator_info_t> illuminator_info() const override
+    {
+        KLVDecoder decoder {m_meta_data.begin(), m_meta_data.end()};
+        return decode_illuminator_info(decoder);
+    }
 
 protected:
 

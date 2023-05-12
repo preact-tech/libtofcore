@@ -10,6 +10,7 @@
 #include <chrono>
 #include <csignal>
 #include <iostream>
+#include <iomanip>
 #include <thread>
 #include <unistd.h>
 
@@ -144,6 +145,20 @@ static void measurement_callback(std::shared_ptr<tofcore::Measurement_T> pData)
         else 
         {
             std::cout << "No DLL settings" << std::endl;
+        }
+        auto illum = pData->illuminator_info();
+        if(illum)
+        {
+            const auto& illum_info = *illum;
+            std::cout << "Illuminator info: 0x" << std::hex << (int)illum_info.led_segments_enabled << std::dec << " " 
+                      << illum_info.temperature_c << "C " 
+                      <<  illum_info.vled_v << "V " 
+                      << illum_info.photodiode_v << "V" 
+                      << std::endl;
+        }
+        else
+        {
+            std::cout << "No Illuminator information" << std::endl;
         }
     }
 }

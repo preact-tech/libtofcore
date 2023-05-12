@@ -19,6 +19,15 @@ constexpr auto DCS_DATA_DOCSTRING =
   "Bit 14 is used to encode a saturation flag such that a saturated pixels bit-14 will"
   "be the opposite of the sign bit.";
 
+constexpr auto ILLUMINATOR_INFO_DOCSTRING = 
+  "Obtain infromation on the illuminators state for the measurement\n"
+  "\n"
+  "The following information is available:\n"
+  " - led_segments_enabled : A bit mask indicating which segments are enabled, one bit per segment\n"
+  "   (note some types of sensors have only 1 or 2 segments and each segment can have multiple LEDs)\n"
+  " - temperature_c : Temperature of the illuminator board and LEDs.\n"
+  " - vled_v : Voltage applied to the LEDs\n"
+  " - photodiode_v : Voltage read from the photodiode sensor near the LEDs.";
 
 namespace py = pybind11;
 
@@ -264,6 +273,32 @@ static py::object get_dll_settings(const tofcore::Measurement_T &m)
     return DllSettings_type((*settings)[0] != 0, (*settings)[1], (*settings)[2], (*settings)[3] );
 }
 
+/// @brief Helper function 
+static py::object get_illuminator_info(const tofcore::Measurement_T &m)
+{
+    //Use static and a lambda to create namedtuple type only once.
+    static auto Tuple_type = []() {
+        auto namedTuple_attr = pybind11::module::import("collections").attr("namedtuple");
+        py::list fields;
+        fields.append("led_segments_enabled");
+        fields.append("temperature_c");
+        fields.append("vled_v");
+        fields.append("photodiode_v");
+        return namedTuple_attr("IlluminatorInfo", fields);
+    }();
+
+    const auto info = m.illuminator_info();
+    if(!info)
+    {
+        return py::cast<py::none>(Py_None);
+    }
+    return Tuple_type((*info).led_segments_enabled,
+                      (*info).temperature_c, 
+                      (*info).vled_v, 
+                      (*info).photodiode_v);
+}
+
+
 PYBIND11_MODULE(pytofcore, m) {
     m.doc() = "Sensor object that represents a connect to a TOF depth sensor.";
 
@@ -312,6 +347,7 @@ PYBIND11_MODULE(pytofcore, m) {
         .def_property_readonly("horizontal_binning", &tofcore::Measurement_T::horizontal_binning, "get horizontal binning setting used during capture, 0 means no binning, values above 1 indicate the amount of subsampling")
         .def_property_readonly("vertical_binning", &tofcore::Measurement_T::vertical_binning, "get vertical binning setting used during capture, 0 means no binning, values above 1 indicate the amount of subsampling")
         .def_property_readonly("dll_settings", &get_dll_settings, "get the dll settings used during capture as a named tuple of (enabled, coarseStep, fineStep, finestStep)")
+        .def_property_readonly("illuminator_info", &get_illuminator_info, ILLUMINATOR_INFO_DOCSTRING)
         ;
 
 

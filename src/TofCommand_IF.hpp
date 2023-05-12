@@ -147,16 +147,6 @@ constexpr uint32_t V0_T1_INTERFERENCE_DETECTION_LIMIT_INDEX = 9;          ///<In
 constexpr uint32_t V0_T1_TEMPORAL_EDGE_FILTER_THRESHOLD_LOW_INDEX = 11;   ///<Lower threshold for temporal edge filter
 constexpr uint32_t V0_T1_TEMPORAL_EDGE_FILTER_THRESHOLD_HIGH_INDEX = 13;  ///<Higher threshold for temporal edge filter
 
-/**
- * KLV meta-data keys which are included as a block in the Measurement header
- */
-constexpr uint16_t KLV_SENSOR_TEMPERATURE_KEY {1};
-constexpr uint16_t KLV_DLL_SETTINGS_KEY {2};
-constexpr uint16_t KLV_LED_BOARD_TEMP_KEY {3};
-constexpr uint16_t KLV_MODULATION_FREQUENCY_KEY {4};
-constexpr uint16_t KLV_INTEGRATION_TIMES_KEY {5};
-constexpr uint16_t KLV_BINNING_KEY {6};
-
 } //end namespace TofComm
 
 #endif
