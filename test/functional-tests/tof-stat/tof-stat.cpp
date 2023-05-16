@@ -87,8 +87,8 @@ int main(int argc, char *argv[])
         if (sensor.getSensorInfo(versionData))
         {
             std::cout << "Version Information" << std::endl
-                        << "  Serial #           : " << versionData.m_serialNumber << std::endl
-                        << "  Model #            : " << versionData.m_modelNumber << std::endl
+                        << "  Device Serial #    : " << versionData.m_deviceSerialNumber << std::endl
+                        << "  CPU Board Serial # : " << versionData.m_cpuBoardSerialNumber << std::endl
                         << "  Model Name         : " << versionData.m_modelName << std::endl
                         << "  Software Version   : " << versionData.m_softwareVersion << std::endl
                         << "  CPU version        : " << (unsigned)versionData.m_cpuVersion << std::endl

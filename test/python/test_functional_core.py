@@ -117,8 +117,8 @@ def test_get_sensor_info(dut: pytofcore.Sensor):
     versionInfo = dut.get_sensor_info()
 
     print("\n")
-    print("Serial number: " + versionInfo.serialNumber)
-    print("Model number: " + versionInfo.modelNumber)
+    print("Device Serial number: " + versionInfo.deviceSerialNumber)
+    print("CPU Board Serial number: " + versionInfo.cpuBoardSerialNumber)
     print("Model name: " + versionInfo.modelName)
 
     print("Software Source ID: " + versionInfo.softwareId)
@@ -128,7 +128,7 @@ def test_get_sensor_info(dut: pytofcore.Sensor):
     print("Illuminator Version: " + versionInfo.illuminatorSwVersion + "." + versionInfo.illuminatorSwId)
     print("Backpack Module/Version: " + str(versionInfo.backpackModule))
 
-    assert versionInfo._fields == ('serialNumber', 'modelNumber', 'modelName', 'softwareId', 'softwareVersion', 'cpuVersion', 'illuminatorSwVersion', 'illuminatorSwId', 'illuminatorHwCfg' ,'backpackModule')
+    assert versionInfo._fields == ('deviceSerialNumber', 'cpuBoardSerialNumber', 'modelName', 'softwareId', 'softwareVersion', 'cpuVersion', 'illuminatorSwVersion', 'illuminatorSwId', 'illuminatorHwCfg' ,'backpackModule')
 
 
 @pytest.mark.functional

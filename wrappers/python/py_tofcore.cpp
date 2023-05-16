@@ -146,8 +146,8 @@ static auto getSensorInfo(tofcore::Sensor& s)
     static auto VersionData_type = []() {
         auto namedTuple_attr = pybind11::module::import("collections").attr("namedtuple");
         py::list fields;
-        fields.append("serialNumber");
-        fields.append("modelNumber");
+        fields.append("deviceSerialNumber");
+        fields.append("cpuBoardSerialNumber");
         fields.append("modelName");
 
         fields.append("softwareId");
@@ -170,8 +170,8 @@ static auto getSensorInfo(tofcore::Sensor& s)
         throw std::runtime_error("An error occcured trying to read sensor version info");
     }
 
-    return VersionData_type(versionData.m_serialNumber, 
-                            versionData.m_modelNumber, 
+    return VersionData_type(versionData.m_deviceSerialNumber,
+                            versionData.m_cpuBoardSerialNumber,
                             versionData.m_modelName, 
                             versionData.m_softwareSourceID, 
                             versionData.m_softwareVersion,

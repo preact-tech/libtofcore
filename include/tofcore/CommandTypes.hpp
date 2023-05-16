@@ -22,8 +22,8 @@ struct ManufacturingData_T
 {
     MAC_T m_MAC { 0x00, 0x1A, 0xF1, 0x99, 0x99, 0x99 };    ///< Default MAC for Ethernet connection
     uint8_t m_dummy[2] { 0, 0 };
-    char m_serialNumber[256] { 0 };     ///<< Product serial number (string)
-    char m_modelNumber[256] { 0 };      ///<< Product model number (string)
+    char m_deviceSerialNumber[256] { 0 };     ///<< Product serial number (string)
+    char m_cpuBoardSerialNumber[256] { 0 };      ///<< Product model number (string)
     char m_modelName[256] { 0 };        ///<< Product model number (string)
 
 } PACKED;
@@ -37,8 +37,8 @@ enum backpackModule_t : uint8_t
 };
 struct versionData_t
 {
-    char m_serialNumber[256] { };
-    char m_modelNumber[256] { };
+    char m_deviceSerialNumber[256] { };
+    char m_cpuBoardSerialNumber[256] { };
     char m_modelName[256] { };
     char m_softwareSourceID[32] { };
     char m_softwareVersion[32] { };
