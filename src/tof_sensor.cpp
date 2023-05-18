@@ -158,6 +158,39 @@ bool Sensor::getSoftwareVersion(std::string& version)
     return true;
 }
 
+std::tuple<bool, bool> Sensor::isFlipHorizontallyActive()
+{
+    bool hIsFlipped { false };
+    bool ok { false };
+    auto result = this->send_receive(COMMAND_GET_HORIZ_FLIP_STATE);
+    if (result)
+    {
+        const auto& answer = *result;
+        if (answer.size() > 0)
+        {
+            hIsFlipped = (*reinterpret_cast<const uint8_t*>(answer.data()) != 0);
+            ok = true;
+        }
+    }
+    return std::make_tuple(ok, hIsFlipped);
+}
+
+std::tuple<bool, bool> Sensor::isFlipVerticallyActive()
+{
+    bool vIsFlipped { false };
+    bool ok { false };
+    auto result = this->send_receive(COMMAND_GET_VERT_FLIP_STATE);
+    if (result)
+    {
+        const auto& answer = *result;
+        if (answer.size() > 0)
+        {
+            vIsFlipped = (*reinterpret_cast<const uint8_t*>(answer.data()) != 0);
+            ok = true;
+        }
+    }
+    return std::make_tuple(ok, vIsFlipped);
+}
 
 void Sensor::jumpToBootloader()
 {
@@ -169,7 +202,6 @@ void Sensor::jumpToBootloader(uint16_t token)
 {
     this->send_receive(COMMAND_JUMP_TO_BOOLOADER, token);
 }
-
 
 bool Sensor::setBinning(const bool vertical, const bool horizontal)
 {
@@ -213,6 +245,18 @@ bool Sensor::setFilter(const bool medianFilter, const bool averageFilter, const 
     BE_Put(&payload[V0_T1_TEMPORAL_EDGE_FILTER_THRESHOLD_HIGH_INDEX], temporalEdgeThresholdHigh);
 
     return pimpl->connection.send_receive(COMMAND_SET_FILTER, payload, 5s).has_value();
+}
+
+bool Sensor::setFlipHorizontally(bool flip)
+{
+    const uint8_t data = (flip ? 1 : 0);
+    return bool{this->send_receive(COMMAND_SET_HORIZ_FLIP_STATE, data)};
+}
+
+bool Sensor::setFlipVertically(bool flip)
+{
+    const uint8_t data = (flip ? 1 : 0);
+    return bool{this->send_receive(COMMAND_SET_VERT_FLIP_STATE, data)};
 }
 
 bool Sensor::setHDRMode(uint8_t mode)

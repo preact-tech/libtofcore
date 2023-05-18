@@ -41,6 +41,9 @@ public:
     bool getSettings(std::string& jsonSettings);
     bool getSoftwareVersion(std::string& version);
 
+    std::tuple<bool, bool> isFlipHorizontallyActive();
+    std::tuple<bool, bool> isFlipVerticallyActive();
+
     void jumpToBootloader();
     void jumpToBootloader(uint16_t token);
 
@@ -49,6 +52,8 @@ public:
                    const uint16_t temporalThreshold, const uint16_t edgeThreshold, const uint16_t temporalEdgeThresholdLow,
                    const uint16_t temporalEdgeThresholdHigh, const uint16_t interferenceDetectionLimit,
                    const bool interferenceDetectionUseLastValue);
+    bool setFlipHorizontally(bool flip);
+    bool setFlipVertically(bool flip);
     bool setHDRMode(uint8_t mode);
     bool setIntegrationTime(uint16_t, uint16_t, uint16_t, uint16_t);
     bool setMinAmplitude(uint16_t minAmplitude);
