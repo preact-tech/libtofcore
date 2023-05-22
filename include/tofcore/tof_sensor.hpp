@@ -41,8 +41,8 @@ public:
     bool getSettings(std::string& jsonSettings);
     bool getSoftwareVersion(std::string& version);
 
-    std::tuple<bool, bool> isFlipHorizontallyActive();
-    std::tuple<bool, bool> isFlipVerticallyActive();
+    std::optional<bool> isFlipHorizontallyActive();
+    std::optional<bool> isFlipVerticallyActive();
 
     void jumpToBootloader();
     void jumpToBootloader(uint16_t token);

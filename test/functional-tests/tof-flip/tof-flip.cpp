@@ -115,8 +115,8 @@ int main(int argc, char *argv[])
         auto hResult = sensor.isFlipHorizontallyActive();
         auto vResult = sensor.isFlipVerticallyActive();
 
-        const char* hDescr = std::get<0>(hResult) ? (std::get<1>(hResult) ? "ON" : "OFF") : "??";
-        const char* vDescr = std::get<0>(vResult) ? (std::get<1>(vResult) ? "ON" : "OFF") : "??";
+        const char* hDescr = (hResult) ? (*hResult ? "ON" : "OFF") : "??";
+        const char* vDescr = (vResult) ? (*vResult ? "ON" : "OFF") : "??";
 
         std::cout << "Horizontal Flip: " << hDescr << "; Vertical Flip: " << vDescr << std::endl;
 

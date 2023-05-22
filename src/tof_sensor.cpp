@@ -163,10 +163,9 @@ bool Sensor::getSoftwareVersion(std::string& version)
  * 
  * @return std::tuple<bool, bool> - <message success, Hflip active>
  */
-std::tuple<bool, bool> Sensor::isFlipHorizontallyActive()
+std::optional<bool> Sensor::isFlipHorizontallyActive()
 {
     bool hIsFlipped { false };
-    bool ok { false };
     auto result = this->send_receive(COMMAND_GET_HORIZ_FLIP_STATE);
     if (result)
     {
@@ -174,10 +173,10 @@ std::tuple<bool, bool> Sensor::isFlipHorizontallyActive()
         if (answer.size() > 0)
         {
             hIsFlipped = (*reinterpret_cast<const uint8_t*>(answer.data()) != 0);
-            ok = true;
+            return hIsFlipped;
         }
     }
-    return std::make_tuple(ok, hIsFlipped);
+    return std::nullopt;
 }
 
 /**
@@ -185,10 +184,9 @@ std::tuple<bool, bool> Sensor::isFlipHorizontallyActive()
  * 
  * @return std::tuple<bool, bool> - <message success, Vflip active>
  */
-std::tuple<bool, bool> Sensor::isFlipVerticallyActive()
+std::optional<bool> Sensor::isFlipVerticallyActive()
 {
     bool vIsFlipped { false };
-    bool ok { false };
     auto result = this->send_receive(COMMAND_GET_VERT_FLIP_STATE);
     if (result)
     {
@@ -196,10 +194,10 @@ std::tuple<bool, bool> Sensor::isFlipVerticallyActive()
         if (answer.size() > 0)
         {
             vIsFlipped = (*reinterpret_cast<const uint8_t*>(answer.data()) != 0);
-            ok = true;
+            return vIsFlipped;
         }
     }
-    return std::make_tuple(ok, vIsFlipped);
+    return std::nullopt;
 }
 
 void Sensor::jumpToBootloader()
