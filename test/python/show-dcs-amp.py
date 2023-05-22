@@ -1,10 +1,14 @@
+import argparse
 import cv2 as cv
 import numpy as np
+import sys
 import time
 
 import pytofcore
 
 sensor = pytofcore.Sensor(protocol_version=1)
+v_flip_default = True
+h_flip_default = False
 
 def measurement_callback(data):
     if data.data_type == pytofcore.Measurement.DataType.DISTANCE_AMPLITUDE:
@@ -28,23 +32,52 @@ def measurement_callback(data):
     if cv.waitKey(1)&0xFF == ord('q'):
         measurement_callback.EXIT = True
 
+def cleanup_and_exit(s:pytofcore.Sensor):
+    s.stop_stream()
+    s = None
+    cv.destroyAllWindows()
+    sys.exit(0)
+
+# Necessary due to an unkown bug in the command protocol
+def cmd_delay():
+    time.sleep(0.1)
+
+# Setup arg parser and run the tool
+parser = argparse.ArgumentParser()
+parser.add_argument("-H", "--hFlip", help="Set Horizontal flip state", type=int, default=h_flip_default)
+parser.add_argument("-V", "--vFlip", help="Set Vertical flip state", type=int, default=v_flip_default)
+args = parser.parse_args()
+
+print("Horizontal Flip Selected: {:d}".format(args.hFlip))
+print("Vertical Flip Selected: {:d}".format(args.vFlip))
+
+sensor.set_flip_active_h(args.hFlip)
+cmd_delay()
+sensor.set_flip_active_v(args.vFlip)
+cmd_delay()
+
 measurement_callback.EXIT = False
 measurement_callback.SWITCH = False
 
 success = sensor.set_integration_time(100,0,0,0)
+cmd_delay()
 print(sensor.get_software_version)
+cmd_delay()
 sensor.subscribe_measurement(measurement_callback)
 
 stream_state = 0
 stream_modes = (sensor.stream_distance_amplitude, sensor.stream_dcs_ambient)
 stream_modes[stream_state]()
 
-while not measurement_callback.EXIT:
-    time.sleep(0.01)
-    if measurement_callback.SWITCH:
-        stream_state = 1 - stream_state
-        stream_modes[stream_state]()
-        measurement_callback.SWITCH = False
+try:
+    while not measurement_callback.EXIT:
+        time.sleep(0.01)
+        if measurement_callback.SWITCH:
+            stream_state = 1 - stream_state
+            stream_modes[stream_state]()
+            measurement_callback.SWITCH = False
+except KeyboardInterrupt:
+    # exit cleanly on ctrl+c
+    cleanup_and_exit(sensor)
 
-sensor.stop_stream()
-cv.destroyAllWindows()
+cleanup_and_exit(sensor)

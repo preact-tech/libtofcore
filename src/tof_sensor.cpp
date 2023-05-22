@@ -158,6 +158,11 @@ bool Sensor::getSoftwareVersion(std::string& version)
     return true;
 }
 
+/**
+ * @brief Check if Horizontal flip is active.
+ * 
+ * @return std::tuple<bool, bool> - <message success, Hflip active>
+ */
 std::tuple<bool, bool> Sensor::isFlipHorizontallyActive()
 {
     bool hIsFlipped { false };
@@ -175,6 +180,11 @@ std::tuple<bool, bool> Sensor::isFlipHorizontallyActive()
     return std::make_tuple(ok, hIsFlipped);
 }
 
+/**
+ * @brief Check if Vertical flip is active.
+ * 
+ * @return std::tuple<bool, bool> - <message success, Vflip active>
+ */
 std::tuple<bool, bool> Sensor::isFlipVerticallyActive()
 {
     bool vIsFlipped { false };
