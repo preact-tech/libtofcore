@@ -298,6 +298,42 @@ static py::object get_illuminator_info(const tofcore::Measurement_T &m)
                       (*info).photodiode_v);
 }
 
+static bool hflip_get(tofcore::Sensor &sensor)
+{
+    auto hflip = sensor.isFlipHorizontallyActive();
+    if (hflip)
+    {
+        return *hflip;
+    }
+    else
+    {
+        throw std::runtime_error("An error occcured attempting to read Horizontal Flip state.");
+    }
+}
+
+static bool hflip_set(tofcore::Sensor &sensor, bool active)
+{
+    return sensor.setFlipHorizontally(active);
+}
+
+static bool vflip_get(tofcore::Sensor &sensor)
+{
+    auto vflip = sensor.isFlipVerticallyActive();
+    if (vflip)
+    {
+        return *vflip;
+    }
+    else
+    {
+        throw std::runtime_error("An error occcured attempting to read Vertical Flip state.");
+    }
+}
+
+static bool vflip_set(tofcore::Sensor &sensor, bool active)
+{
+    return sensor.setFlipVertically(active);;
+}
+
 
 PYBIND11_MODULE(pytofcore, m) {
     m.doc() = "Sensor object that represents a connect to a TOF depth sensor.";
@@ -314,8 +350,8 @@ PYBIND11_MODULE(pytofcore, m) {
         .def("stream_grayscale", &tofcore::Sensor::streamGrayscale, "Command the sensor to stream grayscale frames", py::call_guard<py::gil_scoped_release>())
         .def("stream_distance", &tofcore::Sensor::streamDistance, "Command the sensor to stream distance frames", py::call_guard<py::gil_scoped_release>())
         .def("stream_distance_amplitude", &tofcore::Sensor::streamDistanceAmplitude, "Command the sensor to stream distance and amplitude frames", py::call_guard<py::gil_scoped_release>())
-        .def("set_flip_active_h", &tofcore::Sensor::setFlipHorizontally, "Set the Horizontal image flip state.", py::arg("active"), py::call_guard<py::gil_scoped_release>())
-        .def("set_flip_active_v", &tofcore::Sensor::setFlipVertically, "Set the Vertical image flip state.", py::arg("active"), py::call_guard<py::gil_scoped_release>())
+        // .def("set_flip_active_h", &tofcore::Sensor::setFlipHorizontally, "Set the Horizontal image flip state.", py::arg("active"), py::call_guard<py::gil_scoped_release>())
+        // .def("set_flip_active_v", &tofcore::Sensor::setFlipVertically, "Set the Vertical image flip state.", py::arg("active"), py::call_guard<py::gil_scoped_release>())
         .def("set_offset", &tofcore::Sensor::setOffset, py::arg("offset"), "Apply milimeter offest to very distance pixel returned by the sensor", py::call_guard<py::gil_scoped_release>())
         .def("set_min_amplitude", &tofcore::Sensor::setMinAmplitude, py::arg("min_amplitude"), "Set minimum amplitude for distance pixel to be treated as good", py::call_guard<py::gil_scoped_release>())
         .def("set_binning", &tofcore::Sensor::setBinning, "Set horizontal and vertical binning settings on sensor", py::arg("vertical"), py::arg("horizontal"), py::call_guard<py::gil_scoped_release>())
@@ -326,8 +362,12 @@ PYBIND11_MODULE(pytofcore, m) {
         .def("set_filter", &tofcore::Sensor::setFilter, "Configure filter applied by sensor on data returned", py::call_guard<py::gil_scoped_release>())
         .def("subscribe_measurement", &subscribeMeasurement, "Set a function object to be called when new measurement data is received", py::arg("callback"))
         .def("get_sensor_info", &getSensorInfo, "Get the sensor version and build info")
-        .def("is_flip_active_h", &tofcore::Sensor::isFlipHorizontallyActive, "Check if Horizontal flip is active.", py::call_guard<py::gil_scoped_release>())
-        .def("is_flip_active_v", &tofcore::Sensor::isFlipVerticallyActive, "Check if Vertical flip is active.", py::call_guard<py::gil_scoped_release>())
+        // .def("is_flip_active_h", &tofcore::Sensor::isFlipHorizontallyActive, "Check if Horizontal flip is active.", py::call_guard<py::gil_scoped_release>())
+        // .def("is_flip_active_v", &tofcore::Sensor::isFlipVerticallyActive, "Check if Vertical flip is active.", py::call_guard<py::gil_scoped_release>())
+        .def_property("hflip", &hflip_get, &hflip_set, "State of the image horizontal flip option (default False)")
+        .def_property("vflip", &vflip_get, &vflip_set, "State of the image vertical flip option (default True)")
+// def_property("vled_voltage", &readVled, &setVled, VLED_VOLTAGE_DOCSTRING)
+
         .def_property_readonly_static("DEFAULT_PORT_NAME", [](py::object /* self */){return tofcore::DEFAULT_PORT_NAME;})
         .def_property_readonly_static("DEFAULT_BAUD_RATE", [](py::object /* self */){return tofcore::DEFAULT_BAUD_RATE;})
         .def_property_readonly_static("DEFAULT_PROTOCOL_VERSION", [](py::object /* self */){return tofcore::DEFAULT_PROTOCOL_VERSION;});

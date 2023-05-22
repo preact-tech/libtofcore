@@ -51,9 +51,14 @@ args = parser.parse_args()
 print("Horizontal Flip Selected: {:d}".format(args.hFlip))
 print("Vertical Flip Selected: {:d}".format(args.vFlip))
 
-sensor.set_flip_active_h(args.hFlip)
+sensor.hflip = args.hFlip
 cmd_delay()
-sensor.set_flip_active_v(args.vFlip)
+sensor.vflip = args.vFlip
+cmd_delay()
+
+print("Horizontal Flip Actual: {}".format(sensor.hflip))
+cmd_delay()
+print("Vertical Flip Actual: {}".format(sensor.vflip))
 cmd_delay()
 
 measurement_callback.EXIT = False
