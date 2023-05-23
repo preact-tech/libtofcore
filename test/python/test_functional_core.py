@@ -3,7 +3,9 @@ import struct
 import pytest
 import pytofcore
 import threading
+import random
 from typing import List
+from functools import partial
 
 def pytest_configure(config):
     config.addinivalue_line(
@@ -338,3 +340,65 @@ def test_meta_data_binning(dut: pytofcore.Sensor):
     run([0, 2])
     run([2, 0])
     run([0, 0])
+
+
+@pytest.mark.functional
+def test_rapid_commands(dut: pytofcore.Sensor):
+    '''
+    Verify that the protocol API and device can handle rapid command sequences while not streaming
+    '''
+    methods = [
+        partial(dut.set_integration_time, 100, 0, 0, 100),
+        partial(dut.set_integration_time, 200, 0, 0, 100),
+        partial(dut.set_binning, True, True),
+        partial(dut.set_binning, False, False),
+        partial(dut.set_min_amplitude, 50), 
+        partial(dut.set_min_amplitude, 5), 
+        partial(dut.set_offset, 100),
+        partial(dut.set_offset, 0),
+        dut.get_sensor_info
+        ]
+
+    #Create a random sequence N calls to the functions listed above
+    test_sequence = [random.choice(methods) for _ in range(2000)]
+
+    try:
+        for method in test_sequence: 
+            method()
+    except Exception as e:
+        assert False, f'unexpected error occured: {e}'
+
+
+@pytest.mark.functional
+@pytest.mark.skip(reason="this test will lock up the communcations, see MOS-539")
+def test_rapid_commands_with_streaming(dut: pytofcore.Sensor):
+    '''
+    Verify that the protocol API and device can handle rapid command sequences while streaming
+    '''
+    
+    def callback(m):
+        callback.count += 1
+    callback.count = 0
+
+    dut.subscribe_measurement(callback)
+    dut.stream_distance_amplitude()
+
+    methods = [
+        partial(dut.set_integration_time, 100, 0, 0, 100),
+        partial(dut.set_min_amplitude, 50), 
+        partial(dut.set_offset, 100),
+        dut.get_sensor_info
+        ]
+
+    #Create a random sequence N calls to the functions listed above
+    test_sequence = [random.choice(methods) for _ in range(2000)]
+    
+    try:
+        for method in test_sequence: 
+            method()
+    except Exception as e:
+         assert False, f'unexpected error occured: {e}'
+
+    dut.stop_stream()
+    assert callback.count != 0
+
