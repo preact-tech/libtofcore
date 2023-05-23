@@ -360,11 +360,14 @@ void SerialConnection::Impl::begin_response_timer(std::chrono::steady_clock::dur
 
 void SerialConnection::Impl::on_response_timeout(const system::error_code &error)
 {
-    if (error && (error != boost::asio::error::operation_aborted) && !this->process_error(error, __FUNCTION__))
+    // If the timer expires (timeout), there is no error
+    if (error && ( (error == boost::asio::error::operation_aborted) ||
+                   !this->process_error(error, __FUNCTION__)
+                 ))
     {
         return;
     }
-    //Oops timeout occured
+    // The timer went off and so a "timeout" occurred waiting for the response
     if (this->on_command_response_)
     {
         std::vector<std::byte> tmp;
