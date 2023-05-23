@@ -18,11 +18,12 @@ static uint32_t baudRate { DEFAULT_BAUD_RATE };
 static std::string devicePort { DEFAULT_PORT_NAME };
 static volatile bool exitRequested { false };
 static const uint16_t protocolVersion { 1 };
+static uint32_t repetitions { 100000 };
 
 static void parseArgs(int argc, char *argv[])
 {
     int opt;
-    while ((opt = getopt(argc, argv, "b:hp:")) != -1)
+    while ((opt = getopt(argc, argv, "b:hp:r:")) != -1)
     {
         switch (opt)
         {
@@ -35,10 +36,14 @@ static void parseArgs(int argc, char *argv[])
                             << "  -b <baud>     Set baud rate (UART). Default = "<< DEFAULT_BAUD_RATE << std::endl
                             << "  -h            Print help and exit" << std::endl
                             << "  -p <port>     Set port name. Default = "<< DEFAULT_PORT_NAME << std::endl
+                            << "  -r <count>    Repetition count (defaults to " << repetitions << ")" << std::endl
                             << std::endl << std::endl;
                 exit(0);
             case 'p':
                 devicePort = optarg;
+                break;
+            case 'r':
+                repetitions = atoi(optarg);
                 break;
             default:
                 break;
@@ -66,7 +71,7 @@ int main(int argc, char *argv[])
         uint32_t setCount { 0 };
         uint32_t integrationOffset { 0 };
 
-        while (true)
+        for (uint32_t i = 0; i < repetitions; ++i)
         {
             ++setCount;
             if (!sensor.setIntegrationTime((100 + integrationOffset), (200 + integrationOffset),
