@@ -7,7 +7,7 @@ import time
 import pytofcore
 
 sensor = pytofcore.Sensor(protocol_version=1)
-v_flip_default = True
+v_flip_default = False
 h_flip_default = False
 
 def measurement_callback(data):
