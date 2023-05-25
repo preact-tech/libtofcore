@@ -80,6 +80,19 @@ template <class NumericType> inline void LE_Put(void* dst, const NumericType src
     }
 }
 
+/**
+ * This template function supports appending fixed-sized numeric types to a buffer 
+ * @param dst Non-NULL pointer to location to store the big-endian data
+ * @param src The value to be converted to big endian format.
+ * @return New pointer pointing one byte past the freshly inserted value
+ */
+template<typename T> inline std::byte* BE_Append(std::byte* dst, const T& src)
+{
+    BE_Put(dst, src);
+    return dst + sizeof(src);
+}
+
+
 } // namespace TofComm
 
 #endif // TOFENDIAN_HPP
