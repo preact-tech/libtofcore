@@ -112,7 +112,6 @@ def test_get_software_version(dut: pytofcore.Sensor):
     assert version._fields == ('softwareVersion',)
     assert isinstance(version.softwareVersion, str)
 
-
 @pytest.mark.functional
 def test_get_sensor_info(dut: pytofcore.Sensor):
     
@@ -121,16 +120,19 @@ def test_get_sensor_info(dut: pytofcore.Sensor):
     print("\n")
     print("Device Serial number: " + versionInfo.deviceSerialNumber)
     print("CPU Board Serial number: " + versionInfo.cpuBoardSerialNumber)
+    print("Illuminator Serial Number: " + versionInfo.illuminatorBoardSerialNumber)
     print("Model name: " + versionInfo.modelName)
+    print("Last Reset Type: " + versionInfo.lastResetType)
 
     print("Software Source ID: " + versionInfo.softwareId)
     print("Sensor Description: " + versionInfo.softwareVersion)
 
     print("CPU Board Hardware Version: " + str(versionInfo.cpuVersion))
+    print("Preact Chip ID: " + hex(versionInfo.chipId))
     print("Illuminator Version: " + versionInfo.illuminatorSwVersion + "." + versionInfo.illuminatorSwId)
     print("Backpack Module/Version: " + str(versionInfo.backpackModule))
 
-    assert versionInfo._fields == ('deviceSerialNumber', 'cpuBoardSerialNumber', 'modelName', 'softwareId', 'softwareVersion', 'cpuVersion', 'illuminatorSwVersion', 'illuminatorSwId', 'illuminatorHwCfg' ,'backpackModule')
+    assert versionInfo._fields == ('deviceSerialNumber', 'cpuBoardSerialNumber', 'illuminatorBoardSerialNumber', 'modelName', 'lastResetType', 'softwareId', 'softwareVersion', 'cpuVersion', 'chipId', 'illuminatorSwVersion', 'illuminatorSwId', 'illuminatorHwCfg' ,'backpackModule')
 
 
 @pytest.mark.functional
