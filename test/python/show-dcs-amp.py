@@ -69,6 +69,7 @@ args = parser.parse_args()
 print_sensor_info()
 
 if(args.serial):
+    sensor.set_factory_mode(True)
     if(sensor.set_cpu_board_serial(args.serial)):
         print(f"Set CPU serial to: {args.serial}")
     else:
