@@ -10,6 +10,21 @@ sensor = pytofcore.Sensor(protocol_version=1)
 v_flip_default = False
 h_flip_default = False
 
+
+def print_sensor_info():
+    sensor_info = sensor.get_sensor_info()
+
+    print(f"Sensor Info: \n\
+Unit Serial # : {sensor_info.deviceSerialNumber}\n\
+Cpu Board Serial # : {sensor_info.cpuBoardSerialNumber}\n\
+Illuminator Board Serial # : {sensor_info.illuminatorBoardSerialNumber}\n\
+Model Name : {sensor_info.modelName}\n\
+Software Version: {sensor_info.softwareVersion}\n\
+Cpu Board Version: {sensor_info.cpuVersion}\n\
+Chip ID: {sensor_info.chipId}\n\
+Illuminator Board SW Version: {sensor_info.illuminatorSwVersion}.{sensor_info.illuminatorSwId}\n\
+Backpack Module Info: {sensor_info.backpackModule}\n")
+
 def measurement_callback(data):
     if data.data_type == pytofcore.Measurement.DataType.DISTANCE_AMPLITUDE:
         amp = np.array(data.amplitude_data)
@@ -47,6 +62,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-H", "--hFlip", help="Set Horizontal flip state", type=int, default=h_flip_default)
 parser.add_argument("-V", "--vFlip", help="Set Vertical flip state", type=int, default=v_flip_default)
 args = parser.parse_args()
+
+print_sensor_info()
 
 print("Horizontal Flip Selected: {:d}".format(args.hFlip))
 print("Vertical Flip Selected: {:d}".format(args.vFlip))
