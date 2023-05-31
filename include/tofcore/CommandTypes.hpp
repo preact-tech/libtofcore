@@ -42,6 +42,7 @@ struct versionData_t
     char m_cpuBoardSerialNumber[256] { };
     char m_illuminatorBoardSerialNumber[256] { };
     char m_modelName[256] { };
+    char m_lastResetType[32] { };
     char m_softwareSourceID[32] { };
     char m_softwareVersion[32] { };
     uint8_t m_cpuVersion { };

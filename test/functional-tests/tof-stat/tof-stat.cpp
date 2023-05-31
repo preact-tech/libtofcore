@@ -91,6 +91,7 @@ int main(int argc, char *argv[])
                         << "  CPU Board Serial # : " << versionData.m_cpuBoardSerialNumber << std::endl
                         << "  Illuminator Serial # : " << versionData.m_illuminatorBoardSerialNumber << std::endl
                         << "  Model Name         : " << versionData.m_modelName << std::endl
+                        << "  Last Reset Type    : " << versionData.m_lastResetType << std::endl
                         << "  Software Version   : " << versionData.m_softwareVersion << std::endl
                         << "  CPU version        : " << (unsigned)versionData.m_cpuVersion << std::endl
                         << "  Chip ID : " << std::hex << versionData.m_sensorChipId << std::dec << std::endl

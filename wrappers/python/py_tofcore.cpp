@@ -150,6 +150,7 @@ static auto getSensorInfo(tofcore::Sensor& s)
         fields.append("cpuBoardSerialNumber");
         fields.append("illuminatorBoardSerialNumber");
         fields.append("modelName");
+        fields.append("lastResetType");
 
         fields.append("softwareId");
         fields.append("softwareVersion");
@@ -179,6 +180,7 @@ static auto getSensorInfo(tofcore::Sensor& s)
                             versionData.m_cpuBoardSerialNumber,
                             versionData.m_illuminatorBoardSerialNumber,
                             versionData.m_modelName,
+                            versionData.m_lastResetType,
                             versionData.m_softwareSourceID,
                             versionData.m_softwareVersion,
                             versionData.m_cpuVersion,

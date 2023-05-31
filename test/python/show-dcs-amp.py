@@ -20,6 +20,7 @@ Unit Serial # : {sensor_info.deviceSerialNumber}\n\
 Cpu Board Serial # : {sensor_info.cpuBoardSerialNumber}\n\
 Illuminator Board Serial # : {sensor_info.illuminatorBoardSerialNumber}\n\
 Model Name : {sensor_info.modelName}\n\
+Last Reset Type : {sensor_info.lastResetType}\n\
 Software Version: {sensor_info.softwareVersion}\n\
 Cpu Board Version: {sensor_info.cpuVersion}\n\
 Chip ID: {chip_id}\n\
