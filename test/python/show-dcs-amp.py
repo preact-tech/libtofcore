@@ -4,15 +4,16 @@ import numpy as np
 import sys
 import time
 
-import pytofcore
+import pytofcrust
 
-sensor = pytofcore.Sensor(protocol_version=1)
+sensor = pytofcrust.Sensor(protocol_version=1)
 v_flip_default = False
 h_flip_default = False
 
 
 def print_sensor_info():
     sensor_info = sensor.get_sensor_info()
+    chip_id = hex(sensor_info.chipId)
 
     print(f"Sensor Info: \n\
 Unit Serial # : {sensor_info.deviceSerialNumber}\n\
@@ -21,19 +22,19 @@ Illuminator Board Serial # : {sensor_info.illuminatorBoardSerialNumber}\n\
 Model Name : {sensor_info.modelName}\n\
 Software Version: {sensor_info.softwareVersion}\n\
 Cpu Board Version: {sensor_info.cpuVersion}\n\
-Chip ID: {sensor_info.chipId}\n\
+Chip ID: {chip_id}\n\
 Illuminator Board SW Version: {sensor_info.illuminatorSwVersion}.{sensor_info.illuminatorSwId}\n\
 Backpack Module Info: {sensor_info.backpackModule}\n")
 
 def measurement_callback(data):
-    if data.data_type == pytofcore.Measurement.DataType.DISTANCE_AMPLITUDE:
+    if data.data_type == pytofcrust.Measurement.DataType.DISTANCE_AMPLITUDE:
         amp = np.array(data.amplitude_data)
         amp_scaled = (amp - amp.min()) / (amp.max() - amp.min())
         amp_uint8 = (255 * amp_scaled).astype(np.uint8)
 
         cv.imshow('Amplitude - Distance Amplitude', amp_uint8)
         measurement_callback.SWITCH = True
-    elif data.data_type == pytofcore.Measurement.DataType.DCS:
+    elif data.data_type == pytofcrust.Measurement.DataType.DCS:
         dcs = np.array(data.dcs_data).astype(np.float64)
         amp = np.sqrt(
             (dcs[0,...]-dcs[2,...]).astype(np.float64)**2 + \
@@ -47,7 +48,7 @@ def measurement_callback(data):
     if cv.waitKey(1)&0xFF == ord('q'):
         measurement_callback.EXIT = True
 
-def cleanup_and_exit(s:pytofcore.Sensor):
+def cleanup_and_exit(s:pytofcrust.Sensor):
     s.stop_stream()
     s = None
     cv.destroyAllWindows()
@@ -61,9 +62,16 @@ def cmd_delay():
 parser = argparse.ArgumentParser()
 parser.add_argument("-H", "--hFlip", help="Set Horizontal flip state", type=int, default=h_flip_default)
 parser.add_argument("-V", "--vFlip", help="Set Vertical flip state", type=int, default=v_flip_default)
+parser.add_argument("-S", "--serial", help="Set CPU board Serial", type=str, default=None)
 args = parser.parse_args()
 
 print_sensor_info()
+
+if(args.serial):
+    if(sensor.set_cpu_board_serial(args.serial)):
+        print(f"Set CPU serial to: {args.serial}")
+    else:
+        print("Failed to set serial!")
 
 print("Horizontal Flip Selected: {:d}".format(args.hFlip))
 print("Vertical Flip Selected: {:d}".format(args.vFlip))
