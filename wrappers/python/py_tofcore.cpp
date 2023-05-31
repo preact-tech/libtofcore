@@ -158,7 +158,7 @@ static auto getSensorInfo(tofcore::Sensor& s)
         fields.append("cpuVersion");
         fields.append("chipId");
         fields.append("illuminatorSwVersion");
-        fields.append("illuminatorSwId"); //TODO: Backwards?
+        fields.append("illuminatorSwId");
         fields.append("illuminatorHwCfg");
         fields.append("backpackModule");
 
@@ -172,12 +172,17 @@ static auto getSensorInfo(tofcore::Sensor& s)
         throw std::runtime_error("An error occcured trying to read sensor version info");
     }
 
+    // Extract packed value
+    uint32_t chipId { versionData.m_sensorChipId };
+
     return VersionData_type(versionData.m_deviceSerialNumber,
                             versionData.m_cpuBoardSerialNumber,
-                            versionData.m_modelName, 
-                            versionData.m_softwareSourceID, 
+                            versionData.m_illuminatorBoardSerialNumber,
+                            versionData.m_modelName,
+                            versionData.m_softwareSourceID,
                             versionData.m_softwareVersion,
-                            versionData.m_cpuVersion, 
+                            versionData.m_cpuVersion,
+                            chipId, 
                             versionData.m_illuminatorSwVersion,
                             versionData.m_illuminatorSwSourceId,
                             versionData.m_illuminatorHwCfg,
