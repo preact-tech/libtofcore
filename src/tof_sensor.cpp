@@ -404,9 +404,10 @@ void Sensor::Impl::init()
 }
 
 
-Sensor::send_receive_result_t Sensor::send_receive(const uint16_t command, const std::vector<Sensor::send_receive_payload_t>& payload) const
+Sensor::send_receive_result_t Sensor::send_receive(const uint16_t command, const std::vector<Sensor::send_receive_payload_t>& payload,
+        std::chrono::steady_clock::duration timeout /*= 5s*/) const
 {
-    auto result = pimpl->connection.send_receive(command, payload, 5s);
+    auto result = pimpl->connection.send_receive(command, payload, timeout);
     if(!result)
     {
         return std::nullopt;
@@ -415,10 +416,11 @@ Sensor::send_receive_result_t Sensor::send_receive(const uint16_t command, const
 }
 
 
-Sensor::send_receive_result_t Sensor::send_receive(const uint16_t command, const send_receive_payload_t& payload) const
+Sensor::send_receive_result_t Sensor::send_receive(const uint16_t command, const send_receive_payload_t& payload,
+        std::chrono::steady_clock::duration timeout /*= 5s*/) const
 {
     const std::vector<Sensor::send_receive_payload_t> one{payload};
-    return this->send_receive(command, one);
+    return this->send_receive(command, one, timeout);
 }
 
 

@@ -10,6 +10,7 @@
 #include "CommandTypes.hpp"
 #include "Measurement_T.hpp"
 #include "span.hpp"
+#include <chrono>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -78,8 +79,10 @@ protected:
 
     uint16_t getProtocolVersion() const;
     bool setProtocolVersion(uint16_t version);
-    send_receive_result_t send_receive(const uint16_t command, const std::vector<send_receive_payload_t>& payload) const;
-    send_receive_result_t send_receive(const uint16_t command, const send_receive_payload_t& payload) const;
+    send_receive_result_t send_receive(const uint16_t command, const std::vector<send_receive_payload_t>& payload, 
+                                       std::chrono::steady_clock::duration timeout = std::chrono::seconds(5)) const;
+    send_receive_result_t send_receive(const uint16_t command, const send_receive_payload_t& payload,
+                                       std::chrono::steady_clock::duration timeout = std::chrono::seconds(5)) const;
     send_receive_result_t send_receive(const uint16_t command) const;
     send_receive_result_t send_receive(const uint16_t command, uint32_t value) const;
     send_receive_result_t send_receive(const uint16_t command, int32_t value) const;
