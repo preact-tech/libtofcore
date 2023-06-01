@@ -63,17 +63,33 @@ def cmd_delay():
 parser = argparse.ArgumentParser()
 parser.add_argument("-H", "--hFlip", help="Set Horizontal flip state", type=int, default=h_flip_default)
 parser.add_argument("-V", "--vFlip", help="Set Vertical flip state", type=int, default=v_flip_default)
-parser.add_argument("-S", "--serial", help="Set CPU board Serial", type=str, default=None)
+parser.add_argument("-s", "--cpu_serial", help="Set CPU board Serial", type=str, default=None)
+parser.add_argument("-S", "--dev_serial", help="Set Device serial", type=str, default=None)
+parser.add_argument("-i", "--illmn_serial", help="Set Illuminator serial", type=int, default=0)
 args = parser.parse_args()
 
-print_sensor_info()
-
-if(args.serial):
+if(args.cpu_serial):
     sensor.set_factory_mode(True)
-    if(sensor.set_cpu_board_serial(args.serial)):
-        print(f"Set CPU serial to: {args.serial}")
+    if(sensor.set_cpu_board_serial(args.cpu_serial)):
+        print(f"Set CPU Board serial to: {args.cpu_serial}")
     else:
-        print("Failed to set serial!")
+        print("Failed to set cpu board serial!")
+
+if(args.dev_serial):
+    sensor.set_factory_mode(True)
+    if(sensor.set_device_serial(args.dev_serial)):
+        print(f"Set device serial to: {args.dev_serial}")
+    else:
+        print("Failed to set device serial!")
+
+if(args.illmn_serial):
+    if(sensor.set_illuminator_serial(args.illmn_serial)):
+        print(f"Set Illuminator Board serial to: {args.illmn_serial}")
+    else:
+        print("Failed to set Illuminator Board serial!")
+
+
+print_sensor_info()
 
 print("Horizontal Flip Selected: {:d}".format(args.hFlip))
 print("Vertical Flip Selected: {:d}".format(args.vFlip))
