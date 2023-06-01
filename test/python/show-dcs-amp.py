@@ -16,7 +16,7 @@ def print_sensor_info():
     chip_id = hex(sensor_info.chipId)
 
     print(f"Sensor Info: \n\
-Unit Serial # : {sensor_info.deviceSerialNumber}\n\
+Device Serial # : {sensor_info.deviceSerialNumber}\n\
 Cpu Board Serial # : {sensor_info.cpuBoardSerialNumber}\n\
 Illuminator Board Serial # : {sensor_info.illuminatorBoardSerialNumber}\n\
 Model Name : {sensor_info.modelName}\n\
