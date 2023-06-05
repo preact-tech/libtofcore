@@ -17,6 +17,8 @@ include(cmake/tof_options.cmake)
 # Find system dependencies
 set(MIN_BOOST_VERSION 1.70)
 find_package(Boost ${MIN_BOOST_VERSION} REQUIRED COMPONENTS)
+find_package(PkgConfig REQUIRED)
+    pkg_check_modules(libusb REQUIRED libusb-1.0)
 ###########################
 
 add_library(tofcore)
@@ -58,6 +60,7 @@ target_link_libraries(tofcore
   PUBLIC
   PRIVATE
   # Boost::regex example of private dependency
+  usb-1.0
 )
 
 include(GenerateExportHeader)

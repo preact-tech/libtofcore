@@ -15,6 +15,8 @@
 #include <iostream>
 #include <mutex>
 #include <thread>
+#include <libusb-1.0/libusb.h>
+
 
 namespace tofcore
 {
@@ -115,9 +117,21 @@ struct SerialConnection::Impl
     std::function<void(const std::vector<std::byte>&)> on_measurement_data_ {};
     std::function<void(bool, const std::vector<std::byte>&)> on_command_response_ {};
 
+    // TODOERH: Here!
+    // Probably need to change 1. what is passed inplace of portName, 2. get dev upstream
     Impl(io_service &io, const std::string &portName, uint32_t baud_rate, uint16_t protocolVersion) :
                 port_(io, portName), response_timer_(io), protocol_version_(protocolVersion)
     {
+        // This doesn't work here because port is already taken.
+        // libusb_device_handle * handle;
+        // libusb_device *dev;
+        // struct libusb_device_descriptor dev_desc;
+        // handle = libusb_open_device_with_vid_pid(NULL, 0x35fa, 0x0d0f);
+        // dev = libusb_get_device(handle);
+        // libusb_get_device_descriptor(dev, &dev_desc);
+        // printf("           VID:PID: %04X:%04X\n", dev_desc.idVendor, dev_desc.idProduct);
+        // libusb_close(handle);
+
         this->port_.set_option(serial_port_base::baud_rate(baud_rate));
         this->port_.set_option(serial_port_base::parity(serial_port_base::parity::none));
         this->port_.set_option(serial_port_base::stop_bits(serial_port_base::stop_bits::one));
@@ -168,6 +182,16 @@ SerialConnection::~SerialConnection()
 {
     //TODO: Do I need to explicity cancel pending waits?
     pimpl->port_.close();
+
+    // This is a test
+    libusb_device_handle * handle;
+    libusb_device *dev;
+    struct libusb_device_descriptor dev_desc;
+    handle = libusb_open_device_with_vid_pid(NULL, 0x35fa, 0x0d0f);
+    dev = libusb_get_device(handle);
+    libusb_get_device_descriptor(dev, &dev_desc);
+    printf("           VID:PID: %04X:%04X\n", dev_desc.idVendor, dev_desc.idProduct);
+    libusb_close(handle);
 }
 
 uint16_t SerialConnection::get_protocol_version() const
