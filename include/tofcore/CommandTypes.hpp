@@ -37,12 +37,16 @@ enum backpackModule_t : uint8_t
 };
 struct versionData_t
 {
+
     char m_deviceSerialNumber[256] { };
     char m_cpuBoardSerialNumber[256] { };
+    char m_illuminatorBoardSerialNumber[256] { };
     char m_modelName[256] { };
+    char m_lastResetType[32] { };
     char m_softwareSourceID[32] { };
     char m_softwareVersion[32] { };
     uint8_t m_cpuVersion { };
+    uint32_t m_sensorChipId { };
     char m_illuminatorSwSourceId[32] { };
     char m_illuminatorSwVersion[32] { };
     uint8_t m_illuminatorHwCfg { };

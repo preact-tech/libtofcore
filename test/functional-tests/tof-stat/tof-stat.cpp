@@ -89,9 +89,12 @@ int main(int argc, char *argv[])
             std::cout << "Version Information" << std::endl
                         << "  Device Serial #    : " << versionData.m_deviceSerialNumber << std::endl
                         << "  CPU Board Serial # : " << versionData.m_cpuBoardSerialNumber << std::endl
+                        << "  Illuminator Serial # : " << versionData.m_illuminatorBoardSerialNumber << std::endl
                         << "  Model Name         : " << versionData.m_modelName << std::endl
+                        << "  Last Reset Type    : " << versionData.m_lastResetType << std::endl
                         << "  Software Version   : " << versionData.m_softwareVersion << std::endl
                         << "  CPU version        : " << (unsigned)versionData.m_cpuVersion << std::endl
+                        << "  Chip ID : " << std::hex << versionData.m_sensorChipId << std::dec << std::endl
                         << "  Illuminator SW Version: " << versionData.m_illuminatorSwVersion << '.' << 
                                                             versionData.m_illuminatorSwSourceId << std::endl
                         << "  Backpack Module    : " << (unsigned)versionData.m_backpackModule << std::endl;
@@ -99,18 +102,6 @@ int main(int argc, char *argv[])
         else
         {
             std::cerr << "Failed to read version data" << std::endl;
-        }
-        /*
-         * Chip Information
-         */
-        uint16_t chipId, waferId;
-        if (sensor.getChipInformation(waferId, chipId))
-        {
-            std::cout << "Wafer: 0X" << std::hex << waferId << "; Chip: 0x" << chipId << std::dec << std::endl;
-        }
-        else
-        {
-            std::cerr << "Failed to read chip information" << std::endl;
         }
         /*
          * Persistent Sensor Settings

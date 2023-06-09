@@ -51,6 +51,7 @@ static void subscribeMeasurement(tofcore::Sensor& s, tofcore::Sensor::on_measure
     s.subscribeMeasurement(f);
 }
 
+/* DEPRECATED - use getSensorInfo() instead. */
 static auto getSoftwareVersion(tofcore::Sensor& s)
 {
     //Use static and a lambda to create the softwareVersion namedtuple type only once.
@@ -71,6 +72,7 @@ static auto getSoftwareVersion(tofcore::Sensor& s)
     return softwareVersion_type(softwareVersion);
 }
 
+/* DEPRECATED - use getSensorInfo() instead. */
 static auto getChipInformation(tofcore::Sensor& s)
 {
     //Use static and a lambda to create the ChipInfo namedtuple type only once.
@@ -148,13 +150,16 @@ static auto getSensorInfo(tofcore::Sensor& s)
         py::list fields;
         fields.append("deviceSerialNumber");
         fields.append("cpuBoardSerialNumber");
+        fields.append("illuminatorBoardSerialNumber");
         fields.append("modelName");
+        fields.append("lastResetType");
 
         fields.append("softwareId");
         fields.append("softwareVersion");
 
         // Mojave platform only
         fields.append("cpuVersion");
+        fields.append("chipId");
         fields.append("illuminatorSwVersion");
         fields.append("illuminatorSwId");
         fields.append("illuminatorHwCfg");
@@ -170,12 +175,18 @@ static auto getSensorInfo(tofcore::Sensor& s)
         throw std::runtime_error("An error occcured trying to read sensor version info");
     }
 
+    // Extract packed value
+    uint32_t chipId { versionData.m_sensorChipId };
+
     return VersionData_type(versionData.m_deviceSerialNumber,
                             versionData.m_cpuBoardSerialNumber,
-                            versionData.m_modelName, 
-                            versionData.m_softwareSourceID, 
+                            versionData.m_illuminatorBoardSerialNumber,
+                            versionData.m_modelName,
+                            versionData.m_lastResetType,
+                            versionData.m_softwareSourceID,
                             versionData.m_softwareVersion,
-                            versionData.m_cpuVersion, 
+                            versionData.m_cpuVersion,
+                            chipId, 
                             versionData.m_illuminatorSwVersion,
                             versionData.m_illuminatorSwSourceId,
                             versionData.m_illuminatorHwCfg,
@@ -340,7 +351,9 @@ PYBIND11_MODULE(pytofcore, m) {
 
     py::class_<tofcore::Sensor>(m, "Sensor")
         .def(py::init<uint16_t, const std::string&, uint32_t>(), py::arg("protocol_version")=tofcore::DEFAULT_PROTOCOL_VERSION, py::arg("port_name")=tofcore::DEFAULT_PORT_NAME, py::arg("baud_rate")=tofcore::DEFAULT_BAUD_RATE)
+        /* DEPRECATED - use get_sensor_info() instead. */
         .def_property_readonly("get_software_version", &getSoftwareVersion, "Obtain the software build version string", py::call_guard<py::gil_scoped_release>())
+        /* DEPRECATED - use get_sensor_info() instead. */
         .def_property_readonly("chip_info", &getChipInformation, "Obtain chip info. Returns namedtuple with fields wafer_id and chip_id", py::call_guard<py::gil_scoped_release>())
         .def_property_readonly("accelerometer_data", &getAccelerometerData, "Obtain acceleromter info. Each call turns a new sample from the accelerometer. The same is a namedtuple with fields x, y, z, range_g", py::call_guard<py::gil_scoped_release>())
         .def_property_readonly("pixel_rays", &getPixelRays, "Obtain unit vector ray information for all pixels based on the lens information stored on the sensor. Returns a namedtuple with fields x, y, z. Each field is a list of floats of length width x height.", py::call_guard<py::gil_scoped_release>())

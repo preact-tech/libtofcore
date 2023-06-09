@@ -74,6 +74,7 @@ bool Sensor::getAccelerometerData(int16_t& x, int16_t& y, int16_t& z, uint8_t& g
     return ok;
 }
 
+/* DEPRECATED - use getSensorInfo() instead. */
 bool Sensor::getChipInformation(uint16_t& waferId, uint16_t& chipId)
 {
     auto result = this->send_receive(COMMAND_READ_CHIP_INFO);
@@ -141,6 +142,7 @@ bool Sensor::getSettings(std::string& jsonSettings)
     return true;
 }
 
+/* DEPRECATED - use getSensorInfo() instead. */
 bool Sensor::getSoftwareVersion(std::string& version)
 {
     auto result = this->send_receive(COMMAND_READ_FIRMWARE_VERSION);
