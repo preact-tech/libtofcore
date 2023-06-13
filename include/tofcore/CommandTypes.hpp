@@ -26,7 +26,7 @@ struct ManufacturingData_T
     char m_cpuBoardSerialNumber[256] { 0 }; ///<< Product model number (string)
     char m_modelName[256] { 0 };            ///<< Product model number (string)
     char m_testStationData[2040] { 0 };     ///<< Storage for test station data
-    uint8_t m_pad[1024] { 0 };              ///<< pad for future expansion
+    uint8_t m_pad[768] { 0 };               ///<< pad for future expansion
 } PACKED;
 
 // Mojave Backpack Modules
