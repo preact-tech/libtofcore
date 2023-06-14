@@ -74,15 +74,6 @@ int main(int argc, char *argv[])
         /*
          * Version information
          */
-        std::string swVersion { };
-        if (sensor.getSoftwareVersion(swVersion))
-        {
-            std::cout << "Software version: " << swVersion << std::endl;
-        }
-        else
-        {
-            std::cerr << "Failed to read software version" << std::endl;
-        }
         versionData_t versionData { };
         if (sensor.getSensorInfo(versionData))
         {
