@@ -182,16 +182,6 @@ SerialConnection::~SerialConnection()
 {
     //TODO: Do I need to explicity cancel pending waits?
     pimpl->port_.close();
-
-    // This is a test
-    libusb_device_handle * handle;
-    libusb_device *dev;
-    struct libusb_device_descriptor dev_desc;
-    handle = libusb_open_device_with_vid_pid(NULL, 0x35fa, 0x0d0f);
-    dev = libusb_get_device(handle);
-    libusb_get_device_descriptor(dev, &dev_desc);
-    printf("           VID:PID: %04X:%04X\n", dev_desc.idVendor, dev_desc.idProduct);
-    libusb_close(handle);
 }
 
 uint16_t SerialConnection::get_protocol_version() const
