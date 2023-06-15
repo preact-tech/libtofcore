@@ -20,8 +20,11 @@
 
 namespace tofcore
 {
-    UsbConnection::UsbConnection(){
+    UsbConnection::UsbConnection(const std::string defaultPortName){
+
+        m_portName = defaultPortName;
         m_preactDevices = GetPreActDevices();
+        GetAvailablePreactDevicePortName();
     }
 
     UsbConnection::~UsbConnection(){
@@ -102,6 +105,59 @@ namespace tofcore
         }
 
         return preactDevices;
+    }
+
+    /// @brief Check Whether Port Name Given is a PreAct Device
+    /// @param givenPortName, std::string, of port name. May be default
+    /// @return true if port name 
+    bool UsbConnection::IsPortNameAPreactDevice(const std::string &givenPortName){
+
+        for (auto devPtr = m_preactDevices.begin(); devPtr != m_preactDevices.end(); ++devPtr){
+
+            libusbp::device &device = *devPtr;
+
+            std::string devicePortName = GetSerialPortName(device);
+
+            // If port name matches device in PreAct list
+            if (devicePortName.compare(givenPortName) == 0) {
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// @brief Check if given port name is a PreAct Device, otherwise, return first avaiable (if any)
+    /// @return std::string, port name
+    std::string UsbConnection::GetAvailablePreactDevicePortName(){
+
+        std::cout << "Initial port name: " << m_portName << std::endl;
+
+        std::cout << "Number of PreAct Devices: " << m_preactDevices.size() << std::endl;
+
+        // Check if given port name is a preact device
+        // If so, return to use for serial connection
+        if (IsPortNameAPreactDevice(m_portName)){
+            std::cout << "Using Port Name Given: " << m_portName << std::endl;
+        }
+
+        // Else if other PreAct Devices are available, return first available 
+        else if (m_preactDevices.size() > 0){
+
+            std::cout << "Port Unavailable or NOT a PreAct Device: " << m_portName << std::endl;
+
+            m_portName = GetSerialPortName(m_preactDevices[0]);
+
+            std::cout << "Using First Available PreAct Device: " << m_portName << std::endl;
+        }
+
+        // No PreAct Devices
+        else {
+            std::cout << "No PreAct Devices Available" << std::endl;
+        }
+
+        return m_portName;
     }
 
 } //end namespace

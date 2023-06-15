@@ -20,6 +20,30 @@
 #include <libusbp-1/libusbp.hpp>
 // https://github.com/pololu/libusbp/blob/master/examples/port_name/port_name.cpp
 
+static std::string devicePort { "/dev/ttyACM3" };
+
+static void parseArgs(int argc, char *argv[])
+{
+    int opt;
+    while ((opt = getopt(argc, argv, "b:hp:sv:")) != -1)
+    {
+        switch (opt)
+        {
+            case 'h':
+                std::cout   << "Test to list PreAct USB Devices. Also used to test whether a particular port is a PreAct device" << std::endl << std::endl
+                            << "Usage: " << argv[0] << " [-h] [-p <port>]" << std::endl
+                            << "  -h            Print help and exit" << std::endl
+                            << "  -p <port>     Set port name. Default = "<< "/dev/ttyACM3" << std::endl
+                            << std::endl << std::endl;
+                exit(0);
+            case 'p':
+                  devicePort = optarg;
+                  break;
+            default:
+                break;
+        }
+    }
+}
 
 std::string serial_number_or_default(const libusbp::device & device,
     const std::string & def)
@@ -69,14 +93,19 @@ void print_device(libusbp::device & device)
 }
 
 
-int main() {
+
+int main(int argc, char *argv[])
+{
+    parseArgs(argc, argv);
 
     try
     {
+        printf("Get List Of Connected PreAct Devices\n");
+        auto preactUsbConnections = tofcore::UsbConnection(devicePort);
 
-        printf("Get Devices list\n");
-
-        auto preactDevices = tofcore::UsbConnection();
+        for (auto devPtr = preactUsbConnections.m_preactDevices.begin(); devPtr != preactUsbConnections.m_preactDevices.end(); ++devPtr){
+            print_device(*devPtr);
+        }
     }
 
     catch(const std::exception & error)

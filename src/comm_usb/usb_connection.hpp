@@ -27,13 +27,17 @@ class UsbConnection
 {
 
 public:
-    UsbConnection();
+    UsbConnection(const std::string defaultPortName);
 
     ~UsbConnection();
 
     std::string GetSerialPortName(libusbp::device &device);
 
     std::vector<libusbp::device> GetPreActDevices();
+
+    bool IsPortNameAPreactDevice(const std::string &givenPortName);
+
+    std::string GetAvailablePreactDevicePortName();
 
     const uint16_t PREACT_VENDOR_ID = 0x35FA;
 
@@ -48,6 +52,7 @@ public:
     const uint8_t USB_INTERFACE_DEBUG_CH = 2;
 
     std::vector<libusbp::device> m_preactDevices;
+    std::string m_portName;
 
 protected:
 
