@@ -24,7 +24,6 @@ namespace tofcore
 
         m_portName = defaultPortName;
         m_preactDevices = GetPreActDevices();
-        GetAvailablePreactDevicePortName();
     }
 
     UsbConnection::~UsbConnection(){

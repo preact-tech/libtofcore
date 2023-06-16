@@ -21,7 +21,7 @@ namespace tofcore
 {
 
 constexpr uint32_t      DEFAULT_BAUD_RATE           { 115200 };
-constexpr const char*   DEFAULT_PORT_NAME           { "/dev/ttyACM3" };
+constexpr const char*   DEFAULT_PORT_NAME           { "/dev/ttyACM0" };
 constexpr uint16_t      DEFAULT_PROTOCOL_VERSION    { 1 };
 
 class Sensor
