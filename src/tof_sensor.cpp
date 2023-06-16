@@ -126,6 +126,21 @@ bool Sensor::getLensInfo(std::vector<double>& rays_x, std::vector<double>& rays_
     return true;
 }
 
+bool Sensor::getSensorInfo(TofComm::versionData_t &versionData)
+{
+    auto result = this->send_receive(COMMAND_READ_SENSOR_INFO);
+    auto ok = bool { result };
+    const auto &payload = *result;
+
+    ok &= (payload.size() == sizeof(versionData));
+
+    if (ok)
+    {
+        memcpy((void*) &versionData, (void*) payload.data(), sizeof(versionData));
+    }
+    return ok;
+}
+
 bool Sensor::getSettings(std::string& jsonSettings)
 {
     auto result = this->send_receive(COMMAND_READ_SETTINGS);
@@ -353,26 +368,6 @@ void Sensor::subscribeMeasurement(std::function<void (std::shared_ptr<Measuremen
 {
     std::lock_guard<std::mutex> guard {pimpl->measurementReadyMutex};
     pimpl->measurementReady = onMeasurementReady;
-}
-
-
-bool Sensor::getSensorInfo(TofComm::versionData_t &versionData){
-
-    auto result = this->send_receive(COMMAND_READ_SENSOR_INFO);
-
-    auto ok = bool{result};
-
-    const auto& payload = *result;
-
-    ok &= (payload.size() == sizeof(versionData));
-
-    if (ok)
-    {
-        //TODO Not really sure that this is a safe thing to do, it assumes that the data exactly matches the structure.
-        memcpy((void*)&versionData, (void*)payload.data(), sizeof(versionData));
-    }
-
-    return ok;
 }
 
 /* #########################################################################
