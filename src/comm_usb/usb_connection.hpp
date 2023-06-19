@@ -21,8 +21,6 @@
 namespace tofcore
 {
 
-typedef tcb::span<std::byte> ScatterGatherElement;
-
 class UsbConnection
 {
 
@@ -42,7 +40,7 @@ public:
     const uint16_t PREACT_VENDOR_ID = 0x35FA;
 
     // MOJAVE DEFS
-    const uint16_t MOJAVE_PRODUCT_ID = 0x0D0F;
+    constexpr uint16_t MOJAVE_PRODUCT_ID = 0x0D0F;
 
     // T10C DEFS
     const uint16_t T10C_PRODUCT_ID = 0x0A03U;
@@ -51,6 +49,8 @@ public:
     const uint8_t USB_INTERFACE_COMM_CH = 0;
     const uint8_t USB_INTERFACE_DEBUG_CH = 2;
 
+    // TODO: make our own struct and store pertinent information. 
+    // DO NOT bring library struct up out of libs. Less flexible in the future
     std::vector<libusbp::device> m_preactDevices;
     std::string m_portName;
 

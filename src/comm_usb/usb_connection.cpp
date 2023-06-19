@@ -17,7 +17,6 @@
 #include <thread>
 #include <libusbp-1/libusbp.hpp>
 
-
 namespace tofcore
 {
     UsbConnection::UsbConnection(const std::string defaultPortName){
