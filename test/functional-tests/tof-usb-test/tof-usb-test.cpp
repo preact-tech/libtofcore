@@ -15,12 +15,9 @@
 #include <iostream>
 #include <unistd.h>
 #include "tof-usb-test.h"
-#include "../src/comm_usb/usb_connection.hpp"
+#include "../src/device_discovery/device_discovery.hpp"
 
-#include <libusbp-1/libusbp.hpp>
-// https://github.com/pololu/libusbp/blob/master/examples/port_name/port_name.cpp
-
-static std::string devicePort { "/dev/ttyACM3" };
+static std::string devicePort { };
 
 static void parseArgs(int argc, char *argv[])
 {
@@ -45,67 +42,17 @@ static void parseArgs(int argc, char *argv[])
     }
 }
 
-std::string serial_number_or_default(const libusbp::device & device,
-    const std::string & def)
-{
-    try
-    {
-        return device.get_serial_number();
-    }
-    catch (const libusbp::error & error)
-    {
-        if (error.has_code(LIBUSBP_ERROR_NO_SERIAL_NUMBER))
-        {
-            return def;
-        }
-        throw;
-    }
-}
-
-void print_device(libusbp::device & device)
-{
-    uint16_t vendor_id = device.get_vendor_id();
-    uint16_t product_id = device.get_product_id();
-    uint16_t revision = device.get_revision();
-    std::string serial_number = serial_number_or_default(device, "-");
-    std::string os_id = device.get_os_id();
-
-    // Note: The serial number might have spaces in it, so it should be the last
-    // field to avoid confusing programs that are looking for a field after the
-    // serial number.
-
-    std::ios::fmtflags flags(std::cout.flags());
-    std::cout
-        << std::hex << std::setfill('0') << std::right
-        << std::setw(4) << vendor_id
-        << ':'
-        << std::setw(4) << product_id
-        << ' '
-        << std::setfill(' ') << std::setw(2) << (revision >> 8)
-        << '.'
-        << std::setfill('0') << std::setw(2) << (revision & 0xFF)
-        << ' '
-        << os_id
-        << ' '
-        << std::setfill(' ') << std::left << serial_number
-        << std::endl;
-    std::cout.flags(flags);
-}
-
-
-
 int main(int argc, char *argv[])
 {
     parseArgs(argc, argv);
 
     try
     {
-        printf("Get List Of Connected PreAct Devices\n");
-        auto preactUsbConnections = tofcore::UsbConnection(devicePort);
+        tofcore::device_info_t device = tofcore::get_device_info(devicePort);
 
-        for (auto devPtr = preactUsbConnections.m_preactDevices.begin(); devPtr != preactUsbConnections.m_preactDevices.end(); ++devPtr){
-            print_device(*devPtr);
-        }
+        std::cout << "Device URI: " << device.connector_uri << std::endl
+                  << "Model Name: " << device.model << std::endl
+                  << "Serial Number: " << device.serial_num << std::endl;
     }
 
     catch(const std::exception & error)

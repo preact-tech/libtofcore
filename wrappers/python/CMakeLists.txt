@@ -9,16 +9,10 @@ FetchContent_Declare(
     GIT_TAG        v2.10.4
 )
 
-FetchContent_Declare(
-    libusbp
-    GIT_REPOSITORY https://github.com/pololu/libusbp
-    GIT_TAG        1.3.0
-)
-
-FetchContent_MakeAvailable(pybind11 libusbp)
+FetchContent_MakeAvailable(pybind11)
 
 pybind11_add_module(pytofcore py_tofcore.cpp)
-target_link_libraries(pytofcore PRIVATE tofcore usbp-1)
+target_link_libraries(pytofcore PRIVATE tofcore)
 
 target_compile_definitions(pytofcore
                         PRIVATE VERSION_INFO=${VERSION_PACKAGE})
