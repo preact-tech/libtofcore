@@ -100,7 +100,7 @@ std::optional<TofComm::illuminator_info_t> decode_illuminator_info(const KLVDeco
     illum_info.led_segments_enabled = static_cast<uint8_t>(*data.first);
     int32_t i32 {0};
     TofComm::BE_Get(i32, data.first + 1);
-    illum_info.temperature_c = i32 / 100.0;
+    illum_info.temperature_c = i32 / 1000.0;
     uint16_t u16 {0};
     TofComm::BE_Get(u16, data.first + 5);
     illum_info.vled_v = u16 / 1000.0;
