@@ -20,6 +20,23 @@
 namespace tofcore
 {
 
+    constexpr uint16_t PREACT_VENDOR_ID = 0x35FA;
+
+    // MOJAVE DEFS
+    constexpr uint16_t MOJAVE_PRODUCT_ID = 0x0D0F;
+
+    // T10C DEFS
+    constexpr uint16_t T10C_PRODUCT_ID = 0x0A03U;
+
+    // USB Channel Info
+    constexpr uint8_t USB_INTERFACE_COMM_CH = 0;
+    constexpr uint8_t USB_INTERFACE_DEBUG_CH = 2;
+
+    constexpr char FILE_PREFIX[] = "file:///";
+    constexpr char SERIAL_PREFIX[] = "serial:///";
+    constexpr char HTTP_PREFIX[] = "http://";
+    constexpr char VIDEO_PREFIX[] = "video:///";
+
     /// @brief TODO: this is for future development, will need to determine device connection type
     /// @return 
     std::string GetDeviceType(){
@@ -178,8 +195,7 @@ namespace tofcore
     /// @return device_info_t, struct containing uri, model, and serial number strings
     device_info_t get_device_info(const std::string defaultPort){
 
-        // No port name given (Note: empty default causes all kinds of problems)
-        if (defaultPort.compare("") == 0){
+        if ((defaultPort.compare("") == 0) || defaultPort.empty()){
 
             std::vector<device_info_t> devices = find_all_devices();
             

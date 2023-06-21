@@ -6,7 +6,6 @@
  * Implements API for libtofcore
  */
 #include "comm_serial/serial_connection.hpp"
-#include "device_discovery/device_discovery.hpp"
 #include "tof_sensor.hpp"
 #include "TofCommand_IF.hpp"
 #include "TofEndian.hpp"

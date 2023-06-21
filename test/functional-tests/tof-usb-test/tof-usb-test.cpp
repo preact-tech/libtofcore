@@ -14,7 +14,6 @@
 #include <iomanip>
 #include <iostream>
 #include <unistd.h>
-#include "tof-usb-test.h"
 #include "../src/device_discovery/device_discovery.hpp"
 
 static std::string devicePort { };

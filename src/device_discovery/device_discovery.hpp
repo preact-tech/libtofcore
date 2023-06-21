@@ -19,36 +19,24 @@
 
 namespace tofcore
 {
-    constexpr uint16_t PREACT_VENDOR_ID = 0x35FA;
-
-    // MOJAVE DEFS
-    constexpr uint16_t MOJAVE_PRODUCT_ID = 0x0D0F;
-
-    // T10C DEFS
-    constexpr uint16_t T10C_PRODUCT_ID = 0x0A03U;
-
-    // USB Channel Info
-    constexpr uint8_t USB_INTERFACE_COMM_CH = 0;
-    constexpr uint8_t USB_INTERFACE_DEBUG_CH = 2;
-
-    constexpr char FILE_PREFIX[] = "file:///";
-    constexpr char SERIAL_PREFIX[] = "serial:///";
-    constexpr char HTTP_PREFIX[] = "http://";
-    constexpr char VIDEO_PREFIX[] = "video:///";
-
+    /// @brief PreAct Tof Device Info
     struct device_info_t
     {
         std::string connector_uri;  //examples /dev/ttyACM1, COM2, (file:///dev/ttyAM1 serial://COM1 
                                     // serial:///dev/ttyACM1, serial:///devttyUSB10?baud=5600 
                                     // in the future it might be network http://192.12.23.0:6000
                                     // video:///video1)
-        std::string serial_num;
-        std::string model;
+        std::string serial_num;     // Device serial number string of alpha-numeric characters
+        std::string model;          // Device model name/number string. ex: Mojave
     };
 
-
+    /// @brief Find all PreAct ToF Devices attached to machine
+    /// @return std::vector<device_info_t>, a list of connected devices, their connection uri, serial number, and model name/number 
     std::vector<device_info_t> find_all_devices();
 
+    /// @brief Get device info form port
+    /// @param defaultPort, default port name for device, if left empty, a device scan will be performed 
+    /// @return device_info_t, info from connected device, its connection uri, serial number, and model name/number 
     device_info_t get_device_info(const std::string defaultPort);
 
 } //end namespace
