@@ -372,7 +372,7 @@ PYBIND11_MODULE(pytofcore, m) {
         .def("set_modulation", &tofcore::Sensor::setModulation, "Set the modulation frequency to use during TOF measurements", py::arg("index"), py::arg("channel"), py::call_guard<py::gil_scoped_release>())
         .def("set_filter", &tofcore::Sensor::setFilter, "Configure filter applied by sensor on data returned", py::call_guard<py::gil_scoped_release>())
         .def("subscribe_measurement", &subscribeMeasurement, "Set a function object to be called when new measurement data is received", py::arg("callback"))
-        // .def("get_sensor_info", &getSensorInfo, "Get the sensor version and build info")
+        .def("get_sensor_info", &getSensorInfo, "Get the sensor version and build info")
         .def_property("hflip", &hflip_get, &hflip_set, "State of the image horizontal flip option (default False)")
         .def_property("vflip", &vflip_get, &vflip_set, "State of the image vertical flip option (default False)")
 
