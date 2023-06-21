@@ -16,7 +16,6 @@
 #include <optional>
 #include <vector>
 #include <cstdint>
-#include <libusbp-1/libusbp.hpp>
 
 namespace tofcore
 {

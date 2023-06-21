@@ -8,7 +8,7 @@
  */
 #include "crc32.h"
 #include "serial_connection.hpp"
-#include "../device_discovery/device_discovery.hpp"
+#include "device_discovery/device_discovery.hpp"
 #include "TofEndian.hpp"
 #include <array>
 #include <boost/scope_exit.hpp>
