@@ -103,17 +103,16 @@ namespace tofcore
     /// @return std::string, serial number string
     std::string GetUsbDeviceSerialNumber(libusbp::device &device){
 
-        // Attemp to Get Serial Number
-        std::string serial = "No Serial Number";
+        // Attempt to Get Serial Number
+        std::string serial = {};
         try
         {
             serial = device.get_serial_number();
+            return serial;
         }
         catch(const std::exception & error) {
-            std::cout << "- WARNING UNIT DOES NOT HAVE SERIAL NUMBER" << std::endl;
+            return serial;
         }
-
-        return serial;
     }
 
     /// @brief Find USB Serial / Communications Device Class Devices
@@ -195,10 +194,13 @@ namespace tofcore
     /// @return device_info_t, struct containing uri, model, and serial number strings
     device_info_t get_device_info(const std::string defaultPort){
 
-        if ((defaultPort.compare("") == 0) || defaultPort.empty()){
+        // If no port name given. Find first PreAct device avaiable
+        if (defaultPort.empty()){
 
+            // Get all PreAct Devices
             std::vector<device_info_t> devices = find_all_devices();
             
+            // No PreAct Devices
             if (devices.empty()){
                 throw std::runtime_error("No PreAct Devices Found");
             }
@@ -206,15 +208,61 @@ namespace tofcore
             return devices[0];
         }
 
+        // Use port name given 
         else {
 
-            device_info_t deviceEntry = {
-                defaultPort,
-                "",
-                ""
-            };
+            // Get all usb devices
+            std::vector<libusbp::device> usbDevices = libusbp::list_connected_devices();
 
-            return deviceEntry;
+            // Device we're searching for
+            device_info_t deviceEntry;
+
+            // No usb devices connected
+            if (usbDevices.empty()){
+                return deviceEntry;
+            }
+
+            // Device connected, scan and compare to portname given
+            // to chase down device info
+            else {
+
+                // TODO: this logic only assumes serial/cdc devices at the moment
+                // this will need to change as more devices types are supported
+                for (auto devPtr = usbDevices.begin(); devPtr != usbDevices.end(); ++devPtr)
+                {
+                    libusbp::device &device = *devPtr;
+
+                    // TODO: probably need to ensure device is a tty device
+                    std::string portName;
+                   
+                    // Get device port name
+                    try {
+                        portName = GetUsbCdcDeviceSerialPortName(device);
+                    }
+                    catch(const std::exception & error) {
+                        ;
+                    }
+
+                    // If port given matches name of device found
+                    if (portName.compare(defaultPort) == 0){
+                        
+                        try
+                        {
+                            deviceEntry.connector_uri = portName;
+                            deviceEntry.model = GetUsbDeviceModelName(device);
+                            deviceEntry.serial_num = GetUsbDeviceSerialNumber(device);
+
+                            return deviceEntry;
+                        }
+                        catch(const std::exception & error) {
+                            throw std::runtime_error("Error getting device info from port name given ");
+                        }
+                    }
+                }
+
+                throw std::runtime_error("Device on port name given not found");
+
+            }
         }
     }
 

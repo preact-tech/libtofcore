@@ -8,7 +8,7 @@
  */
 #include "crc32.h"
 #include "serial_connection.hpp"
-#include "device_discovery/device_discovery.hpp"
+#include "tofcore/device_discovery.hpp"
 #include "TofEndian.hpp"
 #include <array>
 #include <boost/scope_exit.hpp>
@@ -116,10 +116,8 @@ struct SerialConnection::Impl
     std::function<void(const std::vector<std::byte>&)> on_measurement_data_ {};
     std::function<void(bool, const std::vector<std::byte>&)> on_command_response_ {};
 
-    // TODOERH: Here!
     Impl(io_service &io, const std::string &portName, uint32_t baud_rate, uint16_t protocolVersion) :
-                // Pass in the port name (default is null)
-                port_(io, tofcore::get_device_info(portName).connector_uri), 
+                port_(io, portName), 
                 response_timer_(io), 
                 protocol_version_(protocolVersion)
     {
@@ -165,9 +163,11 @@ struct SerialConnection::Impl
  *
  * ========================================================================= */
 
-SerialConnection::SerialConnection(boost::asio::io_service &io, const std::string &portName, uint32_t baud_rate, uint16_t protocolVersion) :
-            pimpl { new Impl(io, portName, baud_rate, protocolVersion) }
+SerialConnection::SerialConnection(boost::asio::io_service &io, const std::string &portName, uint32_t baud_rate, uint16_t protocolVersion) //:
 {
+    
+    tofcore::device_info_t deviceInfo = tofcore::get_device_info(portName);
+    this->pimpl = std::unique_ptr<Impl>(new Impl(io, deviceInfo.connector_uri, baud_rate, protocolVersion));
 }
 
 SerialConnection::~SerialConnection()

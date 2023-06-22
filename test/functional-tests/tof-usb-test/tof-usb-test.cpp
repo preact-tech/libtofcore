@@ -14,7 +14,7 @@
 #include <iomanip>
 #include <iostream>
 #include <unistd.h>
-#include "../src/device_discovery/device_discovery.hpp"
+#include "tofcore/device_discovery.hpp"
 
 static std::string devicePort { };
 
