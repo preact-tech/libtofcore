@@ -1,5 +1,5 @@
 /**
- * @file tof-usb-test.cpp
+ * @file tof-discovery.cpp
  *
  * Copyright 2023 PreAct Technologies
  *
