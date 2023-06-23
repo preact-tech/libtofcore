@@ -47,11 +47,14 @@ int main(int argc, char *argv[])
 
     try
     {
-        tofcore::device_info_t device = tofcore::get_device_info(devicePort);
+        std::vector<tofcore::device_info_t> devices = tofcore::find_all_devices();
 
-        std::cout << "Device URI: " << device.connector_uri << std::endl
-                  << "Model Name: " << device.model << std::endl
-                  << "Serial Number: " << device.serial_num << std::endl;
+        for (auto devPtr = devices.begin(); devPtr != devices.end(); ++devPtr)
+        {
+            std::cout << "Device URI: " << devPtr->connector_uri << std::endl
+                      << "Model Name: " << devPtr->model << std::endl
+                      << "Serial Number: " << devPtr->serial_num << std::endl;
+        }
     }
 
     catch(const std::exception & error)

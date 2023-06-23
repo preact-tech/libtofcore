@@ -51,6 +51,31 @@ static void subscribeMeasurement(tofcore::Sensor& s, tofcore::Sensor::on_measure
     s.subscribeMeasurement(f);
 }
 
+/// @brief Get all connected PreAct Devices
+/// @return std::vector<device_info>, list of connected PreAct devices
+static auto findAllDevices()
+{
+    // Get all PreAct Devices
+    std::vector<tofcore::device_info_t> devices = tofcore::find_all_devices();
+
+    if(devices.empty())
+    {
+        throw std::runtime_error("An error occured while getting connected devices");
+    }
+
+    //Use static and a lambda to create the Device namedtuple type only once.
+    static auto Devices_type = []() {
+        auto namedTuple_attr = pybind11::module::import("collections").attr("namedtuple");
+        py::list fields;
+        fields.append("connector_uri");
+        fields.append("serial_num");
+        fields.append("model");
+        return namedTuple_attr("Devices", fields);
+    }();
+
+    return Devices_type(devices[0].connector_uri, devices[0].serial_num, devices[0].model);
+}
+
 /* DEPRECATED - use getSensorInfo() instead. */
 static auto getSoftwareVersion(tofcore::Sensor& s)
 {
@@ -119,7 +144,7 @@ static auto getAccelerometerData(tofcore::Sensor& s)
 
 static auto getPixelRays(tofcore::Sensor& s)
 {
-    //Use static and a lambda to create the AccelerometerData namedtuple type only once.
+    //Use static and a lambda to create the PixelRays namedtuple type only once.
     static auto PixelRays_type = []() {
         auto namedTuple_attr = pybind11::module::import("collections").attr("namedtuple");
         py::list fields;
@@ -357,6 +382,7 @@ PYBIND11_MODULE(pytofcore, m) {
         .def_property_readonly("chip_info", &getChipInformation, "Obtain chip info. Returns namedtuple with fields wafer_id and chip_id", py::call_guard<py::gil_scoped_release>())
         .def_property_readonly("accelerometer_data", &getAccelerometerData, "Obtain acceleromter info. Each call turns a new sample from the accelerometer. The same is a namedtuple with fields x, y, z, range_g", py::call_guard<py::gil_scoped_release>())
         .def_property_readonly("pixel_rays", &getPixelRays, "Obtain unit vector ray information for all pixels based on the lens information stored on the sensor. Returns a namedtuple with fields x, y, z. Each field is a list of floats of length width x height.", py::call_guard<py::gil_scoped_release>())
+        .def_property_readonly("find_all_devices", &findAllDevices, "Get a list of all connected devices", py::call_guard<py::gil_scoped_release>())
         .def("stop_stream", &tofcore::Sensor::stopStream, "Command the sensor to stop streaming", py::call_guard<py::gil_scoped_release>())
         .def("stream_dcs", &tofcore::Sensor::streamDCS, "Command the sensor to stream DCS frames", py::call_guard<py::gil_scoped_release>())
         .def("stream_dcs_ambient", &tofcore::Sensor::streamDCSAmbient, "Command the sensor to stream DCS and Ambient frames. Ambient frames are of type Frame::DataType::GRAYSCALE", py::call_guard<py::gil_scoped_release>())

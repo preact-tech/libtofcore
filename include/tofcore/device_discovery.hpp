@@ -34,11 +34,6 @@ namespace tofcore
     /// @return std::vector<device_info_t>, a list of connected devices, their connection uri, serial number, and model name/number 
     std::vector<device_info_t> find_all_devices();
 
-    /// @brief Get device info form port
-    /// @param defaultPort, default port name for device, if left empty, a device scan will be performed 
-    /// @return device_info_t, info from connected device, its connection uri, serial number, and model name/number 
-    device_info_t get_device_info(const std::string defaultPort);
-
 } //end namespace
 
 #endif // _DEVICE_DISCOVERY_H_

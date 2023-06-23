@@ -9,6 +9,7 @@
  */
 #include "CommandTypes.hpp"
 #include "Measurement_T.hpp"
+#include "device_discovery.hpp"
 #include "span.hpp"
 #include <chrono>
 #include <cstdint>
