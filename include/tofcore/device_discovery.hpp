@@ -9,13 +9,8 @@
 #ifndef _DEVICE_DISCOVERY_H_
 #define _DEVICE_DISCOVERY_H_
 
-#include "span.hpp"
-#include <chrono>
-#include <functional>
-#include <memory>
-#include <optional>
 #include <vector>
-#include <cstdint>
+#include <string>
 
 namespace tofcore
 {
