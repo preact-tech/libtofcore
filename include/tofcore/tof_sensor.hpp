@@ -9,6 +9,7 @@
  */
 #include "CommandTypes.hpp"
 #include "Measurement_T.hpp"
+#include "device_discovery.hpp"
 #include "span.hpp"
 #include <chrono>
 #include <cstdint>
@@ -21,7 +22,7 @@ namespace tofcore
 {
 
 constexpr uint32_t      DEFAULT_BAUD_RATE           { 115200 };
-constexpr const char*   DEFAULT_PORT_NAME           { "/dev/ttyACM0" };
+constexpr const char*   DEFAULT_PORT_NAME           { "" }; 
 constexpr uint16_t      DEFAULT_PROTOCOL_VERSION    { 1 };
 
 class Sensor

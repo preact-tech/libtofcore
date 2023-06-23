@@ -6,6 +6,7 @@
  * Implements API for libtofcore
  */
 #include "comm_serial/serial_connection.hpp"
+#include "tofcore/device_discovery.hpp"
 #include "tof_sensor.hpp"
 #include "TofCommand_IF.hpp"
 #include "TofEndian.hpp"
@@ -45,9 +46,29 @@ struct Sensor::Impl
  *
  * ######################################################################### */
 
-Sensor::Sensor(uint16_t protocolVersion, const std::string &portName, uint32_t baudrate) :
-            pimpl { new Impl { protocolVersion, portName, baudrate } }
+Sensor::Sensor(uint16_t protocolVersion, const std::string &portName, uint32_t baudrate) 
 {
+    std::string connector_uri;
+    // If no port name given. Find first PreAct device avaiable
+    if (portName.empty()){
+
+        // Get all PreAct Devices
+        std::vector<device_info_t> devices = find_all_devices();
+        
+        // No PreAct Devices
+        if (devices.empty()){
+            throw std::runtime_error("No PreAct Devices Found");
+        }
+
+        connector_uri = devices[0].connector_uri;
+    }
+
+    // Use port name given
+    else {
+        connector_uri = portName;
+    }
+
+    this->pimpl = std::unique_ptr<Impl>(new Impl(protocolVersion, connector_uri, baudrate));
     pimpl->init();
 }
 
