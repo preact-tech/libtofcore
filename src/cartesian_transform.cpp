@@ -716,7 +716,7 @@ void CartesianTransform::initLensTransform(int width, int height, const std::vec
 
 
 // function for cartesian transfrmation
-void CartesianTransform::transformPixel(uint srcX, uint srcY, double srcZ, double &destX, double &destY, double &destZ)
+void CartesianTransform::transformPixel(unsigned int srcX, unsigned int srcY, double srcZ, double &destX, double &destY, double &destZ)
 {
     destX = srcZ * xUA[srcX][srcY];
     destY = srcZ * yUA[srcX][srcY];

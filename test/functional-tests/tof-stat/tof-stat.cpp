@@ -8,7 +8,7 @@
 #include "tofcore/tof_sensor.hpp"
 #include <csignal>
 #include <iostream>
-#include <unistd.h>
+#include <boost/program_options.hpp>
 
 using namespace TofComm;
 using namespace tofcore;
@@ -21,36 +21,22 @@ static bool storeSettings { false };
 
 static void parseArgs(int argc, char *argv[])
 {
-    int opt;
-    while ((opt = getopt(argc, argv, "b:hp:sv:")) != -1)
-    {
-        switch (opt)
-        {
-            case 'b':
-                baudRate = atoi(optarg);
-                break;
-            case 'h':
-                std::cout   << "Read various sensor status data." << std::endl << std::endl
-                            << "Usage: " << argv[0] << " [-b <baud>] [-h] [-p <port>] [-s] [-v <ver>]" << std::endl
-                            << "  -b <baud>     Set baud rate (UART). Default = "<< DEFAULT_BAUD_RATE << std::endl
-                            << "  -h            Print help and exit" << std::endl
-                            << "  -p <port>     Set port name. Default = "<< DEFAULT_PORT_NAME << std::endl
-                            << "  -s            Have sensor store current sensor settings in persistent memory" << std::endl
-                            << "  -v <ver>      Use version <ver> of the command protocol. Default = " << DEFAULT_PROTOCOL_VERSION << std::endl
-                            << std::endl << std::endl;
-                exit(0);
-            case 'p':
-                  devicePort = optarg;
-                  break;
-            case 's':
-                storeSettings = true;
-                break;
-            case 'v':
-                protocolVersion = atoi(optarg);
-                break;
-            default:
-                break;
-        }
+    namespace po = boost::program_options;
+    po::options_description desc("Tof sensor status");
+    desc.add_options()
+        ("help,h", "produce help message")
+        ("device-uri,p", po::value<std::string>(&devicePort))
+        ("protocol-version,v", po::value<uint16_t>(&protocolVersion)->default_value(DEFAULT_PROTOCOL_VERSION))
+        ("baud-rate,b", po::value<uint32_t>(&baudRate)->default_value(DEFAULT_BAUD_RATE))
+        ("store-settings,s", po::bool_switch(&storeSettings), "Have sensor store current sensor settings in persistent memory")
+        ;
+
+    po::variables_map vm;
+    po::store(po::parse_command_line(argc, argv, desc), vm);
+    po::notify(vm);
+    if (vm.count("help")) {
+        std::cout << desc << "\n";
+        exit(0);
     }
 }
 
@@ -68,7 +54,9 @@ int main(int argc, char *argv[])
      * perform a controlled shutdown.
      */
     signal(SIGINT, signalHandler);
+    #if defined(SIGQUIT)
     signal(SIGQUIT, signalHandler);
+    #endif
     {
         tofcore::Sensor sensor { protocolVersion, devicePort, baudRate };
         /*

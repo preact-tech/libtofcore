@@ -27,7 +27,9 @@ add_library(ToFCore::tofcore ALIAS tofcore)
 ###################
 # Compiler Options:
 ###################
-target_compile_options(tofcore PUBLIC -Wall -Wextra -fPIC -g)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_compile_options(tofcore PUBLIC -Wall -Wextra)
+endif()
 target_compile_features(tofcore PUBLIC cxx_std_17)  # Require C99 and C++17
 
 
@@ -52,6 +54,7 @@ target_include_directories(tofcore
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/tofcore>
     PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${Boost_INCLUDE_DIRS}
 )
 
 
@@ -132,9 +135,9 @@ add_subdirectory(test)
 add_subdirectory(wrappers)
 
 # Include HealthCheck module
-include(HealthCheck)
-set(PREACT_CPPCHECK_ENABLE "ON")
-set(PREACT_CPPCHECK_CHECKS "all")
-set(PREACT_CPPCHECK_EXCLUDE_PATTERN "(cmake|test|wrappers|examples)")
-list(APPEND PREACT_CPPCHECK_ALT_SOURCE_PATHS "${CMAKE_CURRENT_SOURCE_DIR}")
-health_check_add_target(tofcore)
+# include(HealthCheck)
+# set(PREACT_CPPCHECK_ENABLE "ON")
+# set(PREACT_CPPCHECK_CHECKS "all")
+# set(PREACT_CPPCHECK_EXCLUDE_PATTERN "(cmake|test|wrappers|examples)")
+# list(APPEND PREACT_CPPCHECK_ALT_SOURCE_PATHS "${CMAKE_CURRENT_SOURCE_DIR}")
+# health_check_add_target(tofcore)
