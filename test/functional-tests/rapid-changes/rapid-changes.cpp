@@ -30,7 +30,7 @@ static void parseArgs(int argc, char *argv[])
         ("device-uri,p", po::value<std::string>(&devicePort))
         ("protocol-version,v", po::value<uint16_t>(&protocolVersion)->default_value(DEFAULT_PROTOCOL_VERSION))
         ("baud-rate,b", po::value<uint32_t>(&baudRate)->default_value(DEFAULT_BAUD_RATE))
-        ("repeat,r", po::value<uint32_t>(&repetitions)->default_VALUE(100000))
+        ("repeat,r", po::value<uint32_t>(&repetitions)->default_value(100000))
         ;
 
     po::variables_map vm;
