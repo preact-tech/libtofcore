@@ -133,3 +133,12 @@ export(PACKAGE ToFCore)
 enable_testing()
 add_subdirectory(test)
 add_subdirectory(wrappers)
+
+
+include(HealthCheck OPTIONAL RESULT_VARIABLE HEALTH_CHECK_INCLUDED)
+if(HEALTH_CHECK_INCLUDED)
+    set(PREACT_CPPCHECK_CHECKS "all")
+    set(PREACT_CPPCHECK_EXCLUDE_PATTERN "(cmake|test|wrappers|examples)")
+    set(PREACT_CPPCHECK_ALT_SOURCE_PATHS "${CMAKE_CURRENT_SOURCE_DIR}")
+    health_check_add_target(tofcore)
+endif()
