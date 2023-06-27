@@ -173,7 +173,7 @@ bool Sensor::getSettings(std::string& jsonSettings)
     const auto& answer = *result;
     const auto size = answer.size();
 
-    jsonSettings = std::string(reinterpret_cast<const char*>(answer.data()+1), size);
+    jsonSettings = std::string(reinterpret_cast<const char*>(answer.data()+1), size-1);
 
     return true;
 }
