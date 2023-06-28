@@ -1,5 +1,5 @@
 #include "tof_sensor.hpp"
-
+#include "device_discovery.hpp"
 #include <pybind11/functional.h>
 #include <pybind11/iostream.h>
 #include <pybind11/pybind11.h>
@@ -119,7 +119,7 @@ static auto getAccelerometerData(tofcore::Sensor& s)
 
 static auto getPixelRays(tofcore::Sensor& s)
 {
-    //Use static and a lambda to create the AccelerometerData namedtuple type only once.
+    //Use static and a lambda to create the PixelRays namedtuple type only once.
     static auto PixelRays_type = []() {
         auto namedTuple_attr = pybind11::module::import("collections").attr("namedtuple");
         py::list fields;
@@ -421,4 +421,17 @@ PYBIND11_MODULE(pytofcore, m) {
     #else
         m.attr("__version__") = "dev";
     #endif
+
+    py::class_<tofcore::device_info_t>(m, "DeviceInfo")
+        .def_readonly("connector_uri", &tofcore::device_info_t::connector_uri)
+        .def_readonly("serial_num", &tofcore::device_info_t::serial_num)
+        .def_readonly("model", &tofcore::device_info_t::model)
+        .def("__repr__",
+            [](const tofcore::device_info_t &d) {
+                return "pytofcore.DeviceInfo(connector_uri:'" + d.connector_uri
+                       + "', serial_num:'" + d.serial_num + "', model:'" + d.model + "')";
+            });
+
+    m.def("find_all_devices", &tofcore::find_all_devices, "Get a list of all connected devices");
+
 }

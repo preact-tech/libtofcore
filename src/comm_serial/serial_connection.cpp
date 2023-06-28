@@ -116,8 +116,11 @@ struct SerialConnection::Impl
     std::function<void(bool, const std::vector<std::byte>&)> on_command_response_ {};
 
     Impl(io_service &io, const std::string &portName, uint32_t baud_rate, uint16_t protocolVersion) :
-                port_(io, portName), response_timer_(io), protocol_version_(protocolVersion)
+                port_(io, portName), 
+                response_timer_(io), 
+                protocol_version_(protocolVersion)
     {
+
         this->port_.set_option(serial_port_base::baud_rate(baud_rate));
         this->port_.set_option(serial_port_base::parity(serial_port_base::parity::none));
         this->port_.set_option(serial_port_base::stop_bits(serial_port_base::stop_bits::one));
@@ -160,8 +163,9 @@ struct SerialConnection::Impl
  * ========================================================================= */
 
 SerialConnection::SerialConnection(boost::asio::io_service &io, const std::string &portName, uint32_t baud_rate, uint16_t protocolVersion) :
-            pimpl { new Impl(io, portName, baud_rate, protocolVersion) }
+    pimpl { new Impl(io, portName, baud_rate, protocolVersion) }
 {
+    
 }
 
 SerialConnection::~SerialConnection()

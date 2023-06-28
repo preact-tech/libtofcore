@@ -34,6 +34,7 @@ target_compile_features(tofcore PUBLIC cxx_std_17)  # Require C99 and C++17
 target_sources(tofcore
   PRIVATE
     src/comm_serial/serial_connection.cpp
+    src/device_discovery/device_discovery.cpp
     src/measurement.cpp
     src/tof_sensor.cpp
     src/cartesian_transform.cpp
@@ -58,6 +59,7 @@ target_link_libraries(tofcore
   PUBLIC
   PRIVATE
   # Boost::regex example of private dependency
+  usbp-1
 )
 
 include(GenerateExportHeader)
