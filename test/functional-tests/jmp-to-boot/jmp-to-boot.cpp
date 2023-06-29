@@ -9,50 +9,42 @@
 #include <csignal>
 #include <iomanip>
 #include <iostream>
-#include <unistd.h>
+#include <boost/program_options.hpp>
 
 using namespace tofcore;
+namespace po = boost::program_options;
 
 constexpr uint16_t FALLBACK_LOADER_TOKEN { 0x04a5 };
 
 static uint32_t baudRate { DEFAULT_BAUD_RATE };
 static std::string devicePort { DEFAULT_PORT_NAME };
 static volatile bool exitRequested { false };
-static const uint16_t protocolVersion { 1 };
+static uint16_t protocolVersion { 1 };
 static uint16_t token = 0;
 
 static void parseArgs(int argc, char *argv[])
 {
-    int opt;
-    while ((opt = getopt(argc, argv, "b:hfp:t:")) != -1)
+    po::options_description desc("Command sensor to jump to bootloader");
+    desc.add_options()
+        ("help,h", "produce help message")
+        ("device-uri,p", po::value<std::string>(&devicePort))
+        ("protocol-version,v", po::value<uint16_t>(&protocolVersion)->default_value(DEFAULT_PROTOCOL_VERSION))
+        ("baud-rate,b", po::value<uint32_t>(&baudRate)->default_value(DEFAULT_BAUD_RATE))
+        ("fallback-loader,f", "Jump to fallback loader to perform update of the primary loader")
+        ("token,t", po::value<uint16_t>(&token), "Pass 16bit token value with command to peform special bootloader operations")
+        ;
+
+    po::variables_map vm;
+    po::store(po::parse_command_line(argc, argv, desc), vm);
+    po::notify(vm);
+    if (vm.count("help")) {
+        std::cout << desc << "\n";
+        exit(0);
+    }
+
+    if (vm.count("fallback-loader"))
     {
-        switch (opt)
-        {
-            case 'b':
-                baudRate = atoi(optarg);
-                break;
-            case 'h':
-                std::cout   << "Command sensor to jump to bootloader" << std::endl << std::endl
-                            << "Usage: " << argv[0] << " [-b <baud>] [-h] [-p <port>]" << std::endl
-                            << "  -b <baud>     Set baud rate (UART). Default = "<< DEFAULT_BAUD_RATE << std::endl
-                            << "  -h            Print help and exit" << std::endl
-                            << "  -p <port>     Set port name. Default = "<< DEFAULT_PORT_NAME << std::endl
-                            << "  -f            Jump to fallback loader" << std::endl
-                            << "  -t <token>    Pass 16bit token value with command to peform special bootloader operations" << std::endl
-                            << std::endl << std::endl;
-                exit(0);
-            case 'p':
-                devicePort = optarg;
-                break;
-            case 'f':
-                token = FALLBACK_LOADER_TOKEN;
-                break;
-            case 't':
-                token = strtoul(optarg, nullptr, 0);
-                break;
-            default:
-                break;
-        }
+        token = FALLBACK_LOADER_TOKEN;
     }
 }
 
@@ -70,7 +62,9 @@ int main(int argc, char *argv[])
      * perform a controlled shutdown.
      */
     signal(SIGINT, signalHandler);
+    #if defined(SIGQUIT)
     signal(SIGQUIT, signalHandler);
+    #endif
     {
         tofcore::Sensor sensor { protocolVersion, devicePort, baudRate };
         if(0 == token)

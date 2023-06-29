@@ -8,63 +8,52 @@
 #include "tofcore/tof_sensor.hpp"
 #include <csignal>
 #include <iostream>
-#include <unistd.h>
+#include <boost/program_options.hpp>
 
-using namespace TofComm;
+namespace po = boost::program_options;
+
 using namespace tofcore;
 
 static uint32_t baudRate { DEFAULT_BAUD_RATE };
 static std::string devicePort { DEFAULT_PORT_NAME };
 static volatile bool exitRequested { false };
-static bool flipHorizontal { false };
-static bool flipVertical { false };
+static uint16_t flipHorizontal { 0 };
+static uint16_t flipVertical { 0 };
 static uint16_t protocolVersion { DEFAULT_PROTOCOL_VERSION };
 static bool setHorizontal { false };
 static bool setVertical { false };
 static bool storeSettings { false };
 
+
+
 static void parseArgs(int argc, char *argv[])
 {
-    int opt;
-    while ((opt = getopt(argc, argv, "b:hH:p:sv:V:")) != -1)
+    po::options_description desc("Set/Get horizontal/vertical flip state.");
+    desc.add_options()
+        ("help,h", "produce help message")
+        ("device-uri,p", po::value<std::string>(&devicePort))
+        ("protocol-version,v", po::value<uint16_t>(&protocolVersion)->default_value(DEFAULT_PROTOCOL_VERSION))
+        ("baud-rate,b", po::value<uint32_t>(&baudRate)->default_value(DEFAULT_BAUD_RATE))
+        ("horizontal-flip,H", po::value<uint16_t>(&flipHorizontal), "Turn horizontal flip off/on")
+        ("vertical-flip,V", po::value<uint16_t>(&flipVertical), "turn vertical flip off/on")
+        ("store-settings,s", po::bool_switch(&storeSettings), "Store settings in persistent memory")
+        ;
+
+    po::variables_map vm;
+    po::store(po::parse_command_line(argc, argv, desc), vm);
+    po::notify(vm);
+    if (vm.count("help")) {
+        std::cout << desc << "\n";
+        exit(0);
+    }
+
+    if (vm.count("horizontal-flip"))
     {
-        switch (opt)
-        {
-            case 'b':
-                baudRate = atoi(optarg);
-                break;
-            case 'h':
-                std::cout   << "Set/Get horizontal/vertical flip state." << std::endl << std::endl
-                            << "Usage: " << argv[0] << " [-b <baud>] [-h] [-H(0|1)] [-p <port>] [-s] [-v <ver>] [-V(0|1)]" << std::endl
-                            << "  -b <baud>     Set baud rate (UART). Default = "<< DEFAULT_BAUD_RATE << std::endl
-                            << "  -h            Print help and exit" << std::endl
-                            << "  -H 0|1        Turn horizontal flip off/on" << std::endl
-                            << "  -p <port>     Set port name. Default = "<< DEFAULT_PORT_NAME << std::endl
-                            << "  -s            Store settings in persistent memory" << std::endl
-                            << "  -v <ver>      Use version <ver> of the command protocol. Default = " << DEFAULT_PROTOCOL_VERSION << std::endl
-                            << "  -V 0|1        Turn vertical flip off/on" << std::endl
-                            << std::endl << std::endl;
-                exit(0);
-            case 'H':
-                setHorizontal = true;
-                flipHorizontal = atoi(optarg);
-                break;
-            case 'p':
-                  devicePort = optarg;
-                  break;
-            case 'v':
-                protocolVersion = atoi(optarg);
-                break;
-            case 's':
-                storeSettings = true;
-                break;
-            case 'V':
-                setVertical = true;
-                flipVertical = atoi(optarg);
-                break;
-            default:
-                break;
-        }
+        setHorizontal = true;
+    }
+    if (vm.count("vertical-flip"))
+    {
+        setVertical = true;
     }
 }
 
@@ -82,7 +71,9 @@ int main(int argc, char *argv[])
      * perform a controlled shutdown.
      */
     signal(SIGINT, signalHandler);
+    #if defined(SIGQUIT)
     signal(SIGQUIT, signalHandler);
+    #endif
     {
         tofcore::Sensor sensor { protocolVersion, devicePort, baudRate };
 

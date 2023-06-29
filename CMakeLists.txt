@@ -17,6 +17,14 @@ include(cmake/tof_options.cmake)
 # Find system dependencies
 set(MIN_BOOST_VERSION 1.70)
 find_package(Boost ${MIN_BOOST_VERSION} REQUIRED COMPONENTS)
+
+#####
+# TODO: Hack to find libusb lib and headers, assuming they were installed under C:\Program Files (x86)/libusbp
+set(CMAKE_PREFIX_PATH "C:/Program Files (x86)/libusbp")
+find_path(LIBUSBP_INCLUDE "libusbp-1/libusbp.h")
+find_library(LIBUSBP_LIB usbp-1)
+message(WARNING "LIBUSBP_INCLUDE=${LIBUSBP_INCLUDE}")
+message(WARNING "LIBUSBP_LIB=${LIBUSBP_LIB}")
 ###########################
 
 add_library(tofcore)
@@ -30,8 +38,11 @@ add_library(ToFCore::tofcore ALIAS tofcore)
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_compile_options(tofcore PUBLIC -Wall -Wextra)
 endif()
-target_compile_features(tofcore PUBLIC cxx_std_17)  # Require C99 and C++17
+if(MSVC)
+    target_compile_definitions(tofcore PUBLIC WINVER=0x0A00 _WIN32_WINNT=0x0A00)
+endif()
 
+target_compile_features(tofcore PUBLIC cxx_std_17)  # Require C99 and C++17
 
 target_sources(tofcore
   PRIVATE
@@ -40,8 +51,8 @@ target_sources(tofcore
     src/measurement.cpp
     src/tof_sensor.cpp
     src/cartesian_transform.cpp
-    src/comm_ethernet/tcp_connection.cpp
-    src/comm_ethernet/udp_server.cpp
+    # src/comm_ethernet/tcp_connection.cpp
+    # src/comm_ethernet/udp_server.cpp
     src/crc32.cpp
     src/klv_decoder.cpp
 )
@@ -55,6 +66,7 @@ target_include_directories(tofcore
     PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${Boost_INCLUDE_DIRS}
+    ${LIBUSBP_INCLUDE}
 )
 
 
@@ -62,7 +74,7 @@ target_link_libraries(tofcore
   PUBLIC
   PRIVATE
   # Boost::regex example of private dependency
-  usbp-1
+  ${LIBUSBP_LIB}
 )
 
 include(GenerateExportHeader)
