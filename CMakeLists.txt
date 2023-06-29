@@ -6,7 +6,7 @@
 #  - https://github.com/pabloariasal/modern-cmake-sample/tree/master/libjsonutils
 ##
 cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
-project(libToFCore VERSION 1.0.0 LANGUAGES CXX)
+project(libToFCore VERSION 1.0.1 LANGUAGES CXX)
 
 #Make sure that custom modules are found
 list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_SOURCE_DIR}/cmake)
