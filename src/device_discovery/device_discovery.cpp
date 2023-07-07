@@ -15,7 +15,7 @@
 #include <iostream>
 #include <mutex>
 #include <thread>
-#include <libusbp-1/libusbp.hpp>
+#include <libusbp.hpp>
 
 namespace tofcore
 {
