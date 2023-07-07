@@ -41,7 +41,7 @@ def callback(frame, **kwargs) :
 
 callback.counter = 0
 
-s.set_integration_time(1, 0, 0, 1)
+s.set_integration_time(1, 0, 0)
 s.subscribe_measurement(callback)
 s.stream_dcs()
 t_0 = timeit.default_timer()

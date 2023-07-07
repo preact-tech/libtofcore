@@ -310,9 +310,15 @@ bool Sensor::setHDRMode(uint8_t mode)
     return this->send_receive(COMMAND_SET_HDR, mode).has_value();
 }
 
-bool Sensor::setIntegrationTime(uint16_t low, uint16_t mid, uint16_t high, uint16_t gray)
+bool Sensor::setIntegrationTime(uint16_t low)
 {
-    uint16_t params[4] = {native_to_big(low), native_to_big(mid), native_to_big(high), native_to_big(gray)};
+    uint16_t params[] = {native_to_big(low)};
+    return this->send_receive(COMMAND_SET_INT_TIMES, {(std::byte*)params, sizeof(params)}).has_value();
+}
+
+bool Sensor::setIntegrationTimes(uint16_t low, uint16_t mid, uint16_t high)
+{
+    uint16_t params[] = {native_to_big(low), native_to_big(mid), native_to_big(high)};
     return this->send_receive(COMMAND_SET_INT_TIMES, {(std::byte*)params, sizeof(params)}).has_value();
 }
 

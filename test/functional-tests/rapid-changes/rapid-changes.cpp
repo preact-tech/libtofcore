@@ -74,8 +74,9 @@ int main(int argc, char *argv[])
         for (uint32_t i = 0; i < repetitions; ++i)
         {
             ++setCount;
-            if (!sensor.setIntegrationTime((100 + integrationOffset), (200 + integrationOffset),
-                                           (300 + integrationOffset), (1000 + integrationOffset)))
+            if (!sensor.setIntegrationTimes((100 + integrationOffset),
+                                           (200 + integrationOffset),
+                                           (300 + integrationOffset)))
             {
                 std::cerr << "setIntegration() FAILED on " << setCount << "th attempt" << std::endl;
                 break;
