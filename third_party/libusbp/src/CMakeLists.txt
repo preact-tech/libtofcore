@@ -56,7 +56,7 @@ endif ()
 add_library (usbp ${sources})
 
 include_directories (
-  "${CMAKE_SOURCE_DIR}/include"
+  "${PROJECT_SOURCE_DIR}/include"
   "${CMAKE_CURRENT_SOURCE_DIR}"
   "${CMAKE_CURRENT_BINARY_DIR}"
 )
@@ -109,6 +109,21 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libusbp-${LIBUSBP_VERSION_MAJOR}.pc"
   DESTINATION lib/pkgconfig)
 
 install(TARGETS usbp
+  EXPORT usbp-targets
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib)
+
+  #Export the targets to a script
+install(EXPORT usbp-targets
+  FILE
+    usbpTargets.cmake
+  DESTINATION
+    lib/cmake/uspbp
+)
+
+export(EXPORT usbp-targets
+    FILE ${CMAKE_CURRENT_BINARY_DIR}/usbpTargets.cmake)
+
+#Register package in the User Package Registry
+export(PACKAGE usbp)
