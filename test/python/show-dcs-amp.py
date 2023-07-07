@@ -46,6 +46,9 @@ def measurement_callback(data):
         amp_uint8 = (255 * amp_scaled).astype(np.uint8)
         cv.imshow('Amplitude - DCS Ambient', amp_uint8)
         measurement_callback.SWITCH = True
+    if args.show_illmn_info:
+        illmn_info = data.illuminator_info
+        print(illmn_info)
     if cv.waitKey(1)&0xFF == ord('q'):
         measurement_callback.EXIT = True
 
@@ -66,6 +69,7 @@ parser.add_argument("-V", "--vFlip", help="Set Vertical flip state", type=int, d
 parser.add_argument("-s", "--cpu_serial", help="Set CPU board Serial", type=str, default=None)
 parser.add_argument("-S", "--dev_serial", help="Set Device serial", type=str, default=None)
 parser.add_argument("-i", "--illmn_serial", help="Set Illuminator serial", type=int, default=0)
+parser.add_argument("-I", "--show_illmn_info", default=False, action='store_true', help="Show the illuminator info for every frame.")
 args = parser.parse_args()
 
 if(args.cpu_serial):

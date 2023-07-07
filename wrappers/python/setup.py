@@ -131,7 +131,7 @@ libtofcore_root = os.path.abspath(os.path.join(script_dir, os.path.pardir, os.pa
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
     name="pytofcore",
-    version="0.0.1",
+    version="1.0.1",
     author="Miguel Gonzalez",
     author_email="miguel.gonzalez@preact-tech.com",
     description="Module for interfacing with with PreAct ToF devices",

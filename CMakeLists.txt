@@ -6,7 +6,7 @@
 #  - https://github.com/pabloariasal/modern-cmake-sample/tree/master/libjsonutils
 ##
 cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
-project(libToFCore VERSION 1.0.0 LANGUAGES CXX)
+project(libToFCore VERSION 1.0.1 LANGUAGES CXX)
 
 #Make sure that custom modules are found
 list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_SOURCE_DIR}/cmake)
@@ -18,13 +18,7 @@ include(cmake/tof_options.cmake)
 set(MIN_BOOST_VERSION 1.70)
 find_package(Boost ${MIN_BOOST_VERSION} REQUIRED COMPONENTS)
 
-#####
-# TODO: Hack to find libusb lib and headers, assuming they were installed under C:\Program Files (x86)/libusbp
-set(CMAKE_PREFIX_PATH "C:/Program Files (x86)/libusbp")
-find_path(LIBUSBP_INCLUDE "libusbp-1/libusbp.h")
-find_library(LIBUSBP_LIB usbp-1)
-message(WARNING "LIBUSBP_INCLUDE=${LIBUSBP_INCLUDE}")
-message(WARNING "LIBUSBP_LIB=${LIBUSBP_LIB}")
+add_subdirectory(third_party/libusbp EXCLUDE_FROM_ALL)
 ###########################
 
 add_library(tofcore)
@@ -65,17 +59,12 @@ target_include_directories(tofcore
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/tofcore>
     PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${Boost_INCLUDE_DIRS}
-    ${LIBUSBP_INCLUDE}
+    $(boost_INCLUDE_DIRS)
+    $(CMAKE_CURRENT_SOURCE_DIR)/third_party/libusbp/include
 )
 
 
-target_link_libraries(tofcore
-  PUBLIC
-  PRIVATE
-  # Boost::regex example of private dependency
-  ${LIBUSBP_LIB}
-)
+target_link_libraries(tofcore PRIVATE usbp)
 
 include(GenerateExportHeader)
 generate_export_header(tofcore)
