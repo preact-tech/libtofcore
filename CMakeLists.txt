@@ -33,7 +33,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_compile_options(tofcore PUBLIC -Wall -Wextra)
 endif()
 if(MSVC)
-    target_compile_definitions(tofcore PUBLIC WINVER=0x0A00 _WIN32_WINNT=0x0A00)
+    target_compile_definitions(tofcore PUBLIC WINVER=0x0A00 _WIN32_WINNT=0x0A00 -DLIBUSBP_STATIC)
 endif()
 
 target_compile_features(tofcore PUBLIC cxx_std_17)  # Require C99 and C++17
@@ -51,6 +51,9 @@ target_sources(tofcore
     src/klv_decoder.cpp
 )
 
+target_link_libraries(tofcore PRIVATE Boost::boost)
+target_link_libraries(tofcore PRIVATE usbp)
+
 #Set target properties
 target_include_directories(tofcore
   PUBLIC
@@ -59,12 +62,8 @@ target_include_directories(tofcore
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/tofcore>
     PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
-    $(boost_INCLUDE_DIRS)
-    $(CMAKE_CURRENT_SOURCE_DIR)/third_party/libusbp/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libusbp/include
 )
-
-
-target_link_libraries(tofcore PRIVATE usbp)
 
 include(GenerateExportHeader)
 generate_export_header(tofcore)
