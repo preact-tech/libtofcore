@@ -22,6 +22,7 @@ constexpr uint16_t COMMAND_GET_DISTANCE             = 0x03;
 constexpr uint16_t COMMAND_GET_GRAYSCALE            = 0x05;
 constexpr uint16_t COMMAND_STOP_STREAM              = 0x06;
 constexpr uint16_t COMMAND_GET_DCS                  = 0x07;
+constexpr uint16_t COMMAND_GET_INT_TIMES            = 0x08;
 constexpr uint16_t COMMAND_GET_DCS_AMBIENT          = 0x0B;
 constexpr uint16_t COMMAND_SET_OFFSET               = 0x14;
 constexpr uint16_t COMMAND_SET_MIN_AMPLITUDE        = 0x15;
