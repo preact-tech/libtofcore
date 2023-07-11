@@ -6,7 +6,7 @@
 #  - https://github.com/pabloariasal/modern-cmake-sample/tree/master/libjsonutils
 ##
 cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
-project(libToFCore VERSION 1.0.0 LANGUAGES CXX)
+project(libToFCore VERSION 1.0.1 LANGUAGES CXX)
 
 #Make sure that custom modules are found
 list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_SOURCE_DIR}/cmake)
@@ -17,6 +17,8 @@ include(cmake/tof_options.cmake)
 # Find system dependencies
 set(MIN_BOOST_VERSION 1.70)
 find_package(Boost ${MIN_BOOST_VERSION} REQUIRED COMPONENTS)
+
+add_subdirectory(third_party/libusbp EXCLUDE_FROM_ALL)
 ###########################
 
 add_library(tofcore)
@@ -52,15 +54,11 @@ target_include_directories(tofcore
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/tofcore>
     PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
+    $(CMAKE_CURRENT_SOURCE_DIR)/third_party/libusbp/include
 )
 
 
-target_link_libraries(tofcore
-  PUBLIC
-  PRIVATE
-  # Boost::regex example of private dependency
-  usbp-1
-)
+target_link_libraries(tofcore PRIVATE usbp)
 
 include(GenerateExportHeader)
 generate_export_header(tofcore)
