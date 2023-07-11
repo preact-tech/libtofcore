@@ -199,7 +199,7 @@ public:
 
 
     /// @brief Obtain the sensor (aka imaging chip) temperature information
-    virtual std::optional<std::array<float,4>> sensor_temperatures() const override
+    virtual std::optional<std::array<float,TofComm::KLV_NUM_TEMPERATURES>> sensor_temperatures() const override
     {
         KLVDecoder decoder {m_meta_data.begin(), m_meta_data.end()};
         return decode_sensor_temperatures(decoder);
@@ -207,7 +207,7 @@ public:
 
 
     /// @brief Obtain the integration time settings that were active at the time measurement was acquired.
-    virtual std::optional<std::array<uint16_t,3>> integration_times() const override
+    virtual std::optional<std::array<uint16_t,TofComm::KLV_NUM_INTEGRATION_TIMES>> integration_times() const override
     {
         KLVDecoder decoder {m_meta_data.begin(), m_meta_data.end()};
         return decode_integration_times(decoder);
@@ -252,7 +252,7 @@ public:
 
     /// @brief Get the DLL settings that were active when the measurement was collected.
     ///  DLL settings include: [enabled, coarse step, fine step, finest step]
-    virtual std::optional<std::array<uint8_t, 4>> dll_settings() const override
+    virtual std::optional<std::array<uint8_t, TofComm::KLV_NUM_DLL_BYTES>> dll_settings() const override
     {
         KLVDecoder decoder {m_meta_data.begin(), m_meta_data.end()};
         return decode_dll_settings(decoder);
