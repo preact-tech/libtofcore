@@ -47,8 +47,8 @@ std::optional<std::array<uint8_t, 4>> decode_dll_settings(const KLVDecoder& klv)
 /// @brief Search the provided KLV data for the integration time settings and return the list of values.
 /// @param klv 
 /// @return std::nullopt if the data is not found.
-/// @return std::option<[int0,int1,int2,grayscale_int]> when the data is found
-std::optional<std::array<uint16_t, 4>> decode_integration_times(const KLVDecoder& klv);
+/// @return std::option<[int0,int1,int2]> when the data is found
+std::optional<std::array<uint16_t, 3>> decode_integration_times(const KLVDecoder& klv);
 
 /// @brief Search the provided KLV data for the illuminator info settings and return provide values.
 /// @param klv 

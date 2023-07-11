@@ -395,7 +395,7 @@ PYBIND11_MODULE(pytofcore, m) {
         .def_property_readonly("dcs_data", &get_dcs_view, DCS_DATA_DOCSTRING)
         .def_property_readonly("meta_data", &get_meta_data_view, "obtain memoryview of the raw block of meta-data associated with the measurement (useful for custom decoding of data not otherwise available via the API)")
         .def_property_readonly("sensor_temperatures", &tofcore::Measurement_T::sensor_temperatures, "get imaging sensor temperature data")
-        .def_property_readonly("integration_times", &tofcore::Measurement_T::integration_times, "get integration time settings during capture [int0, int1, int2, grayscale], values actually used depend on type of measuremnt and additional options")
+        .def_property_readonly("integration_times", &tofcore::Measurement_T::integration_times, "get integration time settings during capture [int0, int1, int2], values actually used depend on type of measuremnt and additional options")
         .def_property_readonly("modulation_frequencies", &tofcore::Measurement_T::modulation_frequencies, "get modulation frequency (Hz) settings during capture")
         .def_property_readonly("horizontal_binning", &tofcore::Measurement_T::horizontal_binning, "get horizontal binning setting used during capture, 0 means no binning, values above 1 indicate the amount of subsampling")
         .def_property_readonly("vertical_binning", &tofcore::Measurement_T::vertical_binning, "get vertical binning setting used during capture, 0 means no binning, values above 1 indicate the amount of subsampling")

@@ -207,7 +207,7 @@ public:
 
 
     /// @brief Obtain the integration time settings that were active at the time measurement was acquired.
-    virtual std::optional<std::array<uint16_t,4>> integration_times() const override
+    virtual std::optional<std::array<uint16_t,3>> integration_times() const override
     {
         KLVDecoder decoder {m_meta_data.begin(), m_meta_data.end()};
         return decode_integration_times(decoder);

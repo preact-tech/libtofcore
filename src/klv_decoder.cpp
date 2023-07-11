@@ -64,7 +64,7 @@ std::optional<std::array<uint8_t, 4>> decode_dll_settings(const KLVDecoder& klv)
 }
 
 
-std::optional<std::array<uint16_t,4>> decode_integration_times(const KLVDecoder& klv)
+std::optional<std::array<uint16_t,3>> decode_integration_times(const KLVDecoder& klv)
 {
     auto data = klv.find(TofComm::KLV_INTEGRATION_TIMES_KEY);
     if(data.first == data.second || std::distance(data.first, data.second) != 8) 
@@ -72,8 +72,8 @@ std::optional<std::array<uint16_t,4>> decode_integration_times(const KLVDecoder&
         return std::nullopt;
     }
     //The integration times key value field consist of: 
-    // - 4 uint16_t big endian values in micro-seconds [int0, int1, int2, grayscale]
-    std::array<uint16_t, 4> values;
+    // - 3 uint16_t big endian values in micro-seconds [int0, int1, int2]
+    std::array<uint16_t, 3> values;
     for(size_t i = 0; i != values.size(); ++i)
     {
         auto temp = uint16_t{0};
