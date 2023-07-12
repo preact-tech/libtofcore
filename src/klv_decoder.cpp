@@ -75,6 +75,7 @@ std::optional<std::array<uint16_t,TofComm::KLV_NUM_INTEGRATION_TIMES>> decode_in
     // The integration times key value field consist of up to KLV_NUM_INTEGRATION_TIMES
     // uint16_t big endian values in micro-seconds [int0, int1, int2]
     std::array<uint16_t, TofComm::KLV_NUM_INTEGRATION_TIMES> values;
+    numTimes = std::min(numTimes, TofComm::KLV_NUM_INTEGRATION_TIMES);
     for(size_t i = 0; i < numTimes; ++i)
     {
         auto temp = uint16_t{0};
