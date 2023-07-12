@@ -229,6 +229,8 @@ def test_meta_data_integration_times(dut: pytofcore.Sensor):
         assert int_times, "No integration time data included with the measurement"
         assert len(int_times) == 3, "Not enough integration time values in the meta-data"
         assert TEST_VALUES == int_times, "Incorrect integration time values included in meta-data"
+        int_times = dut.get_integration_times()
+        assert TEST_VALUES == int_times, "Incorrect integration time values from get_integration_times()"
 
     run([11, 22, 33])
     run([100, 0, 0])
