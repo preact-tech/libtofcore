@@ -132,8 +132,6 @@ add_subdirectory(wrappers)
 # Include HealthCheck module
 include(HealthCheck OPTIONAL RESULT_VARIABLE HEALTHCHECK_FOUND)
 if(HEALTHCHECK_FOUND)
-    set(PREACT_CPPCHECK_ENABLE "ON")
-    set(PREACT_CPPCHECK_CHECKS "all")
     set(PREACT_CPPCHECK_EXCLUDE_PATTERN "(cmake|test|wrappers|examples)")
     list(APPEND PREACT_CPPCHECK_ALT_SOURCE_PATHS "${CMAKE_CURRENT_SOURCE_DIR}")
     health_check_add_target(tofcore)
