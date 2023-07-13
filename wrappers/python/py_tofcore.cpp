@@ -194,6 +194,20 @@ static auto getSensorInfo(tofcore::Sensor& s)
 }
 
 
+/// @brief  Helper function to read the integration times from a sensor such that an
+///         exception is thrown if the read fails.
+static auto getSensorIntegrationTimes(tofcore::Sensor& s)
+{
+    auto integrationTimes = s.getIntegrationTimes();
+    if (!integrationTimes)
+    {
+        throw std::runtime_error("An error occured while getting integration times");
+    }
+
+    return integrationTimes;
+}
+
+
 /// @brief Helper function to obtain a memoryview of the distance data in
 ///        a Measurement object
 static auto get_distance_view(const tofcore::Measurement_T &m) 
@@ -368,7 +382,9 @@ PYBIND11_MODULE(pytofcore, m) {
         .def("set_binning", &tofcore::Sensor::setBinning, "Set horizontal and vertical binning settings on sensor", py::arg("vertical"), py::arg("horizontal"), py::call_guard<py::gil_scoped_release>())
         .def("set_roi", &tofcore::Sensor::setRoi, "Set region of interest pixel area on the sensor", py::arg("x0"), py::arg("y0"), py::arg("x1"), py::arg("y1"), py::call_guard<py::gil_scoped_release>())
         .def("set_integration_times", &tofcore::Sensor::setIntegrationTimes, "Set all integration time parameters on the sensor", py::arg("low"), py::arg("mid"), py::arg("high"), py::call_guard<py::gil_scoped_release>())
-        .def("get_integration_times", &tofcore::Sensor::getIntegrationTimes, "query the device for the currently configured integration time settings", py::call_guard<py::gil_scoped_release>())        .def("set_modulation", &tofcore::Sensor::setModulation, "Set the modulation frequency to use during TOF measurements", py::arg("index"), py::arg("channel"), py::call_guard<py::gil_scoped_release>())
+        .def("get_integration_times", &getSensorIntegrationTimes, "query the device for the currently configured integration time settings", py::call_guard<py::gil_scoped_release>())
+        .def("set_hdr_mode", &tofcore::Sensor::setHDRMode, "Set the High Dynamic Range mode on the sensor", py::arg("mode"), py::call_guard<py::gil_scoped_release>())
+        .def("set_modulation", &tofcore::Sensor::setModulation, "Set the modulation frequency to use during TOF measurements", py::arg("index"), py::arg("channel"), py::call_guard<py::gil_scoped_release>())
         .def("set_filter", &tofcore::Sensor::setFilter, "Configure filter applied by sensor on data returned", py::call_guard<py::gil_scoped_release>())
         .def("subscribe_measurement", &subscribeMeasurement, "Set a function object to be called when new measurement data is received", py::arg("callback"))
         .def("get_sensor_info", &getSensorInfo, "Get the sensor version and build info")
