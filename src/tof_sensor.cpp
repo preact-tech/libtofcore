@@ -55,39 +55,19 @@ struct Sensor::Impl
     /// Method used to initiate streaming of measurement data and in the case
     ///   of streaming via polling keep measurement data going.
     /// 
-    /// @param start_new_stream set to true when initiating a new stream, false 
-    ///   when used to request next measurement via polling
     /// @param measurement_command The measurement command ID to use in the request message
-    void request_measurement(const bool start_new_stream, uint16_t measurement_command = 0)
+    void request_measurement_stream(uint16_t measurement_command)
     {
-        if(start_new_stream)
-        {
-            this->measurement_command_ = measurement_command;
-            #if defined(_WIN32)
-            stream_via_polling_ = true;
-            #else
-            stream_via_polling_ = false;
-            #endif
-        }
+        this->measurement_command_ = measurement_command;
+        #if defined(_WIN32)
+        stream_via_polling_ = true;
+        #else
+        stream_via_polling_ = false;
+        #endif
 
         if(stream_via_polling_)
         {
-            auto f = [this](const boost::system::error_code error)
-            {
-                if ((error != boost::asio::error::operation_aborted) && this->stream_via_polling_)
-                {
-                    this->connection.reset_parser();
-                    this->request_measurement(false);
-                }
-            };
-
-            this->measurement_timer_.cancel();
-            this->measurement_timer_.expires_after(250ms);
-            this->measurement_timer_.async_wait(f);
-
-            //TODO Consider changing to send_receive() but only when start_new_stream is true
-            const uint8_t SINGLE_MEASUREMENT { 0 }; 
-            this->connection.send(this->measurement_command_, &SINGLE_MEASUREMENT, sizeof(SINGLE_MEASUREMENT));
+            this->request_next_measurement();
         }
         else
         {
@@ -95,6 +75,28 @@ struct Sensor::Impl
             const uint8_t CONTINUOUS_MEASUREMENT { 1 };
             this->connection.send(this->measurement_command_, &CONTINUOUS_MEASUREMENT, sizeof(CONTINUOUS_MEASUREMENT));
         }
+    }
+
+    ///
+    ///
+    void request_next_measurement()
+    {
+        auto f = [this](const boost::system::error_code error)
+        {
+            if ((error != boost::asio::error::operation_aborted) && this->stream_via_polling_)
+            {
+                this->connection.reset_parser();
+                this->request_next_measurement();
+            }
+        };
+
+        this->measurement_timer_.cancel();
+        this->measurement_timer_.expires_after(250ms);
+        this->measurement_timer_.async_wait(f);
+
+        //TODO Consider changing to send_receive() but only when start_new_stream is true
+        const uint8_t SINGLE_MEASUREMENT { 0 }; 
+        this->connection.send(this->measurement_command_, &SINGLE_MEASUREMENT, sizeof(SINGLE_MEASUREMENT));
     }
 };
 
@@ -420,47 +422,47 @@ bool Sensor::storeSettings()
 
 bool Sensor::streamDCS()
 {
-    this->pimpl->request_measurement(true, COMMAND_GET_DCS);
+    this->pimpl->request_measurement_stream(COMMAND_GET_DCS);
     return true;
 }
 
 bool Sensor::streamDCSAmbient()
 {
-    this->pimpl->request_measurement(true, COMMAND_GET_DCS_AMBIENT);
+    this->pimpl->request_measurement_stream(COMMAND_GET_DCS_AMBIENT);
     return true;
 //    return this->send_receive(COMMAND_GET_DCS_AMBIENT, (uint8_t)1).has_value();
 }
 
 bool Sensor::streamDistance()
 {
-    this->pimpl->request_measurement(true, COMMAND_GET_DISTANCE);
+    this->pimpl->request_measurement_stream(COMMAND_GET_DISTANCE);
     return true;
 //    return this->send_receive(COMMAND_GET_DISTANCE, (uint8_t)1).has_value();
 }
 
 bool Sensor::streamDistanceAmplitude()
 {
-    this->pimpl->request_measurement(true, COMMAND_GET_DIST_AND_AMP);
+    this->pimpl->request_measurement_stream(COMMAND_GET_DIST_AND_AMP);
     return true;
 //    return this->send_receive(COMMAND_GET_DIST_AND_AMP, (uint8_t)1).has_value();
 }
 
 bool Sensor::streamGrayscale()
 {
-    this->pimpl->request_measurement(true, COMMAND_GET_GRAYSCALE);
+    this->pimpl->request_measurement_stream(COMMAND_GET_GRAYSCALE);
     return true;
 //    return this->send_receive(COMMAND_GET_GRAYSCALE, (uint8_t)1).has_value();
 }
 
 void Sensor::subscribeMeasurement(std::function<void (std::shared_ptr<Measurement_T>)> onMeasurementReady)
 {
-//#if defined(_WIN32)
-    //Hook the callback so we can request the next frame before delivering each frame to the client. 
+    //Hook the callback so that if stream via polling is enabled 
+    // we can request the next frame just before before delivering new frames to the caller
     auto hook = [this, onMeasurementReady](std::shared_ptr<Measurement_T> measurement) -> void
     {
-        if(pimpl->stream_via_polling_)
+        if (pimpl->stream_via_polling_)
         {
-            pimpl->request_measurement(false);
+            pimpl->request_next_measurement();
         }
         
         //Now pass the data on to our client
@@ -471,12 +473,6 @@ void Sensor::subscribeMeasurement(std::function<void (std::shared_ptr<Measuremen
     };
     std::lock_guard<std::mutex> guard {pimpl->measurementReadyMutex};
     pimpl->measurementReady = hook;
-// #else
-//     std::lock_guard<std::mutex> guard {pimpl->measurementReadyMutex};
-//     pimpl->measurementReady = onMeasurementReady;
-
-// #endif
-
 }
 
 /* #########################################################################
@@ -508,34 +504,6 @@ void Sensor::Impl::init()
             }
         };
     connection.subscribe(f);
-
-    auto error_callback = [this](SerialConnection::error_t error)
-    {
-        switch (error)
-        {
-        default:
-            std::cerr << "Connection object reported error: " << (int)error << std::endl;
-#if 0
-            if (this->is_streaming_) 
-            {
-                this->connection.reset_parser();
-                //this->connection.send(COMMAND_STOP_STREAM, 0, 0);
-
-                std::cerr << "Attempting to restart streaming..." << std::endl;
-                //Chances are some data was dropped and now our protocol parser is out of wack. 
-                //Tell the sensor to stop streaming and then reset the connection protocol to resync things. 
-                this->connection.send(COMMAND_STOP_STREAM, 0, 0);
-                std::this_thread::sleep_for(200ms); // allow the sensor to receive and process the stop request MZS Is there a better option than a sleep?
-                this->connection.reset_parser();
-                uint8_t payload{ 1 };
-                this->connection.send(COMMAND_GET_DCS, &payload, sizeof(payload));
-                std::cerr << "GET_DCS command sent" << std::endl;
-            }
-#endif
-            break;
-        }
-    };
-    connection.subscribe_error(error_callback);
 }
 
 
