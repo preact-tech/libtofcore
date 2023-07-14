@@ -56,6 +56,12 @@ struct versionData_t
     backpackModule_t m_backpackModule { };
 
 } PACKED;
+struct Sensor_Status_t
+{
+    int16_t  lastTemperature;
+    float    USB_Current;
+    uint32_t BIT_Status;
+} PACKED;
 
 } //end namespace TofComm
 

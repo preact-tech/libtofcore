@@ -120,6 +120,7 @@ constexpr uint16_t COMMAND_STORAGE_READ         = 0xCE;
 constexpr uint16_t COMMAND_FACTORY_MODE         = 0xCF;
 
 constexpr uint16_t COMMAND_READ_SENSOR_INFO     = 0xD0;
+constexpr uint16_t COMMAND_READ_SENSOR_STATUS   = 0xD1;
 
 constexpr uint8_t DATA_TYPE_ID_OFFSET = 0;
 

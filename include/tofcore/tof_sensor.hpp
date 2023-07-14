@@ -42,6 +42,7 @@ public:
     std::optional<std::vector<uint16_t>> getIntegrationTimes();
     bool getLensInfo(std::vector<double> &rays_x, std::vector<double> &rays_y, std::vector<double> &rays_z);
     bool getSensorInfo(TofComm::versionData_t &versionData);
+    bool getSensorStatus(TofComm::Sensor_Status_t &sensorStatus);
     bool getSettings(std::string& jsonSettings);
     /* DEPRECATED - use getSensorInfo() instead. */
     bool getSoftwareVersion(std::string& version);

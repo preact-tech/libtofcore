@@ -184,6 +184,21 @@ bool Sensor::getSensorInfo(TofComm::versionData_t &versionData)
     return ok;
 }
 
+bool Sensor::getSensorStatus(TofComm::Sensor_Status_t &sensorStatus)
+{
+    auto result = this->send_receive(COMMAND_READ_SENSOR_STATUS);
+    auto ok = bool { result };
+    const auto &payload = *result;
+
+    ok &= (payload.size() == sizeof(sensorStatus));
+
+    if (ok)
+    {
+        memcpy((void*) &sensorStatus, (void*) payload.data(), sizeof(sensorStatus));
+    }
+    return ok;
+}
+
 bool Sensor::getSettings(std::string& jsonSettings)
 {
     auto result = this->send_receive(COMMAND_READ_SETTINGS);
