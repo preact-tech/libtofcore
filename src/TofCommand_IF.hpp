@@ -22,6 +22,7 @@ constexpr uint16_t COMMAND_GET_DISTANCE             = 0x03;
 constexpr uint16_t COMMAND_GET_GRAYSCALE            = 0x05;
 constexpr uint16_t COMMAND_STOP_STREAM              = 0x06;
 constexpr uint16_t COMMAND_GET_DCS                  = 0x07;
+constexpr uint16_t COMMAND_GET_INT_TIMES            = 0x08;
 constexpr uint16_t COMMAND_GET_DCS_AMBIENT          = 0x0B;
     constexpr std::uint8_t SINGLE_MEASUREMENT       = 0;
     constexpr std::uint8_t CONTINUOUS_MEASUREMENT   = 1;

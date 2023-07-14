@@ -137,15 +137,14 @@ public:
     ///  Top Left, Top Right, Bottom Left, Bottum Right. 
     ///  If the temperature data is not included with this measurement then retuned std::optional
     ///  will be empty.
-    virtual std::optional<std::array<float,4>> sensor_temperatures() const = 0;
+    virtual std::optional<std::array<float,TofComm::KLV_NUM_TEMPERATURES>> sensor_temperatures() const = 0;
 
     /// @brief Get the integration time settings that were active when the measurement was collected. 
-    ///  The sensor supports up to 4 different integraiton times, int0, int1, int2, grayscale (all in micro-seconds) 
-    ///  int0-3 are used during the DCS distance collection phase, int1 and int2 are only used
-    ///  when one of the HDR modes are enabled. Grayscale is used for the ambient frame collected
-    ///  during a distance frame collection or when capturing grayscale images.  
+    ///  The sensor supports up to 3 different integration times, int0, int1, int2 (all in micro-seconds)
+    ///  int0 is used during the DCS distance collection phase, int1 and int2 are only used
+    ///  when one of the HDR modes are enabled.
     ///  If the integration time data is not included with this measurement then std::nullopt is returned
-    virtual std::optional<std::array<uint16_t,4>> integration_times() const = 0;
+    virtual std::optional<std::array<uint16_t,TofComm::KLV_NUM_INTEGRATION_TIMES>> integration_times() const = 0;
 
     /// @brief Get illuminator information that was recorded at the time of the measurement.
     ///
@@ -186,7 +185,7 @@ public:
     ///    - fine step
     ///    - finest step
     ///  If no data is found in the measurement header then std::nullopt is returned
-    virtual std::optional<std::array<uint8_t, 4>> dll_settings() const = 0;
+    virtual std::optional<std::array<uint8_t,TofComm::KLV_NUM_DLL_BYTES>> dll_settings() const = 0;
 
 };
 

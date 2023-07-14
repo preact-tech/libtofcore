@@ -174,6 +174,29 @@ bool Sensor::getChipInformation(uint16_t& waferId, uint16_t& chipId)
     return ok;
 }
 
+std::optional<std::vector<uint16_t>> Sensor::getIntegrationTimes()
+{
+    auto result = this->send_receive(COMMAND_GET_INT_TIMES);
+
+    if (!result)
+    {
+        return std::nullopt;
+    }
+    const auto &payload = *result;
+    const auto payloadSize = payload.size();
+    const size_t numIntegrationTimes = std::min((payloadSize / sizeof(uint16_t)), TofComm::KLV_NUM_INTEGRATION_TIMES);
+    std::vector<uint16_t> integrationTimes { };
+
+    for (size_t i = 0; i < numIntegrationTimes; ++i)
+    {
+        uint16_t intTime;
+        BE_Get(intTime, &payload[2 * i]);
+        integrationTimes.push_back(intTime);
+    }
+
+    return { integrationTimes };
+}
+
 bool Sensor::getLensInfo(std::vector<double>& rays_x, std::vector<double>& rays_y, std::vector<double>& rays_z)
 {
     auto result = this->send_receive(COMMAND_GET_LENS_INFO);
@@ -372,9 +395,15 @@ bool Sensor::setHDRMode(uint8_t mode)
     return this->send_receive(COMMAND_SET_HDR, mode).has_value();
 }
 
-bool Sensor::setIntegrationTime(uint16_t low, uint16_t mid, uint16_t high, uint16_t gray)
+bool Sensor::setIntegrationTime(uint16_t low)
 {
-    uint16_t params[4] = {native_to_big(low), native_to_big(mid), native_to_big(high), native_to_big(gray)};
+    uint16_t params[] = {native_to_big(low)};
+    return this->send_receive(COMMAND_SET_INT_TIMES, {(std::byte*)params, sizeof(params)}).has_value();
+}
+
+bool Sensor::setIntegrationTimes(uint16_t low, uint16_t mid, uint16_t high)
+{
+    uint16_t params[] = {native_to_big(low), native_to_big(mid), native_to_big(high)};
     return this->send_receive(COMMAND_SET_INT_TIMES, {(std::byte*)params, sizeof(params)}).has_value();
 }
 

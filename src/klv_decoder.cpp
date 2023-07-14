@@ -51,30 +51,32 @@ std::optional<std::array<uint8_t, 2>> decode_binning(const KLVDecoder& klv)
 }
 
 
-std::optional<std::array<uint8_t, 4>> decode_dll_settings(const KLVDecoder& klv)
+std::optional<std::array<uint8_t, TofComm::KLV_NUM_DLL_BYTES>> decode_dll_settings(const KLVDecoder& klv)
 {
     auto data = klv.find(TofComm::KLV_DLL_SETTINGS_KEY);
-    if(data.first == data.second || std::distance(data.first, data.second) != 4) 
+    if(data.first == data.second || std::distance(data.first, data.second) != TofComm::KLV_NUM_DLL_BYTES)
     {
         return std::nullopt;
     }
-    std::array<uint8_t, 4> retval {};
+    std::array<uint8_t, TofComm::KLV_NUM_DLL_BYTES> retval {};
     std::copy((uint8_t*)data.first, (uint8_t*)data.second, retval.begin());
     return retval;
 }
 
 
-std::optional<std::array<uint16_t,4>> decode_integration_times(const KLVDecoder& klv)
+std::optional<std::array<uint16_t,TofComm::KLV_NUM_INTEGRATION_TIMES>> decode_integration_times(const KLVDecoder& klv)
 {
     auto data = klv.find(TofComm::KLV_INTEGRATION_TIMES_KEY);
-    if(data.first == data.second || std::distance(data.first, data.second) != 8) 
+    auto numTimes = std::distance(data.first, data.second) / sizeof(uint16_t);
+    if(data.first == data.second || (numTimes < 1))
     {
         return std::nullopt;
     }
-    //The integration times key value field consist of: 
-    // - 4 uint16_t big endian values in micro-seconds [int0, int1, int2, grayscale]
-    std::array<uint16_t, 4> values;
-    for(size_t i = 0; i != values.size(); ++i)
+    // The integration times key value field consist of up to KLV_NUM_INTEGRATION_TIMES
+    // uint16_t big endian values in micro-seconds [int0, int1, int2]
+    std::array<uint16_t, TofComm::KLV_NUM_INTEGRATION_TIMES> values;
+    numTimes = std::min(numTimes, TofComm::KLV_NUM_INTEGRATION_TIMES);
+    for(size_t i = 0; i < numTimes; ++i)
     {
         auto temp = uint16_t{0};
         TofComm::BE_Get(temp, data.first + (i*2));
@@ -130,11 +132,11 @@ std::optional<std::vector<uint32_t>> decode_modulation_frequencies(const KLVDeco
 }
 
 
-std::optional<std::array<float, 4>> decode_sensor_temperatures(const KLVDecoder& klv)
+std::optional<std::array<float, TofComm::KLV_NUM_TEMPERATURES>> decode_sensor_temperatures(const KLVDecoder& klv)
 {
     auto data = klv.find(TofComm::KLV_SENSOR_TEMPERATURE_KEY);
 
-    if(data.first == data.second || std::distance(data.first, data.second) != 12) 
+    if(data.first == data.second || std::distance(data.first, data.second) != (3 * TofComm::KLV_NUM_TEMPERATURES))
     {
         return std::nullopt;
     }
@@ -143,7 +145,7 @@ std::optional<std::array<float, 4>> decode_sensor_temperatures(const KLVDecoder&
     // - 4 uin8_t temperature calibration values.
     int16_t* raw_values {(int16_t*)data.first};
     auto cal_values {data.first + (sizeof(int16_t)*4)};
-    std::array<float, 4> temp_degC; 
+    std::array<float, TofComm::KLV_NUM_TEMPERATURES> temp_degC;
     for(std::size_t i = 0; i != temp_degC.size(); ++i) 
     {
         int16_t raw_value {0};

@@ -210,7 +210,7 @@ def test_meta_data_integration_times(dut: pytofcore.Sensor):
         callback.mutex = threading.Lock()
         callback.count = 0
         callback.measurement = None
-        dut.set_integration_time(*TEST_VALUES)
+        dut.set_integration_times(*TEST_VALUES)
         dut.subscribe_measurement(callback)
         dut.stream_distance()
         count = 0 # we will wait for upto 1 second in 0.1 second increments
@@ -227,12 +227,14 @@ def test_meta_data_integration_times(dut: pytofcore.Sensor):
         #check for integration time data with the measurement.
         int_times = callback.measurement.integration_times
         assert int_times, "No integration time data included with the measurement"
-        assert len(int_times) == 4, "Not enough integration time values in the meta-data"
+        assert len(int_times) == 3, "Not enough integration time values in the meta-data"
         assert TEST_VALUES == int_times, "Incorrect integration time values included in meta-data"
+        int_times = dut.get_integration_times()
+        assert TEST_VALUES == int_times, "Incorrect integration time values from get_integration_times()"
 
-    run([11, 22, 33, 44])
-    run([100, 0, 0, 500])
-    run([111, 222, 333, 444])
+    run([11, 22, 33])
+    run([100, 0, 0])
+    run([111, 222, 333])
 
 
 @pytest.mark.functional
@@ -350,8 +352,8 @@ def test_rapid_commands(dut: pytofcore.Sensor):
     Verify that the protocol API and device can handle rapid command sequences while not streaming
     '''
     methods = [
-        partial(dut.set_integration_time, 100, 0, 0, 100),
-        partial(dut.set_integration_time, 200, 0, 0, 100),
+        partial(dut.set_integration_times, 100, 0, 0),
+        partial(dut.set_integration_times, 200, 0, 0),
         partial(dut.set_binning, True, True),
         partial(dut.set_binning, False, False),
         partial(dut.set_min_amplitude, 50), 
@@ -386,7 +388,7 @@ def test_rapid_commands_with_streaming(dut: pytofcore.Sensor):
     dut.stream_distance_amplitude()
 
     methods = [
-        partial(dut.set_integration_time, 100, 0, 0, 100),
+        partial(dut.set_integration_times, 100, 0, 0),
         partial(dut.set_min_amplitude, 50), 
         partial(dut.set_offset, 100),
         dut.get_sensor_info
