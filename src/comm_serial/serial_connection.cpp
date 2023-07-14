@@ -317,11 +317,6 @@ void SerialConnection::sendv0(uint16_t command, const std::vector<ScatterGatherE
     }
     bufs.push_back(buffer(filler, filler_size));
     bufs.push_back(buffer(epilog));
-    if (!pimpl->port_.is_open())
-    {
-        ERR("Attempting write on port that is not open");
-    }
-
     write(pimpl->port_, bufs);
 }
 
@@ -355,12 +350,6 @@ void SerialConnection::sendv1(uint16_t command, const std::vector<ScatterGatherE
     std::array<uint8_t, sizeof(crc32)> epilog {};
     BE_Put(&epilog[0], crc32);
     bufs.push_back(buffer(epilog));
-
-    if (!pimpl->port_.is_open())
-    {
-        ERR("Attempting write on port that is not open");
-    }
-
     write(pimpl->port_, bufs);
 }
 
@@ -370,7 +359,7 @@ void SerialConnection::Impl::reset_parser()
     this->port_.cancel();
     this->response_timer_.cancel();
 
-#if _WIN32
+#if defined(_WIN32)
     auto handle = this->port_.native_handle();
     PurgeComm(handle, PURGE_RXCLEAR);
 #endif
@@ -470,16 +459,7 @@ void SerialConnection::Impl::on_receive_v0_prolog(const system::error_code &erro
     this->response_type_ = this->prolog_epilog_buf_[V0_RESP_PROLOG_TYPE_OFFSET];
     uint32_t payload_length; 
     LE_Get(payload_length, &this->prolog_epilog_buf_[V0_RESP_PROLOG_LENGTH_OFFSET]);
-
     DBG("Received V0 type: " << (unsigned)this->response_type_ << "; size: " << payload_length);
-#if 0
-    if ((this->response_type_ != std::byte(0)) && (this->response_type_ != std::byte(1)))
-    {
-        ERR("--Received uknown response type " << (int)this->response_type_ << " ignoring message");
-        this->begin_receive_start();
-        return;
-    }
-#endif
     this->begin_receive_payload(payload_length);
 }
 
@@ -494,11 +474,6 @@ void SerialConnection::Impl::begin_receive_v1_prolog()
 
 void SerialConnection::Impl::on_receive_v1_prolog(const system::error_code &error)
 {
-    if (error)
-    {
-        ERR("on_receive_v1_prolog error: " << error.message());
-    }
-
     if (error && !this->process_error(error, __FUNCTION__))
     {
         return;
@@ -515,16 +490,6 @@ void SerialConnection::Impl::on_receive_v1_prolog(const system::error_code &erro
     this->response_type_ = this->prolog_epilog_buf_[V1_RESP_PROLOG_TYPE_OFFSET];
     uint32_t payload_length; BE_Get(payload_length, &this->prolog_epilog_buf_[V1_RESP_PROLOG_LENGTH_OFFSET]);
     DBG("Received V1 type: " << (unsigned)this->response_type_ << "; size: " << payload_length);
-
-#if 0
-    if ((this->response_type_ != std::byte(0)) && (this->response_type_ != std::byte(1)))
-    {
-        ERR("--Received uknown response type " << (int)this->response_type_ << " ignoring message");
-        this->begin_receive_start();
-        return;
-    }
-#endif
-
     this->begin_receive_payload(payload_length);
 }
 
@@ -728,18 +693,13 @@ bool SerialConnection::Impl::process_error(const system::error_code &error, cons
 {
     if (error)
     {
-        ERR("ERROR IN : " << where << error.message());
-    }
-
-    if (error)
-    {
-        ERR("ERROR in " << where << ": " << error.message());
+        ERR("ERROR in " << where << ": " << error.category().name());
     }
     else
     {
         DBG("NO ERROR in " << where );
     }
-    return false; // continue for now
+    return true; // continue for now
 }
 
 } //end namespace
