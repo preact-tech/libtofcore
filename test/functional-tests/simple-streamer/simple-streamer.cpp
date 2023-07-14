@@ -280,18 +280,6 @@ int main(int argc, char *argv[])
                       << "; total = " << (amplitude + dcs + distance + grayscale) << std::endl;
         }
         std::cout << "Shutting down..." << std::endl;
-#if 0
-        TofComm::versionData_t info;
-        auto success =  sensor.getSensorInfo(info);
-        if (success)
-        {
-            std::cout << "Sensor Version: " << info.m_softwareVersion << std::endl;
-        }
-        else
-        {
-            std::cout << "Failed to get version info" << std::endl;
-        }
-#endif
         sensor.stopStream();
     } // when scope is exited, sensor connection is cleaned up
 
