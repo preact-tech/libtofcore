@@ -28,6 +28,17 @@ public:
     typedef std::function<void(const std::vector<std::byte>&)> on_measurement_callback_t;
     typedef std::function<void(bool, const std::vector<std::byte>&)> on_command_response_callback_t;
 
+    /*
+     * Values to report errors to clients
+     */
+    enum class error_t
+    {
+        PROTOCOL_ERROR = 1,
+    };
+
+    typedef std::function<void(error_t)> on_error_callback_t;
+
+
 public:
     SerialConnection(boost::asio::io_service&, const std::string &portName, uint32_t baudrate, uint16_t protocolVersion);
 
@@ -49,8 +60,11 @@ public:
                                                          std::chrono::steady_clock::duration timeout);
     bool set_protocol_version(uint16_t version);
 
+    void reset_parser();
+
     /// Callback function that will be called when a complete measurement data packet has been received.
     void subscribe(on_measurement_callback_t callback);
+    void subscribe_error(on_error_callback_t);
 
 protected:
 

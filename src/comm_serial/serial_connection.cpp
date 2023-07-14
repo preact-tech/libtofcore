@@ -112,8 +112,11 @@ struct SerialConnection::Impl
 
     uint32_t response_crc_accum_ { 0 };
 
+    bool crc_error_occurred_{ false };
+
     std::function<void(const std::vector<std::byte>&)> on_measurement_data_ {};
     std::function<void(bool, const std::vector<std::byte>&)> on_command_response_ {};
+    SerialConnection::on_error_callback_t on_error_ {};
 
     Impl(io_service &io, const std::string &portName, uint32_t baud_rate, uint16_t protocolVersion) :
                 port_(io, portName), 
@@ -127,9 +130,26 @@ struct SerialConnection::Impl
         this->port_.set_option(serial_port_base::flow_control(serial_port_base::flow_control::none));
         this->port_.set_option(serial_port_base::character_size(8));
 
+
+#if 0 //defined(_WIN32)
+        COMMPROP commProp;
+        GetCommProperties(this->port_.native_handle(), &commProp);
+
+        std::cout << "commProp." << commProp.dwCurrentRxQueue << std::endl;
+        commProp.dwCurrentRxQueue = 320 * 240 * 2 * 5; // commProp.dwCurrentRxQueue * 10;
+        if (!GetCommProperties(this->port_.native_handle(), &commProp))
+        {
+            std::cerr << "!!!! Failed to comm port receive queue !!!!" << std::endl;
+        }
+#endif
+
+
+
         //start a receive operation to receive the start of the next data packet. 
         this->begin_receive_start();
     }
+
+    void reset_parser();
 
     void begin_receive_start();
     void on_receive_start(const system::error_code &error);
@@ -177,6 +197,11 @@ SerialConnection::~SerialConnection()
 uint16_t SerialConnection::get_protocol_version() const
 {
     return pimpl->protocol_version_;
+}
+
+void SerialConnection::reset_parser()
+{
+    pimpl->reset_parser();
 }
 
 void SerialConnection::send(uint16_t command, const std::vector<uint8_t> &buf)
@@ -261,6 +286,13 @@ void SerialConnection::subscribe(on_measurement_callback_t callback)
     pimpl->on_measurement_data_ = callback;
 }
 
+
+void SerialConnection::subscribe_error(on_error_callback_t callback)
+{
+    pimpl->on_error_ = callback;
+}
+
+
 /* #########################################################################
  *
  * SerialConnection protected methods
@@ -309,6 +341,11 @@ void SerialConnection::sendv0(uint16_t command, const std::vector<ScatterGatherE
     }
     bufs.push_back(buffer(filler, filler_size));
     bufs.push_back(buffer(epilog));
+    if (!pimpl->port_.is_open())
+    {
+        ERR("Attempting write on port that is not open");
+    }
+
     write(pimpl->port_, bufs);
 }
 
@@ -342,7 +379,27 @@ void SerialConnection::sendv1(uint16_t command, const std::vector<ScatterGatherE
     std::array<uint8_t, sizeof(crc32)> epilog {};
     BE_Put(&epilog[0], crc32);
     bufs.push_back(buffer(epilog));
+
+    if (!pimpl->port_.is_open())
+    {
+        ERR("Attempting write on port that is not open");
+    }
+
     write(pimpl->port_, bufs);
+}
+
+void SerialConnection::Impl::reset_parser()
+{
+    //Cancel any pending reads and timers and start fresh. 
+    this->port_.cancel();
+    this->response_timer_.cancel();
+
+#if _WIN32
+    auto handle = this->port_.native_handle();
+    PurgeComm(handle, PURGE_RXCLEAR);
+#endif
+
+    this->begin_receive_start();
 }
 
 /* #########################################################################
@@ -384,6 +441,10 @@ void SerialConnection::Impl::begin_receive_start()
 {
     auto f = [&](const auto &error, auto)
     {
+        if (crc_error_occurred_)
+        {
+            ERR("recieved something after CRC error, calling on_receive_start()");
+        }
         this->on_receive_start(error);
     };
     this->response_marker_ = (std::byte)0; // invalidate any previous marker
@@ -392,6 +453,10 @@ void SerialConnection::Impl::begin_receive_start()
 
 void SerialConnection::Impl::on_receive_start(const system::error_code &error)
 {
+    if (error)
+    {
+        ERR("on_receive_start error: " << error.message());
+    }
     if (error && !this->process_error(error, __FUNCTION__))
     {
         return;
@@ -417,6 +482,12 @@ void SerialConnection::Impl::begin_receive_v0_prolog()
 {
     auto f = [&](const auto &error, auto)
     {
+
+        if (crc_error_occurred_)
+        {
+            ERR("recieved something after CRC error, calling on_receive_v0_prolog()");
+        }
+
         this->on_receive_v0_prolog(error);
     };
     async_read(this->port_, buffer(this->prolog_epilog_buf_, V0_RESP_PROLOG_SIZE), f);
@@ -424,6 +495,11 @@ void SerialConnection::Impl::begin_receive_v0_prolog()
 
 void SerialConnection::Impl::on_receive_v0_prolog(const system::error_code &error)
 {
+    if (error)
+    {
+        ERR("on_receive_v0_prolog error: " << error.message());
+    }
+
     if (error && !this->process_error(error, __FUNCTION__))
     {
         return;
@@ -435,8 +511,23 @@ void SerialConnection::Impl::on_receive_v0_prolog(const system::error_code &erro
      *  ---------- ---------- ------------- ---------------- ---------------------
      */
     this->response_type_ = this->prolog_epilog_buf_[V0_RESP_PROLOG_TYPE_OFFSET];
-    uint32_t payload_length; LE_Get(payload_length, &this->prolog_epilog_buf_[V0_RESP_PROLOG_LENGTH_OFFSET]);
+    uint32_t payload_length; 
+    LE_Get(payload_length, &this->prolog_epilog_buf_[V0_RESP_PROLOG_LENGTH_OFFSET]);
+
     DBG("Received V0 type: " << (unsigned)this->response_type_ << "; size: " << payload_length);
+#if 0
+    if ((this->response_type_ != std::byte(0)) && (this->response_type_ != std::byte(1)))
+    {
+        ERR("--Received uknown response type " << (int)this->response_type_ << " ignoring message");
+        this->begin_receive_start();
+        return;
+    }
+#endif
+
+    if (crc_error_occurred_)
+    {
+        ERR("Received V0 type: " << (unsigned)this->response_type_ << "; size: " << payload_length);
+    }
     this->begin_receive_payload(payload_length);
 }
 
@@ -444,6 +535,11 @@ void SerialConnection::Impl::begin_receive_v1_prolog()
 {
     auto f = [&](const auto &error, auto)
     {
+        if (crc_error_occurred_)
+        {
+            ERR("recieved something after CRC error, calling on_receive_v1_prolog()");
+        }
+
         this->on_receive_v1_prolog(error);
     };
     async_read(this->port_, buffer(this->prolog_epilog_buf_, V1_RESP_PROLOG_SIZE), f);
@@ -451,6 +547,11 @@ void SerialConnection::Impl::begin_receive_v1_prolog()
 
 void SerialConnection::Impl::on_receive_v1_prolog(const system::error_code &error)
 {
+    if (error)
+    {
+        ERR("on_receive_v1_prolog error: " << error.message());
+    }
+
     if (error && !this->process_error(error, __FUNCTION__))
     {
         return;
@@ -467,6 +568,20 @@ void SerialConnection::Impl::on_receive_v1_prolog(const system::error_code &erro
     this->response_type_ = this->prolog_epilog_buf_[V1_RESP_PROLOG_TYPE_OFFSET];
     uint32_t payload_length; BE_Get(payload_length, &this->prolog_epilog_buf_[V1_RESP_PROLOG_LENGTH_OFFSET]);
     DBG("Received V1 type: " << (unsigned)this->response_type_ << "; size: " << payload_length);
+
+#if 0
+    if ((this->response_type_ != std::byte(0)) && (this->response_type_ != std::byte(1)))
+    {
+        ERR("--Received uknown response type " << (int)this->response_type_ << " ignoring message");
+        this->begin_receive_start();
+        return;
+    }
+#endif
+
+    if (crc_error_occurred_)
+    {
+        ERR("--Received V1 type: " << (unsigned)this->response_type_ << "; size: " << payload_length);
+    }
     this->begin_receive_payload(payload_length);
 }
 
@@ -475,6 +590,11 @@ void SerialConnection::Impl::begin_receive_payload(uint32_t payload_length)
     this->payload_.resize(payload_length);
     auto f = [&](const auto &error, auto)
     {
+        if (crc_error_occurred_)
+        {
+            ERR("recieved something after CRC error, calling on_receive_payload(), awaiting payload: " << payload_length);
+        }
+
         this->on_receive_payload(error);
     };
 
@@ -483,6 +603,11 @@ void SerialConnection::Impl::begin_receive_payload(uint32_t payload_length)
 
 void SerialConnection::Impl::on_receive_payload(const system::error_code &error)
 {
+    if (error)
+    {
+        ERR("on_receive_payload error: " << error.message());
+    }
+
     if (error && !this->process_error(error, __FUNCTION__))
     {
         return;
@@ -504,6 +629,11 @@ void SerialConnection::Impl::begin_receive_end()
 
 void SerialConnection::Impl::on_receive_end(const system::error_code &error)
 {
+    if (error)
+    {
+        ERR("on_receive_end error: " << error.message());
+    }
+
     if (error && !this->process_error(error, __FUNCTION__))
     {
         return;
@@ -512,6 +642,10 @@ void SerialConnection::Impl::on_receive_end(const system::error_code &error)
     BOOST_SCOPE_EXIT(this_)
     {
         //Start all over again when we exit this method
+        if (this_->crc_error_occurred_)
+        {
+            ERR("Calling begin_receive_start() after error");
+        }
         this_->begin_receive_start();
     }
     BOOST_SCOPE_EXIT_END
@@ -607,6 +741,11 @@ void SerialConnection::Impl::process_v1_response()
             bool isValid { this->response_crc_accum_ == response_crc };
             if (!isValid)
             {
+                if (this->on_error_)
+                {
+                    this->on_error_(error_t::PROTOCOL_ERROR);
+                }
+
                 ERR("-INVALID COMMAND CRC received: 0X" << std::hex << response_crc << "; stream: 0X" << this->response_crc_accum_ << std::dec);
             }
             if (this->on_command_response_)
@@ -651,6 +790,11 @@ void SerialConnection::Impl::process_v1_response()
             if (this->response_crc_accum_ != response_crc)
             {
                 ERR("-INVALID DATA CRC received: 0X" << std::hex << response_crc << "; stream: 0X" << this->response_crc_accum_ << std::dec);
+                if (this->on_error_)
+                {
+                    asio::post(this->port_.get_executor(), std::bind(this->on_error_, error_t::PROTOCOL_ERROR));
+                }
+                crc_error_occurred_ = true;
             }
             else
 #endif
@@ -668,15 +812,20 @@ void SerialConnection::Impl::process_v1_response()
 
 bool SerialConnection::Impl::process_error(const system::error_code &error, const char* where)
 {
-    if (error.failed())
+    if (error)
     {
-        ERR("ERROR in " << where << ": " << error.category().name());
+        ERR("ERROR IN : " << where << error.message());
+    }
+
+    if (error)
+    {
+        ERR("ERROR in " << where << ": " << error.message());
     }
     else
     {
-        ERR("NO ERROR in " << where << ": " << error.category().name());
+        DBG("NO ERROR in " << where );
     }
-    return true; // continue for now
+    return false; // continue for now
 }
 
 } //end namespace
