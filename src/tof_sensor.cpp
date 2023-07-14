@@ -40,7 +40,7 @@ struct Sensor::Impl
     on_measurement_ready_t measurementReady;
     SerialConnection connection;
 
-    /// The items below are specifically used when using polling for streaming.
+    /// The items below are specifically used for streaming via polling.
     /// Note: This mode is currently only used on Windows systems due to a strange Windows only phenomenon.
     ///  Data from the sensor can be randomly dropped for no reason that we can discern.
     ///  When data is dropped our parser gets out sync and cannot easily recover.
@@ -52,34 +52,35 @@ struct Sensor::Impl
     uint16_t measurement_command_ = 0;
     boost::asio::steady_timer measurement_timer_;
 
-    /// Method used to initiate streaming of measurement data and in the case
-    ///   of streaming via polling keep measurement data going.
+    /// Method used to initiate streaming of measurement data
     /// 
-    /// @param measurement_command The measurement command ID to use in the request message
-    void request_measurement_stream(uint16_t measurement_command)
+    /// @param measurement_command The measurement command ID to to send
+    /// @return true on successful
+    bool request_measurement_stream(uint16_t measurement_command)
     {
         this->measurement_command_ = measurement_command;
-        #if defined(_WIN32)
+#if defined(_WIN32)
         stream_via_polling_ = true;
-        #else
+#else
         stream_via_polling_ = false;
-        #endif
+#endif
 
         if(stream_via_polling_)
         {
-            this->request_next_measurement();
+            return this->request_next_measurement();
         }
         else
         {
-            //TODO Consider changing this to send_receive()
-            const uint8_t CONTINUOUS_MEASUREMENT { 1 };
-            this->connection.send(this->measurement_command_, &CONTINUOUS_MEASUREMENT, sizeof(CONTINUOUS_MEASUREMENT));
+            //TODO Consider changing this to send_receive() so we can really know if it succeeds.
+            this->connection.send(this->measurement_command_, &TofComm::CONTINUOUS_MEASUREMENT, sizeof(TofComm::CONTINUOUS_MEASUREMENT));
+            return true;
         }
     }
 
+    /// Method used to request the next measurement item when stream_via_polling_ is true.
     ///
-    ///
-    void request_next_measurement()
+    /// @return true on successful
+    bool request_next_measurement()
     {
         auto f = [this](const boost::system::error_code error)
         {
@@ -94,9 +95,10 @@ struct Sensor::Impl
         this->measurement_timer_.expires_after(250ms);
         this->measurement_timer_.async_wait(f);
 
-        //TODO Consider changing to send_receive() but only when start_new_stream is true
-        const uint8_t SINGLE_MEASUREMENT { 0 }; 
-        this->connection.send(this->measurement_command_, &SINGLE_MEASUREMENT, sizeof(SINGLE_MEASUREMENT));
+        this->connection.send(this->measurement_command_, &TofComm::SINGLE_MEASUREMENT, sizeof(TofComm::SINGLE_MEASUREMENT));
+        //Assume success: Note we can't use send_receive() here because this method could be called
+        // from the context of the measurement callback and we would deadlock.
+        return true;
     }
 };
 
@@ -422,42 +424,33 @@ bool Sensor::storeSettings()
 
 bool Sensor::streamDCS()
 {
-    this->pimpl->request_measurement_stream(COMMAND_GET_DCS);
-    return true;
+    return this->pimpl->request_measurement_stream(COMMAND_GET_DCS);
 }
 
 bool Sensor::streamDCSAmbient()
 {
-    this->pimpl->request_measurement_stream(COMMAND_GET_DCS_AMBIENT);
-    return true;
-//    return this->send_receive(COMMAND_GET_DCS_AMBIENT, (uint8_t)1).has_value();
+    return this->pimpl->request_measurement_stream(COMMAND_GET_DCS_AMBIENT);
 }
 
 bool Sensor::streamDistance()
 {
-    this->pimpl->request_measurement_stream(COMMAND_GET_DISTANCE);
-    return true;
-//    return this->send_receive(COMMAND_GET_DISTANCE, (uint8_t)1).has_value();
+    return this->pimpl->request_measurement_stream(COMMAND_GET_DISTANCE);
 }
 
 bool Sensor::streamDistanceAmplitude()
 {
-    this->pimpl->request_measurement_stream(COMMAND_GET_DIST_AND_AMP);
-    return true;
-//    return this->send_receive(COMMAND_GET_DIST_AND_AMP, (uint8_t)1).has_value();
+    return this->pimpl->request_measurement_stream(COMMAND_GET_DIST_AND_AMP);
 }
 
 bool Sensor::streamGrayscale()
 {
-    this->pimpl->request_measurement_stream(COMMAND_GET_GRAYSCALE);
-    return true;
-//    return this->send_receive(COMMAND_GET_GRAYSCALE, (uint8_t)1).has_value();
+    return this->pimpl->request_measurement_stream(COMMAND_GET_GRAYSCALE);
 }
 
 void Sensor::subscribeMeasurement(std::function<void (std::shared_ptr<Measurement_T>)> onMeasurementReady)
 {
-    //Hook the callback so that if stream via polling is enabled 
-    // we can request the next frame just before before delivering new frames to the caller
+    //Hook the callback so that if stream via polling is enabled we can request
+    // the next measurement just before before delivering to the caller
     auto hook = [this, onMeasurementReady](std::shared_ptr<Measurement_T> measurement) -> void
     {
         if (pimpl->stream_via_polling_)

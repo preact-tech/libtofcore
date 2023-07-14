@@ -23,6 +23,9 @@ constexpr uint16_t COMMAND_GET_GRAYSCALE            = 0x05;
 constexpr uint16_t COMMAND_STOP_STREAM              = 0x06;
 constexpr uint16_t COMMAND_GET_DCS                  = 0x07;
 constexpr uint16_t COMMAND_GET_DCS_AMBIENT          = 0x0B;
+    constexpr std::uint8_t SINGLE_MEASUREMENT       = 0;
+    constexpr std::uint8_t CONTINUOUS_MEASUREMENT   = 1;
+
 constexpr uint16_t COMMAND_SET_OFFSET               = 0x14;
 constexpr uint16_t COMMAND_SET_MIN_AMPLITUDE        = 0x15;
 constexpr uint16_t COMMAND_SET_FILTER               = 0x16;
