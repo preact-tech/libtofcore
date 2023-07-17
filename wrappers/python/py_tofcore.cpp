@@ -152,6 +152,20 @@ static auto getSensorInfo(tofcore::Sensor& s)
 }
 
 
+/// @brief  Helper function to read the integration times from a sensor such that an
+///         exception is thrown if the read fails.
+static auto getSensorIntegrationTimes(tofcore::Sensor& s)
+{
+    auto integrationTimes = s.getIntegrationTimes();
+    if (!integrationTimes)
+    {
+        throw std::runtime_error("An error occured while getting integration times");
+    }
+
+    return integrationTimes;
+}
+
+
 /// @brief Helper function to obtain a memoryview of the distance data in
 ///        a Measurement object
 static auto get_distance_view(const tofcore::Measurement_T &m) 
@@ -321,8 +335,9 @@ PYBIND11_MODULE(pytofcore, m) {
         .def("set_min_amplitude", &tofcore::Sensor::setMinAmplitude, py::arg("min_amplitude"), "Set minimum amplitude for distance pixel to be treated as good", py::call_guard<py::gil_scoped_release>())
         .def("set_binning", &tofcore::Sensor::setBinning, "Set horizontal and vertical binning settings on sensor", py::arg("vertical"), py::arg("horizontal"), py::call_guard<py::gil_scoped_release>())
         .def("set_roi", &tofcore::Sensor::setRoi, "Set region of interest pixel area on the sensor", py::arg("x0"), py::arg("y0"), py::arg("x1"), py::arg("y1"), py::call_guard<py::gil_scoped_release>())
-        .def("set_integration_time", &tofcore::Sensor::setIntegrationTime, "Set the integration time parameters on the sensor", py::arg("low"), py::arg("mid"), py::arg("high"), py::arg("gray"), py::call_guard<py::gil_scoped_release>())
-        .def("set_hdr_mode", &tofcore::Sensor::setHDRMode, "Set the High Dynamic Range modeon the sensor", py::arg("mode"), py::call_guard<py::gil_scoped_release>())
+        .def("set_integration_times", &tofcore::Sensor::setIntegrationTimes, "Set all integration time parameters on the sensor", py::arg("low"), py::arg("mid"), py::arg("high"), py::call_guard<py::gil_scoped_release>())
+        .def("get_integration_times", &getSensorIntegrationTimes, "query the device for the currently configured integration time settings", py::call_guard<py::gil_scoped_release>())
+        .def("set_hdr_mode", &tofcore::Sensor::setHDRMode, "Set the High Dynamic Range mode on the sensor", py::arg("mode"), py::call_guard<py::gil_scoped_release>())
         .def("set_modulation", &tofcore::Sensor::setModulation, "Set the modulation frequency to use during TOF measurements", py::arg("index"), py::arg("channel"), py::call_guard<py::gil_scoped_release>())
         .def("set_filter", &tofcore::Sensor::setFilter, "Configure filter applied by sensor on data returned", py::call_guard<py::gil_scoped_release>())
         .def("subscribe_measurement", &subscribeMeasurement, "Set a function object to be called when new measurement data is received", py::arg("callback"))
@@ -348,7 +363,7 @@ PYBIND11_MODULE(pytofcore, m) {
         .def_property_readonly("dcs_data", &get_dcs_view, DCS_DATA_DOCSTRING)
         .def_property_readonly("meta_data", &get_meta_data_view, "obtain memoryview of the raw block of meta-data associated with the measurement (useful for custom decoding of data not otherwise available via the API)")
         .def_property_readonly("sensor_temperatures", &tofcore::Measurement_T::sensor_temperatures, "get imaging sensor temperature data")
-        .def_property_readonly("integration_times", &tofcore::Measurement_T::integration_times, "get integration time settings during capture [int0, int1, int2, grayscale], values actually used depend on type of measuremnt and additional options")
+        .def_property_readonly("integration_times", &tofcore::Measurement_T::integration_times, "get integration time settings during capture [int0, int1, int2], values actually used depend on type of measuremnt and additional options")
         .def_property_readonly("modulation_frequencies", &tofcore::Measurement_T::modulation_frequencies, "get modulation frequency (Hz) settings during capture")
         .def_property_readonly("horizontal_binning", &tofcore::Measurement_T::horizontal_binning, "get horizontal binning setting used during capture, 0 means no binning, values above 1 indicate the amount of subsampling")
         .def_property_readonly("vertical_binning", &tofcore::Measurement_T::vertical_binning, "get vertical binning setting used during capture, 0 means no binning, values above 1 indicate the amount of subsampling")

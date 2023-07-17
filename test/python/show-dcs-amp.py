@@ -111,7 +111,7 @@ cmd_delay()
 measurement_callback.EXIT = False
 measurement_callback.SWITCH = False
 
-success = sensor.set_integration_time(100,0,0,0)
+success = sensor.set_integration_times(100,0,0)
 cmd_delay()
 print(sensor.get_sensor_info)
 cmd_delay()

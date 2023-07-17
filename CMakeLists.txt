@@ -54,7 +54,7 @@ target_include_directories(tofcore
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/tofcore>
     PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
-    $(CMAKE_CURRENT_SOURCE_DIR)/third_party/libusbp/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libusbp/include
 )
 
 
@@ -130,9 +130,9 @@ add_subdirectory(test)
 add_subdirectory(wrappers)
 
 # Include HealthCheck module
-include(HealthCheck)
-set(PREACT_CPPCHECK_ENABLE "ON")
-set(PREACT_CPPCHECK_CHECKS "all")
-set(PREACT_CPPCHECK_EXCLUDE_PATTERN "(cmake|test|wrappers|examples)")
-list(APPEND PREACT_CPPCHECK_ALT_SOURCE_PATHS "${CMAKE_CURRENT_SOURCE_DIR}")
-health_check_add_target(tofcore)
+include(HealthCheck OPTIONAL RESULT_VARIABLE HEALTHCHECK_FOUND)
+if(HEALTHCHECK_FOUND)
+    set(PREACT_CPPCHECK_EXCLUDE_PATTERN "(cmake|test|wrappers|examples)")
+    list(APPEND PREACT_CPPCHECK_ALT_SOURCE_PATHS "${CMAKE_CURRENT_SOURCE_DIR}")
+    health_check_add_target(tofcore)
+endif()

@@ -33,7 +33,7 @@ sensor.subscribe_measurement(example_callback)
 # - DCS measurement with 4 DCS frames included
 # - Grayscale measurement with single ambient frame
 example_callback.counter = 0
-sensor.set_integration_time(args.integration, args.integration, args.integration, args.integration)
+sensor.set_integration_times(args.integration, args.integration, args.integration)
 sensor.stream_dcs_ambient()
 while example_callback.counter < 1:
     time.sleep(0.1)
