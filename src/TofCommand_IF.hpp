@@ -26,7 +26,7 @@ constexpr uint16_t COMMAND_GET_INT_TIMES            = 0x08;
 constexpr uint16_t COMMAND_GET_DCS_AMBIENT          = 0x0B;
 constexpr uint16_t COMMAND_SET_OFFSET               = 0x14;
 constexpr uint16_t COMMAND_SET_MIN_AMPLITUDE        = 0x15;
-constexpr uint16_t COMMAND_SET_FILTER               = 0x16;
+
 constexpr uint16_t COMMAND_SET_MODULATION           = 0x17;
 constexpr uint16_t COMMAND_SET_BINNING              = 0x18;
 constexpr uint16_t COMMAND_SET_HDR                  = 0x19;
@@ -138,19 +138,6 @@ constexpr uint32_t V0_T1_INTEGRATION_TIME_3D_2_INDEX = 19;  ///<Index of the int
 constexpr uint32_t V0_T1_TEMPERATURE_INDEX = 21;            ///<Index of the last temperature
 constexpr uint32_t V0_T1_DATA_OFFSET_INDEX = 23;            ///<Index of the data offset_INDEX = offset where the measurement data starts
 constexpr uint32_t V0_T1_USER_DATA_INDEX = 25;              ///<Index of the user data (start of KLV data)
-
-/*
- * Offsets into version 0 protocol type 0 (command) payload for filter parameters
- */
-constexpr uint32_t V0_T1_TEMPORAL_FILTER_FACTOR_INDEX = 0;                ///<Factor for the temporal filter
-constexpr uint32_t V0_T1_TEMPORAL_FILTER_THRESHOLD_INDEX = 2;             ///<Threshold for the temporal filter
-constexpr uint32_t V0_T1_MEDIAN_FILTER_ENABLED_INDEX = 4;                 ///<Flag to enable/disable the median filter
-constexpr uint32_t V0_T1_AVERAGE_FILTER_ENABLED_INDEX = 5;                ///<Flag to enable/disable the average filter
-constexpr uint32_t V0_T1_EDGE_DETECTION_THRESHOLD_INDEX = 6;              ///<Threshold to setup the edge detection
-constexpr uint32_t V0_T1_INTERFERENCE_DETECTION_USE_LAST_VALUE_INDEX = 8; ///<Flag to select if the last valid value should be used in case of interference
-constexpr uint32_t V0_T1_INTERFERENCE_DETECTION_LIMIT_INDEX = 9;          ///<Interference detection limit
-constexpr uint32_t V0_T1_TEMPORAL_EDGE_FILTER_THRESHOLD_LOW_INDEX = 11;   ///<Lower threshold for temporal edge filter
-constexpr uint32_t V0_T1_TEMPORAL_EDGE_FILTER_THRESHOLD_HIGH_INDEX = 13;  ///<Higher threshold for temporal edge filter
 
 } //end namespace TofComm
 

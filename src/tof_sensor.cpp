@@ -291,31 +291,6 @@ bool Sensor::setBinning(const bool vertical, const bool horizontal)
     return bool{this->send_receive(COMMAND_SET_BINNING, byte)};
 }
 
-bool Sensor::setFilter(const bool medianFilter, const bool averageFilter, const uint16_t temporalFactor, const uint16_t temporalThreshold, const uint16_t edgeThreshold, const uint16_t temporalEdgeThresholdLow, const uint16_t temporalEdgeThresholdHigh, const uint16_t interferenceDetectionLimit, const bool interferenceDetectionUseLastValue)
-{
-    std::vector<uint8_t> payload;
-
-    BE_Put(&payload[V0_T1_TEMPORAL_FILTER_FACTOR_INDEX], temporalFactor);
-
-    BE_Put(&payload[V0_T1_TEMPORAL_FILTER_THRESHOLD_INDEX], temporalThreshold);
-
-    payload[V0_T1_MEDIAN_FILTER_ENABLED_INDEX] = medianFilter ? 1 : 0;
-
-    payload[V0_T1_AVERAGE_FILTER_ENABLED_INDEX] = averageFilter ? 1 : 0;
-
-    BE_Put(&payload[V0_T1_EDGE_DETECTION_THRESHOLD_INDEX], edgeThreshold);
-
-    payload[V0_T1_INTERFERENCE_DETECTION_USE_LAST_VALUE_INDEX] = interferenceDetectionUseLastValue ? 1 : 0;
-
-    BE_Put(&payload[V0_T1_INTERFERENCE_DETECTION_LIMIT_INDEX], interferenceDetectionLimit);
-
-    BE_Put(&payload[V0_T1_TEMPORAL_EDGE_FILTER_THRESHOLD_LOW_INDEX], temporalEdgeThresholdLow);
-
-    BE_Put(&payload[V0_T1_TEMPORAL_EDGE_FILTER_THRESHOLD_HIGH_INDEX], temporalEdgeThresholdHigh);
-
-    return pimpl->connection.send_receive(COMMAND_SET_FILTER, payload, 5s).has_value();
-}
-
 bool Sensor::setFlipHorizontally(bool flip)
 {
     const uint8_t data = (flip ? 1 : 0);

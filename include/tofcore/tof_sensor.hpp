@@ -53,10 +53,6 @@ public:
     void jumpToBootloader(uint16_t token);
 
     bool setBinning(const bool vertical, const bool horizontal);
-    bool setFilter(const bool medianFilter, const bool averageFilter, const uint16_t temporalFactor,
-                   const uint16_t temporalThreshold, const uint16_t edgeThreshold, const uint16_t temporalEdgeThresholdLow,
-                   const uint16_t temporalEdgeThresholdHigh, const uint16_t interferenceDetectionLimit,
-                   const bool interferenceDetectionUseLastValue);
     bool setFlipHorizontally(bool flip);
     bool setFlipVertically(bool flip);
     bool setHDRMode(uint8_t mode);
