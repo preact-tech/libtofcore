@@ -5,6 +5,7 @@
  *
  * Test program that uses libtofcore to get various sensor values.
  */
+#include "tofcore/TofEndian.hpp"
 #include "tofcore/tof_sensor.hpp"
 #include <csignal>
 #include <iomanip>
@@ -143,8 +144,8 @@ int main(int argc, char *argv[])
         Sensor_Status_t sensorStatus { };
         if (sensor.getSensorStatus(sensorStatus))
         {
-            std::cout << "Last Temperature: " << sensorStatus.lastTemperature
-                      << "; USB Current: " << std::fixed << std::setprecision(2) << sensorStatus.USB_Current
+            std::cout << "Last Temperature: " << boost::endian::big_to_native(sensorStatus.lastTemperature)
+                      << "; USB Current: " << boost::endian::big_to_native(sensorStatus.USB_Current)
                       << "; BIT Status: " << std::hex << "0X" << sensorStatus.BIT_Status << "\n";
         }
         else

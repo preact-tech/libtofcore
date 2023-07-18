@@ -216,7 +216,7 @@ static auto getSensorStatus(tofcore::Sensor& s)
 
     // Extract packed value
     int16_t  lastTemperature { sensorStatus.lastTemperature };
-    float    USB_Current     { sensorStatus.USB_Current};
+    int16_t  USB_Current     { sensorStatus.USB_Current};
     uint32_t BIT_Status      { sensorStatus.BIT_Status};
 
     return Sensor_Status_t(lastTemperature,

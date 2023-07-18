@@ -59,7 +59,7 @@ struct versionData_t
 struct Sensor_Status_t
 {
     int16_t  lastTemperature;
-    float    USB_Current;
+    int16_t  USB_Current;
     uint32_t BIT_Status;
 } PACKED;
 
