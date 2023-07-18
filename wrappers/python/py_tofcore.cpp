@@ -162,7 +162,7 @@ static auto getSensorStatus(tofcore::Sensor& s)
         fields.append("USB_Current");
         fields.append("BIT_Status");
 
-        return namedTuple_attr("sensorStatus", fields);
+        return namedTuple_attr("SensorStatus", fields);
     }();
 
     TofComm::Sensor_Status_t sensorStatus;
@@ -177,9 +177,10 @@ static auto getSensorStatus(tofcore::Sensor& s)
     int16_t  USB_Current     { sensorStatus.USB_Current};
     uint32_t BIT_Status      { sensorStatus.BIT_Status};
 
-    return Sensor_Status_t(lastTemperature,
-                            USB_Current,
-                            BIT_Status);
+    // return natural types
+    return Sensor_Status_t((float)lastTemperature,
+                           (float)USB_Current,
+                           BIT_Status);
 
 }
 
