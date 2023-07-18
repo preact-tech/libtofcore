@@ -95,23 +95,6 @@ bool Sensor::getAccelerometerData(int16_t& x, int16_t& y, int16_t& z, uint8_t& g
     return ok;
 }
 
-/* DEPRECATED - use getSensorInfo() instead. */
-bool Sensor::getChipInformation(uint16_t& waferId, uint16_t& chipId)
-{
-    auto result = this->send_receive(COMMAND_READ_CHIP_INFO);
-    auto ok = bool {result};
-    const auto& payload = *result;
-
-    ok &= (payload.size() == READ_CHIP_INFO_SIZE) && (READ_CHIP_INFO_DATA_TYPE == (uint8_t)payload[DATA_TYPE_ID_OFFSET]);
-    if (ok)
-    {
-        BE_Get(waferId, &payload[CHIP_WAFER_ID_OFFSET]);
-        BE_Get(chipId,  &payload[CHIP_CHIP_ID_OFFSET]);
-    }
-
-    return ok;
-}
-
 std::optional<std::vector<uint16_t>> Sensor::getIntegrationTimes()
 {
     auto result = this->send_receive(COMMAND_GET_INT_TIMES);
@@ -216,24 +199,6 @@ bool Sensor::getSettings(std::string& jsonSettings)
     return true;
 }
 
-/* DEPRECATED - use getSensorInfo() instead. */
-bool Sensor::getSoftwareVersion(std::string& version)
-{
-    auto result = this->send_receive(COMMAND_READ_FIRMWARE_VERSION);
-
-    if (!result)
-    {
-        return false; // failed to get information
-    }
-
-    const auto& answer = *result;
-    const auto size = (answer.size() > 0) ? (answer.size() - 1) : 0; // We're not using leading version 0 protocol ACK, just the string that follows
-
-    version = std::string(reinterpret_cast<const char*>(answer.data() + 1), size); // +1 to skip leading version 0 protocol ACK
-
-    return true;
-}
-
 /**
  * @brief Check if Horizontal flip is active.
  * 
@@ -304,31 +269,6 @@ bool Sensor::setBinning(const bool vertical, const bool horizontal)
     }
 
     return bool{this->send_receive(COMMAND_SET_BINNING, byte)};
-}
-
-bool Sensor::setFilter(const bool medianFilter, const bool averageFilter, const uint16_t temporalFactor, const uint16_t temporalThreshold, const uint16_t edgeThreshold, const uint16_t temporalEdgeThresholdLow, const uint16_t temporalEdgeThresholdHigh, const uint16_t interferenceDetectionLimit, const bool interferenceDetectionUseLastValue)
-{
-    std::vector<uint8_t> payload;
-
-    BE_Put(&payload[V0_T1_TEMPORAL_FILTER_FACTOR_INDEX], temporalFactor);
-
-    BE_Put(&payload[V0_T1_TEMPORAL_FILTER_THRESHOLD_INDEX], temporalThreshold);
-
-    payload[V0_T1_MEDIAN_FILTER_ENABLED_INDEX] = medianFilter ? 1 : 0;
-
-    payload[V0_T1_AVERAGE_FILTER_ENABLED_INDEX] = averageFilter ? 1 : 0;
-
-    BE_Put(&payload[V0_T1_EDGE_DETECTION_THRESHOLD_INDEX], edgeThreshold);
-
-    payload[V0_T1_INTERFERENCE_DETECTION_USE_LAST_VALUE_INDEX] = interferenceDetectionUseLastValue ? 1 : 0;
-
-    BE_Put(&payload[V0_T1_INTERFERENCE_DETECTION_LIMIT_INDEX], interferenceDetectionLimit);
-
-    BE_Put(&payload[V0_T1_TEMPORAL_EDGE_FILTER_THRESHOLD_LOW_INDEX], temporalEdgeThresholdLow);
-
-    BE_Put(&payload[V0_T1_TEMPORAL_EDGE_FILTER_THRESHOLD_HIGH_INDEX], temporalEdgeThresholdHigh);
-
-    return pimpl->connection.send_receive(COMMAND_SET_FILTER, payload, 5s).has_value();
 }
 
 bool Sensor::setFlipHorizontally(bool flip)
