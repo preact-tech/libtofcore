@@ -31,7 +31,7 @@ static void parseArgs(int argc, char *argv[])
         ("protocol-version,v", po::value<uint16_t>(&protocolVersion)->default_value(DEFAULT_PROTOCOL_VERSION))
         ("baud-rate,b", po::value<uint32_t>(&baudRate)->default_value(DEFAULT_BAUD_RATE))
         ("fallback-loader,f", "Jump to fallback loader to perform update of the primary loader")
-        ("token,t", po::value<uint16_t>(&token), "Pass 16bit token value with command to peform special bootloader operations")
+        ("token,t", po::value<uint16_t>(&token), "Pass 16bit token value with command to perform special boot-loader operations")
         ;
 
     po::variables_map vm;

@@ -204,8 +204,9 @@ static void parseArgs(int argc, char *argv[])
         ("device-uri,p", po::value<std::string>(&devicePort))
         ("protocol-version,v", po::value<uint16_t>(&protocolVersion)->default_value(DEFAULT_PROTOCOL_VERSION))
         ("baud-rate,b", po::value<uint32_t>(&baudRate)->default_value(DEFAULT_BAUD_RATE))
-        ("a", po::bool_switch(&captureAmxxx), "Capture DCS+Ambient or Distance Amplitude frames, (not just DCS or Distance)")
-        ("d", po::bool_switch(&captureDistance),  "Capture distance (or amplitude) frames instead of DCS frames")
+        ("amplitude,a", po::bool_switch(&captureAmxxx), "Capture DCS+Ambient or Distance Amplitude frames, (not just DCS or Distance)")
+        ("ambient", po::bool_switch(&captureAmxxx), "Capture DCS+Ambient or Distance Amplitude frames, (not just DCS or Distance)")
+        ("distance,d", po::bool_switch(&captureDistance),  "Capture distance (or amplitude) frames instead of DCS frames")
         ("verbose,v",               
            new  CountValue(&verbosity),
             "Increase verbosity of output")
