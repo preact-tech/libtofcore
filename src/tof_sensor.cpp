@@ -95,23 +95,6 @@ bool Sensor::getAccelerometerData(int16_t& x, int16_t& y, int16_t& z, uint8_t& g
     return ok;
 }
 
-/* DEPRECATED - use getSensorInfo() instead. */
-bool Sensor::getChipInformation(uint16_t& waferId, uint16_t& chipId)
-{
-    auto result = this->send_receive(COMMAND_READ_CHIP_INFO);
-    auto ok = bool {result};
-    const auto& payload = *result;
-
-    ok &= (payload.size() == READ_CHIP_INFO_SIZE) && (READ_CHIP_INFO_DATA_TYPE == (uint8_t)payload[DATA_TYPE_ID_OFFSET]);
-    if (ok)
-    {
-        BE_Get(waferId, &payload[CHIP_WAFER_ID_OFFSET]);
-        BE_Get(chipId,  &payload[CHIP_CHIP_ID_OFFSET]);
-    }
-
-    return ok;
-}
-
 std::optional<std::vector<uint16_t>> Sensor::getIntegrationTimes()
 {
     auto result = this->send_receive(COMMAND_GET_INT_TIMES);
@@ -197,24 +180,6 @@ bool Sensor::getSettings(std::string& jsonSettings)
     const auto size = answer.size();
 
     jsonSettings = std::string(reinterpret_cast<const char*>(answer.data()+1), size-1);
-
-    return true;
-}
-
-/* DEPRECATED - use getSensorInfo() instead. */
-bool Sensor::getSoftwareVersion(std::string& version)
-{
-    auto result = this->send_receive(COMMAND_READ_FIRMWARE_VERSION);
-
-    if (!result)
-    {
-        return false; // failed to get information
-    }
-
-    const auto& answer = *result;
-    const auto size = (answer.size() > 0) ? (answer.size() - 1) : 0; // We're not using leading version 0 protocol ACK, just the string that follows
-
-    version = std::string(reinterpret_cast<const char*>(answer.data() + 1), size); // +1 to skip leading version 0 protocol ACK
 
     return true;
 }

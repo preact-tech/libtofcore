@@ -37,14 +37,10 @@ public:
     ~Sensor();
 
     bool getAccelerometerData(int16_t &x, int16_t &y, int16_t &z, uint8_t &g_range);
-    /* DEPRECATED - use getSensorInfo() instead. */
-    bool getChipInformation(uint16_t &waferId, uint16_t &chipId);
     std::optional<std::vector<uint16_t>> getIntegrationTimes();
     bool getLensInfo(std::vector<double> &rays_x, std::vector<double> &rays_y, std::vector<double> &rays_z);
     bool getSensorInfo(TofComm::versionData_t &versionData);
     bool getSettings(std::string& jsonSettings);
-    /* DEPRECATED - use getSensorInfo() instead. */
-    bool getSoftwareVersion(std::string& version);
 
     std::optional<bool> isFlipHorizontallyActive();
     std::optional<bool> isFlipVerticallyActive();

@@ -113,7 +113,7 @@ measurement_callback.SWITCH = False
 
 success = sensor.set_integration_times(100,0,0)
 cmd_delay()
-print(sensor.get_software_version)
+print(sensor.get_sensor_info)
 cmd_delay()
 sensor.subscribe_measurement(measurement_callback)
 

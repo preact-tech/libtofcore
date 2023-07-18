@@ -105,14 +105,6 @@ def test_stream_dcs_ambient(dut: pytofcore.Sensor):
 
 
 @pytest.mark.functional
-def test_get_software_version(dut: pytofcore.Sensor):
-    version = dut.get_software_version
-
-    print("\nSoftware Version: " + version.softwareVersion)
-    assert version._fields == ('softwareVersion',)
-    assert isinstance(version.softwareVersion, str)
-
-@pytest.mark.functional
 def test_get_sensor_info(dut: pytofcore.Sensor):
     
     versionInfo = dut.get_sensor_info()
@@ -133,17 +125,6 @@ def test_get_sensor_info(dut: pytofcore.Sensor):
     print("Backpack Module/Version: " + str(versionInfo.backpackModule))
 
     assert versionInfo._fields == ('deviceSerialNumber', 'cpuBoardSerialNumber', 'illuminatorBoardSerialNumber', 'modelName', 'lastResetType', 'softwareId', 'softwareVersion', 'cpuVersion', 'chipId', 'illuminatorSwVersion', 'illuminatorSwId', 'illuminatorHwCfg' ,'backpackModule')
-
-
-@pytest.mark.functional
-def test_get_chip_info(dut: pytofcore.Sensor):
-    chip_info = dut.chip_info
-
-    print(chip_info)
-
-    assert chip_info._fields == ('wafer_id', 'chip_id')
-    assert isinstance(chip_info.wafer_id, int)
-    assert isinstance(chip_info.chip_id, int)
 
 
 @pytest.mark.functional
