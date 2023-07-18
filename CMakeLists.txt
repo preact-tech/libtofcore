@@ -16,6 +16,7 @@ include(cmake/tof_options.cmake)
 ###########################
 # Find system dependencies
 set(MIN_BOOST_VERSION 1.70)
+set(Boost_USE_STATIC_LIBS   ON)
 find_package(Boost ${MIN_BOOST_VERSION} REQUIRED COMPONENTS)
 
 add_subdirectory(third_party/libusbp EXCLUDE_FROM_ALL)
