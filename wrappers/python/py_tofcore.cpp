@@ -177,9 +177,9 @@ static auto getSensorStatus(tofcore::Sensor& s)
     int16_t  USB_Current     { sensorStatus.USB_Current};
     uint32_t BIT_Status      { sensorStatus.BIT_Status};
 
-    // return natural types
-    return Sensor_Status_t((float)lastTemperature,
-                           (float)USB_Current,
+    // return natural units, degree Celsius for temperature and amperes for current.
+    return Sensor_Status_t(lastTemperature/100.0,
+                           USB_Current/1000.0,
                            BIT_Status);
 
 }
