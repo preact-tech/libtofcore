@@ -151,6 +151,38 @@ static auto getSensorInfo(tofcore::Sensor& s)
                             (uint8_t)versionData.m_backpackModule);
 }
 
+static auto getSensorStatus(tofcore::Sensor& s)
+{
+
+    //Use static and a lambda to create the sensorStatus namedtuple type only once.
+    static auto Sensor_Status_t = []() {
+        auto namedTuple_attr = pybind11::module::import("collections").attr("namedtuple");
+        py::list fields;
+        fields.append("lastTemperature");
+        fields.append("USB_Current");
+        fields.append("BIT_Status");
+
+        return namedTuple_attr("SensorStatus", fields);
+    }();
+
+    TofComm::Sensor_Status_t sensorStatus;
+
+    if (!s.getSensorStatus(sensorStatus))
+    {
+        throw std::runtime_error("An error occcured trying to read sensor status info");
+    }
+
+    // Extract packed value
+    int16_t  lastTemperature { sensorStatus.lastTemperature };
+    int16_t  USB_Current     { sensorStatus.USB_Current};
+    uint32_t BIT_Status      { sensorStatus.BIT_Status};
+
+    // return natural units, degree Celsius for temperature and amperes for current.
+    return Sensor_Status_t(lastTemperature/100.0,
+                           USB_Current/1000.0,
+                           BIT_Status);
+
+}
 
 /// @brief  Helper function to read the integration times from a sensor such that an
 ///         exception is thrown if the read fails.
@@ -341,6 +373,7 @@ PYBIND11_MODULE(pytofcore, m) {
         .def("set_modulation", &tofcore::Sensor::setModulation, "Set the modulation frequency to use during TOF measurements", py::arg("index"), py::arg("channel"), py::call_guard<py::gil_scoped_release>())
         .def("subscribe_measurement", &subscribeMeasurement, "Set a function object to be called when new measurement data is received", py::arg("callback"))
         .def("get_sensor_info", &getSensorInfo, "Get the sensor version and build info")
+        .def("get_sensor_status", &getSensorStatus, "Get the sensor status info")
         .def_property("hflip", &hflip_get, &hflip_set, "State of the image horizontal flip option (default False)")
         .def_property("vflip", &vflip_get, &vflip_set, "State of the image vertical flip option (default False)")
 

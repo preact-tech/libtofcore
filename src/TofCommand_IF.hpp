@@ -57,7 +57,9 @@ constexpr uint16_t COMMAND_JUMP_TO_BOOLOADER        = 0x6F;
 constexpr uint16_t COMMAND_STORE_SETTINGS           = 0x71;
 constexpr uint16_t COMMAND_READ_SETTINGS            = 0x72;
 
-constexpr uint16_t COMMAND_READ_SENSOR_INFO         = 0xD0;
+constexpr uint16_t COMMAND_READ_SENSOR_INFO     = 0xD0;
+constexpr uint16_t COMMAND_READ_SENSOR_STATUS   = 0xD1;
+
 
 constexpr uint8_t DATA_TYPE_ID_OFFSET = 0;
 

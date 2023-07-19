@@ -7,6 +7,7 @@
  */
 #include "comm_serial/serial_connection.hpp"
 #include "tofcore/device_discovery.hpp"
+#include "tofcore/TofEndian.hpp"
 #include "tof_sensor.hpp"
 #include "TofCommand_IF.hpp"
 #include "TofEndian.hpp"
@@ -225,6 +226,26 @@ bool Sensor::getSensorInfo(TofComm::versionData_t &versionData)
     if (ok)
     {
         memcpy((void*) &versionData, (void*) payload.data(), sizeof(versionData));
+    }
+    return ok;
+}
+
+bool Sensor::getSensorStatus(TofComm::Sensor_Status_t &sensorStatus)
+{
+    auto result = this->send_receive(COMMAND_READ_SENSOR_STATUS);
+    auto ok = bool { result };
+    const auto &payload = *result;
+
+    ok &= (payload.size() == sizeof(sensorStatus));
+
+    if (ok)
+    {
+        memcpy((void*) &sensorStatus, (void*) payload.data(), sizeof(sensorStatus));
+
+        sensorStatus.lastTemperature = boost::endian::big_to_native(sensorStatus.lastTemperature);
+        sensorStatus.USB_Current = boost::endian::big_to_native(sensorStatus.USB_Current);
+        sensorStatus.BIT_Status = boost::endian::big_to_native(sensorStatus.BIT_Status);
+
     }
     return ok;
 }

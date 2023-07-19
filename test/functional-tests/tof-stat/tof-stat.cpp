@@ -7,6 +7,7 @@
  */
 #include "tofcore/tof_sensor.hpp"
 #include <csignal>
+#include <iomanip>
 #include <iostream>
 #include <boost/program_options.hpp>
 
@@ -122,6 +123,21 @@ int main(int argc, char *argv[])
             {
                 std::cerr << "Failed to store sensor settings in persistent memory" << std::endl;
             }
+        }
+
+        /*
+         * Read Sensor Status
+         */
+        Sensor_Status_t sensorStatus { };
+        if (sensor.getSensorStatus(sensorStatus))
+        {
+            std::cout << "Last Temperature: " << sensorStatus.lastTemperature
+                      << "; USB Current: " << sensorStatus.USB_Current
+                      << "; BIT Status: " << std::hex << "0X" << sensorStatus.BIT_Status << "\n";
+        }
+        else
+        {
+            std::cerr << "Failed to read sensor status" << std::endl;
         }
     } // when scope is exited, sensor connection is cleaned up
 

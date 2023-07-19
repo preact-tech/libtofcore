@@ -62,7 +62,13 @@ PACK_START struct versionData_t
     char m_illuminatorSwVersion[32] { };
     uint8_t m_illuminatorHwCfg { };
     backpackModule_t m_backpackModule { };
+} PACK_END;
 
+PACK_START struct Sensor_Status_t
+{
+    int16_t  lastTemperature;
+    int16_t  USB_Current;
+    uint32_t BIT_Status;
 } PACK_END;
 
 } //end namespace TofComm
