@@ -54,52 +54,6 @@ constexpr uint16_t COMMAND_JUMP_TO_BOOLOADER        = 0x6F;
 constexpr uint16_t COMMAND_STORE_SETTINGS           = 0x71;
 constexpr uint16_t COMMAND_READ_SETTINGS            = 0x72;
 
-/*
-* Illuminator board commands
-*/
-constexpr uint16_t COMMAND_SET_VLED_ENABLES     = 0x80;
-constexpr uint16_t COMMAND_GET_VLED_ENABLES     = 0x81;
-    constexpr size_t  VLED_ENABLES_DATA_OFFSET         = 1;
-    constexpr size_t  VLED_ENABLES_DATA_SIZE           = 2;
-constexpr uint16_t COMMAND_SET_VLED             = 0x82;
-constexpr uint16_t COMMAND_GET_VLED             = 0x83;
-    constexpr size_t VLED_DATA_OFFSET               = 0;
-    constexpr size_t VLED_DATA_SIZE                 = 2;
-constexpr uint16_t COMMAND_GET_IB_5V            = 0x84;
-    constexpr size_t IB_5V_DATA_OFFSET               = 0;
-    constexpr size_t IB_5V_DATA_SIZE                 = 2;
-constexpr uint16_t COMMAND_GET_IB_TEMPERATURE      = 0x85;
-    constexpr size_t IB_TEMPERATURE_DATA_OFFSET         = 0;
-    constexpr size_t IB_TEMPERATURE_DATA_SIZE           = 2;
-constexpr uint16_t COMMAND_GET_IB_PD            = 0x86;
-    constexpr size_t IB_PD_DATA_OFFSET               = 0;
-    constexpr size_t IB_PD_DATA_SIZE                 = 2;
-constexpr uint16_t COMMAND_SET_RGB              = 0x88;
-    constexpr size_t RGB_COLOR_OFFSET           = 0;
-    constexpr size_t RGB_BLINK_OFFSET           = 1;
-    constexpr size_t RGB_SET_DATA_SIZE          = 3;
-constexpr uint16_t COMMAND_GET_RGB              = 0x89;
-    constexpr size_t RGB_DATA_OFFSET                 = 0;
-    constexpr size_t RGB_DATA_SIZE                   = 1;
-constexpr uint16_t COMMAND_SET_IB_TEST_8BIT      = 0x8A;
-constexpr uint16_t COMMAND_SET_IB_TEST_16BIT     = 0x8B;
-constexpr uint16_t COMMAND_GET_IB_TEST_8BIT      = 0x8C;
-    constexpr size_t IB_TEST_8BIT_OFFSET             = 0;
-    constexpr size_t IB_TEST_8BIT_SIZE               = 1;
-constexpr uint16_t COMMAND_GET_IB_TEST_16BIT     = 0x8D;
-    constexpr size_t IB_TEST_16BIT_OFFSET             = 0;
-    constexpr size_t IB_TEST_16BIT_SIZE               = 2;
-constexpr uint16_t COMMAND_SET_SERIAL_NUM        = 0x8F;
-constexpr uint16_t COMMAND_GET_SERIAL_NUM        = 0x90;
-    constexpr size_t SERIAL_NUM_DATA_OFFSET           = 0;
-    constexpr size_t SERIAL_NUM_DATA_SIZE             = 4;
-
-
-constexpr uint16_t COMMAND_STORAGE_GET_METADATA = 0xCC;
-constexpr uint16_t COMMAND_STORAGE_WRITE        = 0xCD;
-constexpr uint16_t COMMAND_STORAGE_READ         = 0xCE;
-constexpr uint16_t COMMAND_FACTORY_MODE         = 0xCF;
-
 constexpr uint16_t COMMAND_READ_SENSOR_INFO     = 0xD0;
 constexpr uint16_t COMMAND_READ_SENSOR_STATUS   = 0xD1;
 
