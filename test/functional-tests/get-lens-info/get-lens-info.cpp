@@ -1,9 +1,9 @@
 /**
- * @file tof-stat.cpp
+ * @file get-lens-info.cpp
  *
  * Copyright 2023 PreAct Technologies
  *
- * Test program that uses libt10 to get various sensor values.
+ * Test program that libtofcore to read Lens information.
  */
 #include "tofcore/tof_sensor.hpp"
 #include <csignal>
@@ -29,7 +29,7 @@ static void parseArgs(int argc, char *argv[])
                 baudRate = atoi(optarg);
                 break;
             case 'h':
-                std::cout   << "Command sensor to jump to bootloader" << std::endl << std::endl
+                std::cout   << "Read Lens information from the sensor" << std::endl << std::endl
                             << "Usage: " << argv[0] << " [-b <baud>] [-h] [-p <port>]" << std::endl
                             << "  -b <baud>     Set baud rate (UART). Default = "<< DEFAULT_BAUD_RATE << std::endl
                             << "  -h            Print help and exit" << std::endl
@@ -63,24 +63,24 @@ int main(int argc, char *argv[])
     {
         tofcore::Sensor sensor { protocolVersion, devicePort, baudRate };
 
-        auto lensIntrinsics = sensor.getLensIntrinsics();
-        if (lensIntrinsics)
+        auto lensInfo = sensor.getLensIntrinsics();
+        if (lensInfo)
         {
-            std::cout << "rowOffset: "           << lensIntrinsics->m_rowOffset
-                      << "; columnOffset: "      << lensIntrinsics->m_columnOffset
-                      << "; rowFocalLength: "    << lensIntrinsics->m_rowFocalLength
-                      << "; columnFocalLength: " << lensIntrinsics->m_columnFocalLength
-                      << "; coefficients: {";
+            std::cout << "rowOffset="           << lensInfo->m_rowOffset
+                      << ", columnOffset="      << lensInfo->m_columnOffset
+                      << ", rowFocalLength="    << lensInfo->m_rowFocalLength
+                      << ", columnFocalLength=" << lensInfo->m_columnFocalLength
+                      << ", undistortionCoeff=[";
             size_t n;
             for (n = 0; n < 4; ++n)
             {
-                std::cout << lensIntrinsics->m_undistortionCoeffs[n] << ", ";
+                std::cout << lensInfo->m_undistortionCoeffs[n] << ", ";
             }
-            std::cout << lensIntrinsics->m_undistortionCoeffs[n] << "}" << std::endl;
+            std::cout << lensInfo->m_undistortionCoeffs[n] << "]" << std::endl;
         }
         else
         {
-            std::cerr << "Unable to read Lens Intrinsics data" << std::endl;
+            std::cerr << "Unable to read Lens Info data" << std::endl;
         }
 
     } // when scope is exited, sensor connection is cleaned up
