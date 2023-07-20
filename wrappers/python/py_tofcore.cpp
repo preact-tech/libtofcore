@@ -75,6 +75,30 @@ static auto getAccelerometerData(tofcore::Sensor& s)
     return AccelerometerData_type(x, y, z, g_range);
 }
 
+static auto getLensInfo(tofcore::Sensor& s)
+{
+    //Use static and a lambda to create the LensInfo_type namedtuple type only once.
+    static auto LensInfo_type = []() {
+        auto namedTuple_attr = pybind11::module::import("collections").attr("namedtuple");
+        py::list fields;
+        fields.append("rowOffset");
+        fields.append("columnOffset");
+        fields.append("rowFocalLength");
+        fields.append("columnFocalLength");
+        fields.append("undistortionCoeffs");
+        return namedTuple_attr("LensInfo", fields);
+    }();
+
+    auto result = s.getLensIntrinsics();
+    if (!result)
+    {
+        throw std::runtime_error("An error occured while getting Lens information");
+    }
+
+    return LensInfo_type(result->m_rowOffset, result->m_columnOffset, result->m_rowFocalLength,
+                         result->m_columnFocalLength, result->m_undistortionCoeffs);
+}
+
 static auto getPixelRays(tofcore::Sensor& s)
 {
     //Use static and a lambda to create the PixelRays namedtuple type only once.
@@ -357,6 +381,7 @@ PYBIND11_MODULE(pytofcore, m) {
         .def(py::init<uint16_t, const std::string&, uint32_t>(), py::arg("protocol_version")=tofcore::DEFAULT_PROTOCOL_VERSION, py::arg("port_name")=tofcore::DEFAULT_PORT_NAME, py::arg("baud_rate")=tofcore::DEFAULT_BAUD_RATE)
         .def_property_readonly("accelerometer_data", &getAccelerometerData, "Obtain acceleromter info. Each call turns a new sample from the accelerometer. The same is a namedtuple with fields x, y, z, range_g", py::call_guard<py::gil_scoped_release>())
         .def_property_readonly("pixel_rays", &getPixelRays, "Obtain unit vector ray information for all pixels based on the lens information stored on the sensor. Returns a namedtuple with fields x, y, z. Each field is a list of floats of length width x height.", py::call_guard<py::gil_scoped_release>())
+        .def_property_readonly("lens_info", &getLensInfo, "Obtain Lens information stored on sensor. Returns a namedtuple with fields rowOffset, columnOffset, rowFocalLength, columnFocalLength, undistortionCoeffs.", py::call_guard<py::gil_scoped_release>())
         .def("stop_stream", &tofcore::Sensor::stopStream, "Command the sensor to stop streaming", py::call_guard<py::gil_scoped_release>())
         .def("stream_dcs", &tofcore::Sensor::streamDCS, "Command the sensor to stream DCS frames", py::call_guard<py::gil_scoped_release>())
         .def("stream_dcs_ambient", &tofcore::Sensor::streamDCSAmbient, "Command the sensor to stream DCS and Ambient frames. Ambient frames are of type Frame::DataType::GRAYSCALE", py::call_guard<py::gil_scoped_release>())

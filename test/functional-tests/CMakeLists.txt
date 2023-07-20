@@ -2,6 +2,7 @@ add_subdirectory (jmp-to-boot)
 add_subdirectory (rapid-changes)
 add_subdirectory (simple-streamer)
 add_subdirectory (tof-flip)
+add_subdirectory (tof-lens-rd)
 add_subdirectory (tof-stat)
 add_subdirectory (tof-discovery)
 

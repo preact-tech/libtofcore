@@ -121,7 +121,7 @@ std::optional<std::vector<uint16_t>> Sensor::getIntegrationTimes()
 
 bool Sensor::getLensInfo(std::vector<double>& rays_x, std::vector<double>& rays_y, std::vector<double>& rays_z)
 {
-    auto result = this->send_receive(COMMAND_GET_LENS_INFO);
+    auto result = this->send_receive(COMMAND_GET_LENS_INFO, (uint8_t)1);
 
     if (!result)
     {
@@ -151,6 +151,46 @@ bool Sensor::getLensInfo(std::vector<double>& rays_x, std::vector<double>& rays_
         rays_z.push_back(v / imax);
     }
     return true;
+}
+
+std::optional<LensIntrinsics_t> Sensor::getLensIntrinsics()
+{
+    auto result = this->send_receive(COMMAND_GET_LENS_INFO, (uint8_t)0);
+
+    if (!result || (result->size() != RAW_SENSOR_INFO_DATA_SIZE))
+    {
+        return std::nullopt; // failed to get information
+    }
+    LensIntrinsics_t li { };
+
+    const uint8_t* rawPtr = reinterpret_cast<const uint8_t*>(result->data());
+    int16_t s16 { 0 };
+    // Row offset
+    BE_Get(s16, rawPtr);
+    li.m_rowOffset = s16 / 1.0E2;
+    rawPtr += sizeof(s16);
+    // Column offset
+    BE_Get(s16, rawPtr);
+    li.m_columnOffset = s16 / 1.0E2;
+    rawPtr += sizeof(s16);
+    // Row focal length
+    uint32_t u32 { 0 };
+    BE_Get(u32, rawPtr);
+    li.m_rowFocalLength = u32 / 1.0E6;
+    rawPtr += sizeof(u32);
+    // Column focal length
+    BE_Get(u32, rawPtr);
+    li.m_columnFocalLength = u32 / 1.0E6;
+    rawPtr += sizeof(u32);
+    // Un-distortion coefficients
+    for (size_t n = 0; n < 5; ++n)
+    {
+        int32_t i32 { 0 };
+        BE_Get(i32, rawPtr);
+        li.m_undistortionCoeffs[n] = i32 / 1.0E8;
+        rawPtr += sizeof(i32);
+    }
+    return { li };
 }
 
 bool Sensor::getSensorInfo(TofComm::versionData_t &versionData)

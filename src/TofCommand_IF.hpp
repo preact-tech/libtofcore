@@ -48,14 +48,15 @@ constexpr uint16_t COMMAND_READ_ACCELEROMETER       = 0x4B;
     constexpr size_t  READ_ACCELEROMETER_SIZE           = ACCELEROMETER_G_RANGE_OFFSET + sizeof(uint8_t);
 
 constexpr uint16_t COMMAND_GET_LENS_INFO            = 0x50;
+    constexpr size_t RAW_SENSOR_INFO_DATA_SIZE          = 32;
 
 constexpr uint16_t COMMAND_JUMP_TO_BOOLOADER        = 0x6F;
 
 constexpr uint16_t COMMAND_STORE_SETTINGS           = 0x71;
 constexpr uint16_t COMMAND_READ_SETTINGS            = 0x72;
 
-constexpr uint16_t COMMAND_READ_SENSOR_INFO     = 0xD0;
-constexpr uint16_t COMMAND_READ_SENSOR_STATUS   = 0xD1;
+constexpr uint16_t COMMAND_READ_SENSOR_INFO         = 0xD0;
+constexpr uint16_t COMMAND_READ_SENSOR_STATUS       = 0xD1;
 
 
 constexpr uint8_t DATA_TYPE_ID_OFFSET = 0;
