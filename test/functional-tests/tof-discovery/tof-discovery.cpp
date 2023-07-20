@@ -14,7 +14,6 @@ namespace po = boost::program_options;
 
 static std::string devicePort { };
 
-#if 1
 static void parseArgs(int argc, char *argv[])
 {
     po::options_description desc("Discover and enumerate connected devices");
@@ -30,27 +29,6 @@ static void parseArgs(int argc, char *argv[])
         exit(0);
     }
 }
-
-#else 
-static void parseArgs(int argc, char *argv[])
-{
-    int opt;
-    while ((opt = getopt(argc, argv, "h")) != -1)
-    {
-        switch (opt)
-        {
-            case 'h':
-                std::cout   << "Utiliity to scan for PreAct ToF Devices\n\n"
-                            << "Usage: " << argv[0] << " [-h]\n"
-                            << "  -h            Print help and exit"
-                            << std::endl;
-                exit(0);
-            default:
-                break;
-        }
-    }
-}
-#endif
 
 int main(int argc, char *argv[])
 {
