@@ -9,8 +9,15 @@
  */
 #include <cstdint>
 
-#if !defined(PACKED)
-#    define PACKED __attribute__((__packed__))
+#ifdef __GNUC__
+#define PACK_START
+#define PACK_END __attribute__((__packed__))
+#endif
+
+#ifdef _MSC_VER
+#define PACK_START __pragma( pack(push, 1) )
+#define PACK_END __pragma( pack(pop))
+//#define PACK( __Declaration__ ) __pragma( pack(push, 1) ) __Declaration__ __pragma( pack(pop))
 #endif
 
 namespace TofComm
@@ -20,7 +27,7 @@ typedef uint8_t(MAC_T)[6];
 
 constexpr unsigned SERIAL_NUMBER_SIZE       { 256U };
 constexpr unsigned TEST_STATION_DATA_SIZE   { 2040U };
-struct ManufacturingData_T
+PACK_START struct ManufacturingData_T
 {
     MAC_T m_MAC { 0x00, 0x1A, 0xF1, 0x99, 0x99, 0x99 };     ///< Default MAC for Ethernet connection
     uint8_t m_dummy[2] { 0, 0 };
@@ -29,7 +36,7 @@ struct ManufacturingData_T
     char m_modelName[SERIAL_NUMBER_SIZE] { 0 };             ///<< Product model number (string)
     char m_testStationData[TEST_STATION_DATA_SIZE] { 0 };   ///<< Storage for test station data
     uint8_t m_pad[768] { 0 };                               ///<< pad for future expansion
-} PACKED;
+} PACK_END;
 
 // Mojave Backpack Modules
 enum backpackModule_t : uint8_t
@@ -38,7 +45,8 @@ enum backpackModule_t : uint8_t
     EVT_BREAKOUT_BOARD = 1
 
 };
-struct versionData_t
+
+PACK_START struct versionData_t
 {
 
     char m_deviceSerialNumber[SERIAL_NUMBER_SIZE] { };
@@ -54,14 +62,14 @@ struct versionData_t
     char m_illuminatorSwVersion[32] { };
     uint8_t m_illuminatorHwCfg { };
     backpackModule_t m_backpackModule { };
+} PACK_END;
 
-} PACKED;
-struct Sensor_Status_t
+PACK_START struct Sensor_Status_t
 {
     int16_t  lastTemperature;
     int16_t  USB_Current;
     uint32_t BIT_Status;
-} PACKED;
+} PACK_END;
 
 } //end namespace TofComm
 

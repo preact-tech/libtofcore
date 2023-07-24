@@ -10,44 +10,35 @@
 #include "tofcore/tof_sensor.hpp"
 #include <csignal>
 #include <iostream>
-#include <unistd.h>
+#include <boost/program_options.hpp>
 
 using namespace tofcore;
 
 static uint32_t baudRate { DEFAULT_BAUD_RATE };
 static std::string devicePort { DEFAULT_PORT_NAME };
-static volatile bool exitRequested { false };
-static const uint16_t protocolVersion { 1 };
 static uint32_t repetitions { 100000 };
+
+static volatile bool exitRequested { false };
+static uint16_t protocolVersion { 1 };
 
 static void parseArgs(int argc, char *argv[])
 {
-    int opt;
-    while ((opt = getopt(argc, argv, "b:hp:r:")) != -1)
-    {
-        switch (opt)
-        {
-            case 'b':
-                baudRate = atoi(optarg);
-                break;
-            case 'h':
-                std::cout   << "Continually and rapidly set integration time." << std::endl << std::endl
-                            << "Usage: " << argv[0] << " [-b <baud>] [-h] [-p <port>]" << std::endl
-                            << "  -b <baud>     Set baud rate (UART). Default = "<< DEFAULT_BAUD_RATE << std::endl
-                            << "  -h            Print help and exit" << std::endl
-                            << "  -p <port>     Set port name. Default = "<< DEFAULT_PORT_NAME << std::endl
-                            << "  -r <count>    Repetition count (defaults to " << repetitions << ")" << std::endl
-                            << std::endl << std::endl;
-                exit(0);
-            case 'p':
-                devicePort = optarg;
-                break;
-            case 'r':
-                repetitions = atoi(optarg);
-                break;
-            default:
-                break;
-        }
+    namespace po = boost::program_options;
+    po::options_description desc("illuminator board test");
+    desc.add_options()
+        ("help,h", "produce help message")
+        ("device-uri,p", po::value<std::string>(&devicePort))
+        ("protocol-version,v", po::value<uint16_t>(&protocolVersion)->default_value(DEFAULT_PROTOCOL_VERSION))
+        ("baud-rate,b", po::value<uint32_t>(&baudRate)->default_value(DEFAULT_BAUD_RATE))
+        ("repeat,r", po::value<uint32_t>(&repetitions)->default_value(100000))
+        ;
+
+    po::variables_map vm;
+    po::store(po::parse_command_line(argc, argv, desc), vm);
+    po::notify(vm);
+    if (vm.count("help")) {
+        std::cout << desc << "\n";
+        exit(0);
     }
 }
 
@@ -65,7 +56,9 @@ int main(int argc, char *argv[])
      * perform a controlled shutdown.
      */
     signal(SIGINT, signalHandler);
+    #if defined(SIGQUUIT)
     signal(SIGQUIT, signalHandler);
+    #endif
     {
         tofcore::Sensor sensor { protocolVersion, devicePort, baudRate };
         uint32_t setCount { 0 };

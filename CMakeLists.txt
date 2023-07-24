@@ -16,6 +16,7 @@ include(cmake/tof_options.cmake)
 ###########################
 # Find system dependencies
 set(MIN_BOOST_VERSION 1.70)
+set(Boost_USE_STATIC_LIBS   ON)
 find_package(Boost ${MIN_BOOST_VERSION} REQUIRED COMPONENTS)
 
 add_subdirectory(third_party/libusbp EXCLUDE_FROM_ALL)
@@ -29,9 +30,14 @@ add_library(ToFCore::tofcore ALIAS tofcore)
 ###################
 # Compiler Options:
 ###################
-target_compile_options(tofcore PUBLIC -Wall -Wextra -fPIC -g)
-target_compile_features(tofcore PUBLIC cxx_std_17)  # Require C99 and C++17
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_compile_options(tofcore PUBLIC -Wall -Wextra)
+endif()
+if(MSVC)
+    target_compile_definitions(tofcore PUBLIC WINVER=0x0A00 _WIN32_WINNT=0x0A00 -DLIBUSBP_STATIC)
+endif()
 
+target_compile_features(tofcore PUBLIC cxx_std_17)  # Require C99 and C++17
 
 target_sources(tofcore
   PRIVATE
@@ -40,11 +46,14 @@ target_sources(tofcore
     src/measurement.cpp
     src/tof_sensor.cpp
     src/cartesian_transform.cpp
-    src/comm_ethernet/tcp_connection.cpp
-    src/comm_ethernet/udp_server.cpp
+    # src/comm_ethernet/tcp_connection.cpp
+    # src/comm_ethernet/udp_server.cpp
     src/crc32.cpp
     src/klv_decoder.cpp
 )
+
+target_link_libraries(tofcore PRIVATE Boost::boost)
+target_link_libraries(tofcore PRIVATE usbp)
 
 #Set target properties
 target_include_directories(tofcore
@@ -56,9 +65,6 @@ target_include_directories(tofcore
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libusbp/include
 )
-
-
-target_link_libraries(tofcore PRIVATE usbp)
 
 include(GenerateExportHeader)
 generate_export_header(tofcore)

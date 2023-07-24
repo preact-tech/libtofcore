@@ -49,6 +49,8 @@ public:
                                                          std::chrono::steady_clock::duration timeout);
     bool set_protocol_version(uint16_t version);
 
+    void reset_parser();
+
     /// Callback function that will be called when a complete measurement data packet has been received.
     void subscribe(on_measurement_callback_t callback);
 

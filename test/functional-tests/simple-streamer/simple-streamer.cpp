@@ -12,7 +12,8 @@
 #include <iostream>
 #include <iomanip>
 #include <thread>
-#include <unistd.h>
+#include <boost/program_options.hpp>
+
 
 using namespace std::chrono_literals;
 using namespace std::chrono;
@@ -24,7 +25,7 @@ static bool captureDistance { false };
 static std::string devicePort { DEFAULT_PORT_NAME };
 static volatile bool exitRequested { false };
 static uint16_t protocolVersion { DEFAULT_PROTOCOL_VERSION };
-static uint32_t verbosity { 0 };
+static size_t verbosity { 0 };
 
 static std::atomic<uint32_t> amplitudeCount;
 static std::atomic<uint32_t> dcsCount;
@@ -163,46 +164,60 @@ static void measurement_callback(std::shared_ptr<tofcore::Measurement_T> pData)
     }
 }
 
+namespace po = boost::program_options;
+
+class CountValue : public po::typed_value<std::size_t>
+{
+public:
+    CountValue():
+        CountValue(nullptr)
+    {
+    }
+
+    CountValue(std::size_t* store):
+        po::typed_value<std::size_t>(store)
+    {
+        // Ensure that no tokens may be passed as a value.
+        default_value(0);
+        zero_tokens();
+    }
+
+    virtual ~CountValue()
+    {
+    }
+
+    virtual void xparse(boost::any& store, const std::vector<std::string>& /*tokens*/) const
+    {
+        // Replace the stored value with the access count.
+        store = boost::any(++count_);
+    }
+
+private:
+    mutable std::size_t count_{ 0 };
+};
+
 static void parseArgs(int argc, char *argv[])
 {
-    int opt;
-    while ((opt = getopt(argc, argv, "ab:dhp:v:V")) != -1)
-    {
-        switch (opt)
-        {
-            case 'a':
-                 captureAmxxx = true;
-                 break;
-            case 'b':
-                baudRate = atoi(optarg);
-                break;
-            case 'd':
-                 captureDistance = true;
-                 break;
-            case 'h':
-                std::cout   << "Stream data from T10 and report message sizes." << std::endl << std::endl
-                            << "Usage: " << argv[0] << " [-a] [-b <baud>] [-h] [-p <port>] [-v <ver>]" << std::endl
-                            << "  -a        Capture DCS+Ambient or Distance Amplitude frames, (not just DCS or Distance)" << std::endl
-                            << "  -b <baud> Set baud rate (UART). Default = "<< DEFAULT_BAUD_RATE << std::endl
-                            << "  -d        Capture distance (or amplitude) frames instead of DCS frames" << std::endl
-                            << "  -h        Print help and exit" << std::endl
-                            << "  -p <port> Set port name. Default = "<< DEFAULT_PORT_NAME << std::endl
-                            << "  -v <ver>      Use version <ver> of the command protocol. Default = " << DEFAULT_PROTOCOL_VERSION << std::endl
-                            << "  -V        Increase verbosity of output." << std::endl
-                            << std::endl << std::endl;
-                exit(0);
-            case 'p':
-                 devicePort = optarg;
-                 break;
-            case 'v':
-                protocolVersion = atoi(optarg);
-                break;
-            case 'V':
-                ++verbosity;
-                break;
-            default:
-                break;
-        }
+    po::options_description desc("illuminator board test");
+    desc.add_options()
+        ("help,h", "produce help message")
+        ("device-uri,p", po::value<std::string>(&devicePort))
+        ("protocol-version,v", po::value<uint16_t>(&protocolVersion)->default_value(DEFAULT_PROTOCOL_VERSION))
+        ("baud-rate,b", po::value<uint32_t>(&baudRate)->default_value(DEFAULT_BAUD_RATE))
+        ("amplitude,a", po::bool_switch(&captureAmxxx), "Capture DCS+Ambient or Distance Amplitude frames, (not just DCS or Distance)")
+        ("ambient", po::bool_switch(&captureAmxxx), "Capture DCS+Ambient or Distance Amplitude frames, (not just DCS or Distance)")
+        ("distance,d", po::bool_switch(&captureDistance),  "Capture distance (or amplitude) frames instead of DCS frames")
+        ("verbose,V",               
+           new  CountValue(&verbosity),
+            "Increase verbosity of output")
+        ;
+
+    po::variables_map vm;
+    po::store(po::parse_command_line(argc, argv, desc), vm);
+    po::notify(vm);
+    if (vm.count("help")) {
+        std::cout << desc << "\n";
+        exit(0);
     }
 }
 
@@ -220,7 +235,9 @@ int main(int argc, char *argv[])
      * perform a controlled shutdown.
      */
     signal(SIGINT, signalHandler);
+    #if defined(SIGQUIT)
     signal(SIGQUIT, signalHandler);
+    #endif
     {
         tofcore::Sensor sensor { protocolVersion, devicePort, baudRate };
         sensor.subscribeMeasurement(&measurement_callback); // callback is called from background thread

@@ -131,6 +131,8 @@ struct SerialConnection::Impl
         this->begin_receive_start();
     }
 
+    void reset_parser();
+
     void begin_receive_start();
     void on_receive_start(const system::error_code &error);
 
@@ -177,6 +179,11 @@ SerialConnection::~SerialConnection()
 uint16_t SerialConnection::get_protocol_version() const
 {
     return pimpl->protocol_version_;
+}
+
+void SerialConnection::reset_parser()
+{
+    pimpl->reset_parser();
 }
 
 void SerialConnection::send(uint16_t command, const std::vector<uint8_t> &buf)
@@ -261,6 +268,7 @@ void SerialConnection::subscribe(on_measurement_callback_t callback)
     pimpl->on_measurement_data_ = callback;
 }
 
+
 /* #########################################################################
  *
  * SerialConnection protected methods
@@ -343,6 +351,20 @@ void SerialConnection::sendv1(uint16_t command, const std::vector<ScatterGatherE
     BE_Put(&epilog[0], crc32);
     bufs.push_back(buffer(epilog));
     write(pimpl->port_, bufs);
+}
+
+void SerialConnection::Impl::reset_parser()
+{
+    //Cancel any pending reads and timers and start fresh. 
+    this->port_.cancel();
+    this->response_timer_.cancel();
+
+#if defined(_WIN32)
+    auto handle = this->port_.native_handle();
+    PurgeComm(handle, PURGE_RXCLEAR);
+#endif
+
+    this->begin_receive_start();
 }
 
 /* #########################################################################
@@ -435,7 +457,8 @@ void SerialConnection::Impl::on_receive_v0_prolog(const system::error_code &erro
      *  ---------- ---------- ------------- ---------------- ---------------------
      */
     this->response_type_ = this->prolog_epilog_buf_[V0_RESP_PROLOG_TYPE_OFFSET];
-    uint32_t payload_length; LE_Get(payload_length, &this->prolog_epilog_buf_[V0_RESP_PROLOG_LENGTH_OFFSET]);
+    uint32_t payload_length; 
+    LE_Get(payload_length, &this->prolog_epilog_buf_[V0_RESP_PROLOG_LENGTH_OFFSET]);
     DBG("Received V0 type: " << (unsigned)this->response_type_ << "; size: " << payload_length);
     this->begin_receive_payload(payload_length);
 }
@@ -668,13 +691,13 @@ void SerialConnection::Impl::process_v1_response()
 
 bool SerialConnection::Impl::process_error(const system::error_code &error, const char* where)
 {
-    if (error.failed())
+    if (error)
     {
         ERR("ERROR in " << where << ": " << error.category().name());
     }
     else
     {
-        ERR("NO ERROR in " << where << ": " << error.category().name());
+        DBG("NO ERROR in " << where );
     }
     return true; // continue for now
 }
