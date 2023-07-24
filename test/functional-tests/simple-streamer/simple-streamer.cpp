@@ -207,7 +207,7 @@ static void parseArgs(int argc, char *argv[])
         ("amplitude,a", po::bool_switch(&captureAmxxx), "Capture DCS+Ambient or Distance Amplitude frames, (not just DCS or Distance)")
         ("ambient", po::bool_switch(&captureAmxxx), "Capture DCS+Ambient or Distance Amplitude frames, (not just DCS or Distance)")
         ("distance,d", po::bool_switch(&captureDistance),  "Capture distance (or amplitude) frames instead of DCS frames")
-        ("verbose,v",               
+        ("verbose,V",               
            new  CountValue(&verbosity),
             "Increase verbosity of output")
         ;
