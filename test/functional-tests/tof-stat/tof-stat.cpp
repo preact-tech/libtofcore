@@ -96,21 +96,6 @@ int main(int argc, char *argv[])
             std::cerr << "Failed to read sensor settings" << std::endl;
         }
         /*
-         * Accelerometer Reading
-         */
-        int16_t x, y, z;
-        uint8_t g_range;
-        if (sensor.getAccelerometerData(x, y, z, g_range))
-        {
-            std::cout <<     "AccelX: " << (g_range * x / 32768.0)
-                      << " g; AccelY: " << (g_range * y / 32768.0)
-                      << " g; AccelZ: " << (g_range * z / 32768.0) << " g" << std::endl;
-        }
-        else
-        {
-            std::cerr << "Failed to read accelerometer" << std::endl;
-        }
-        /*
          * Store settings (optional)
          */
         if (storeSettings)

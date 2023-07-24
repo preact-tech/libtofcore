@@ -36,7 +36,6 @@ public:
 
     ~Sensor();
 
-    bool getAccelerometerData(int16_t &x, int16_t &y, int16_t &z, uint8_t &g_range);
     std::optional<std::vector<uint16_t>> getIntegrationTimes();
     bool getLensInfo(std::vector<double> &rays_x, std::vector<double> &rays_y, std::vector<double> &rays_z);
     bool getSensorInfo(TofComm::versionData_t &versionData);
@@ -58,13 +57,11 @@ public:
     bool setMinAmplitude(uint16_t minAmplitude);
     bool setModulation(const uint8_t index, const uint8_t channel);
     bool setOffset(int16_t offset);
-    bool setRoi(const uint16_t x0, const uint16_t y0, const uint16_t x1, const uint16_t y1);
 
     bool stopStream();
     bool storeSettings();
 
     bool streamDCS();
-    bool streamGrayscale();
     bool streamDistance();
     bool streamDistanceAmplitude();
     bool streamDCSAmbient();

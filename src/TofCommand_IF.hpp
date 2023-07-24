@@ -15,11 +15,10 @@
 
 namespace TofComm
 {
-constexpr uint16_t COMMAND_SET_ROI                  = 0x00;
 constexpr uint16_t COMMAND_SET_INT_TIMES            = 0x01;
 constexpr uint16_t COMMAND_GET_DIST_AND_AMP         = 0x02;
 constexpr uint16_t COMMAND_GET_DISTANCE             = 0x03;
-constexpr uint16_t COMMAND_GET_GRAYSCALE            = 0x05;
+
 constexpr uint16_t COMMAND_STOP_STREAM              = 0x06;
 constexpr uint16_t COMMAND_GET_DCS                  = 0x07;
 constexpr uint16_t COMMAND_GET_INT_TIMES            = 0x08;
@@ -42,14 +41,6 @@ constexpr uint16_t COMMAND_SET_HORIZ_FLIP_STATE     = 0x33;
 
 constexpr uint16_t COMMAND_SET_VERT_FLIP_STATE      = 0x36;
 
-constexpr uint16_t COMMAND_READ_ACCELEROMETER       = 0x4B;
-    constexpr uint8_t READ_ACCELEROMETER_DATA_TYPE      = 9;
-    constexpr size_t  ACCELEROMETER_X_OFFSET            = 1;
-    constexpr size_t  ACCELEROMETER_Y_OFFSET            = ACCELEROMETER_X_OFFSET + sizeof(uint16_t);
-    constexpr size_t  ACCELEROMETER_Z_OFFSET            = ACCELEROMETER_Y_OFFSET + sizeof(uint16_t);
-    constexpr size_t  ACCELEROMETER_G_RANGE_OFFSET      = ACCELEROMETER_Z_OFFSET + sizeof(uint16_t);
-    constexpr size_t  READ_ACCELEROMETER_SIZE           = ACCELEROMETER_G_RANGE_OFFSET + sizeof(uint8_t);
-
 constexpr uint16_t COMMAND_GET_LENS_INFO            = 0x50;
 
 constexpr uint16_t COMMAND_JUMP_TO_BOOLOADER        = 0x6F;
@@ -57,8 +48,8 @@ constexpr uint16_t COMMAND_JUMP_TO_BOOLOADER        = 0x6F;
 constexpr uint16_t COMMAND_STORE_SETTINGS           = 0x71;
 constexpr uint16_t COMMAND_READ_SETTINGS            = 0x72;
 
-constexpr uint16_t COMMAND_READ_SENSOR_INFO     = 0xD0;
-constexpr uint16_t COMMAND_READ_SENSOR_STATUS   = 0xD1;
+constexpr uint16_t COMMAND_READ_SENSOR_INFO         = 0xD0;
+constexpr uint16_t COMMAND_READ_SENSOR_STATUS       = 0xD1;
 
 
 constexpr uint8_t DATA_TYPE_ID_OFFSET = 0;

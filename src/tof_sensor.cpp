@@ -141,23 +141,6 @@ Sensor::~Sensor()
     pimpl->serverThread_.join();
 }
 
-bool Sensor::getAccelerometerData(int16_t& x, int16_t& y, int16_t& z, uint8_t& g_range)
-{
-    auto result = this->send_receive(COMMAND_READ_ACCELEROMETER);
-    auto ok = bool {result};
-    const auto& payload =*result;
-    ok &= (payload.size() == READ_ACCELEROMETER_SIZE) && (READ_ACCELEROMETER_DATA_TYPE == (uint8_t)payload[DATA_TYPE_ID_OFFSET]);
-    if (ok)
-    {
-        BE_Get(x, &payload[ACCELEROMETER_X_OFFSET]);
-        BE_Get(y, &payload[ACCELEROMETER_Y_OFFSET]);
-        BE_Get(z, &payload[ACCELEROMETER_Z_OFFSET]);
-        g_range = (uint8_t)payload[ACCELEROMETER_G_RANGE_OFFSET];
-    }
-
-    return ok;
-}
-
 std::optional<std::vector<uint16_t>> Sensor::getIntegrationTimes()
 {
     auto result = this->send_receive(COMMAND_GET_INT_TIMES);
@@ -384,12 +367,6 @@ bool Sensor::setOffset(int16_t offset)
     return this->send_receive(COMMAND_SET_OFFSET, offset).has_value();
 }
 
-bool Sensor::setRoi(const uint16_t x0, const uint16_t y0, const uint16_t x1, const uint16_t y1)
-{
-    uint16_t params[4] = {native_to_big(x0), native_to_big(y0), native_to_big(x1), native_to_big(y1)};
-    return this->send_receive(COMMAND_SET_ROI, {(std::byte*)params, sizeof(params)}).has_value();
-}
-
 bool Sensor::setProtocolVersion(uint16_t version)
 {
     return pimpl->connection.set_protocol_version(version);
@@ -430,11 +407,6 @@ bool Sensor::streamDistance()
 bool Sensor::streamDistanceAmplitude()
 {
     return this->pimpl->request_measurement_stream(COMMAND_GET_DIST_AND_AMP);
-}
-
-bool Sensor::streamGrayscale()
-{
-    return this->pimpl->request_measurement_stream(COMMAND_GET_GRAYSCALE);
 }
 
 void Sensor::subscribeMeasurement(std::function<void (std::shared_ptr<Measurement_T>)> onMeasurementReady)

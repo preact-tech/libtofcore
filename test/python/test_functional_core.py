@@ -42,21 +42,6 @@ def test_stream_distance_amplitude_frames(dut: pytofcore.Sensor):
 
 
 @pytest.mark.functional
-def test_stream_grayscale(dut: pytofcore.Sensor):
-    
-    def callback(measurement: pytofcore.Measurement, **kwargs):
-        if not callback.measurement and (measurement.data_type == pytofcore.Measurement.DataType.GRAYSCALE):
-            callback.measurement = measurement
-
-    callback.measurement = None
-    dut.subscribe_measurement(callback)
-    dut.stream_grayscale()
-    
-    time.sleep(1.0)
-    assert callback.measurement is not None, "No Grayscale measurements received"
-
-
-@pytest.mark.functional
 def test_stream_distance(dut: pytofcore.Sensor):
 
     def callback(measurement: pytofcore.Measurement, **kwargs):

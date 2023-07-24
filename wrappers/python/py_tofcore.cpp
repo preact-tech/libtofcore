@@ -51,30 +51,6 @@ static void subscribeMeasurement(tofcore::Sensor& s, tofcore::Sensor::on_measure
     s.subscribeMeasurement(f);
 }
 
-static auto getAccelerometerData(tofcore::Sensor& s) 
-{
-
-    //Use static and a lambda to create the AccelerometerData namedtuple type only once.
-    static auto AccelerometerData_type = []() {
-        auto namedTuple_attr = pybind11::module::import("collections").attr("namedtuple");
-        py::list fields;
-        fields.append("x");
-        fields.append("y");
-        fields.append("z");
-        fields.append("g_range");
-        return namedTuple_attr("AccelerometerData", fields);
-    }();
-
-    int16_t x, y, z;
-    uint8_t g_range;
-    if (!s.getAccelerometerData(x, y, z, g_range)) 
-    {
-        throw std::runtime_error("An error occured while getting accelerometer data");
-    }
-
-    return AccelerometerData_type(x, y, z, g_range);
-}
-
 static auto getPixelRays(tofcore::Sensor& s)
 {
     //Use static and a lambda to create the PixelRays namedtuple type only once.
@@ -355,18 +331,15 @@ PYBIND11_MODULE(pytofcore, m) {
 
     py::class_<tofcore::Sensor>(m, "Sensor")
         .def(py::init<uint16_t, const std::string&, uint32_t>(), py::arg("protocol_version")=tofcore::DEFAULT_PROTOCOL_VERSION, py::arg("port_name")=tofcore::DEFAULT_PORT_NAME, py::arg("baud_rate")=tofcore::DEFAULT_BAUD_RATE)
-        .def_property_readonly("accelerometer_data", &getAccelerometerData, "Obtain acceleromter info. Each call turns a new sample from the accelerometer. The same is a namedtuple with fields x, y, z, range_g", py::call_guard<py::gil_scoped_release>())
         .def_property_readonly("pixel_rays", &getPixelRays, "Obtain unit vector ray information for all pixels based on the lens information stored on the sensor. Returns a namedtuple with fields x, y, z. Each field is a list of floats of length width x height.", py::call_guard<py::gil_scoped_release>())
         .def("stop_stream", &tofcore::Sensor::stopStream, "Command the sensor to stop streaming", py::call_guard<py::gil_scoped_release>())
         .def("stream_dcs", &tofcore::Sensor::streamDCS, "Command the sensor to stream DCS frames", py::call_guard<py::gil_scoped_release>())
         .def("stream_dcs_ambient", &tofcore::Sensor::streamDCSAmbient, "Command the sensor to stream DCS and Ambient frames. Ambient frames are of type Frame::DataType::GRAYSCALE", py::call_guard<py::gil_scoped_release>())
-        .def("stream_grayscale", &tofcore::Sensor::streamGrayscale, "Command the sensor to stream grayscale frames", py::call_guard<py::gil_scoped_release>())
         .def("stream_distance", &tofcore::Sensor::streamDistance, "Command the sensor to stream distance frames", py::call_guard<py::gil_scoped_release>())
         .def("stream_distance_amplitude", &tofcore::Sensor::streamDistanceAmplitude, "Command the sensor to stream distance and amplitude frames", py::call_guard<py::gil_scoped_release>())
         .def("set_offset", &tofcore::Sensor::setOffset, py::arg("offset"), "Apply milimeter offest to very distance pixel returned by the sensor", py::call_guard<py::gil_scoped_release>())
         .def("set_min_amplitude", &tofcore::Sensor::setMinAmplitude, py::arg("min_amplitude"), "Set minimum amplitude for distance pixel to be treated as good", py::call_guard<py::gil_scoped_release>())
         .def("set_binning", &tofcore::Sensor::setBinning, "Set horizontal and vertical binning settings on sensor", py::arg("vertical"), py::arg("horizontal"), py::call_guard<py::gil_scoped_release>())
-        .def("set_roi", &tofcore::Sensor::setRoi, "Set region of interest pixel area on the sensor", py::arg("x0"), py::arg("y0"), py::arg("x1"), py::arg("y1"), py::call_guard<py::gil_scoped_release>())
         .def("set_integration_times", &tofcore::Sensor::setIntegrationTimes, "Set all integration time parameters on the sensor", py::arg("low"), py::arg("mid"), py::arg("high"), py::call_guard<py::gil_scoped_release>())
         .def("get_integration_times", &getSensorIntegrationTimes, "query the device for the currently configured integration time settings", py::call_guard<py::gil_scoped_release>())
         .def("set_hdr_mode", &tofcore::Sensor::setHDRMode, "Set the High Dynamic Range mode on the sensor", py::arg("mode"), py::call_guard<py::gil_scoped_release>())
