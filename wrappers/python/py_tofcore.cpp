@@ -349,6 +349,12 @@ static bool vflip_set(tofcore::Sensor &sensor, bool active)
     return sensor.setFlipVertically(active);;
 }
 
+static auto jump_to_bootloader(tofcore::Sensor& s)
+{
+    s.jumpToBootloader();
+
+}
+
 
 PYBIND11_MODULE(pytofcore, m) {
     m.doc() = "Sensor object that represents a connect to a TOF depth sensor.";
@@ -374,6 +380,7 @@ PYBIND11_MODULE(pytofcore, m) {
         .def("subscribe_measurement", &subscribeMeasurement, "Set a function object to be called when new measurement data is received", py::arg("callback"))
         .def("get_sensor_info", &getSensorInfo, "Get the sensor version and build info")
         .def("get_sensor_status", &getSensorStatus, "Get the sensor status info")
+        .def("jump_to_bootloader", &jump_to_bootloader, "Activate bootloader mode to flash firmware")
         .def_property("hflip", &hflip_get, &hflip_set, "State of the image horizontal flip option (default False)")
         .def_property("vflip", &vflip_get, &vflip_set, "State of the image vertical flip option (default False)")
 
