@@ -51,6 +51,30 @@ static void subscribeMeasurement(tofcore::Sensor& s, tofcore::Sensor::on_measure
     s.subscribeMeasurement(f);
 }
 
+static auto getLensInfo(tofcore::Sensor& s)
+{
+    //Use static and a lambda to create the LensInfo_type namedtuple type only once.
+    static auto LensInfo_type = []() {
+        auto namedTuple_attr = pybind11::module::import("collections").attr("namedtuple");
+        py::list fields;
+        fields.append("rowOffset");
+        fields.append("columnOffset");
+        fields.append("rowFocalLength");
+        fields.append("columnFocalLength");
+        fields.append("undistortionCoeffs");
+        return namedTuple_attr("LensInfo", fields);
+    }();
+
+    auto result = s.getLensIntrinsics();
+    if (!result)
+    {
+        throw std::runtime_error("An error occured while getting Lens information");
+    }
+
+    return LensInfo_type(result->m_rowOffset, result->m_columnOffset, result->m_rowFocalLength,
+                         result->m_columnFocalLength, result->m_undistortionCoeffs);
+}
+
 static auto getPixelRays(tofcore::Sensor& s)
 {
     //Use static and a lambda to create the PixelRays namedtuple type only once.
@@ -325,6 +349,12 @@ static bool vflip_set(tofcore::Sensor &sensor, bool active)
     return sensor.setFlipVertically(active);;
 }
 
+static auto jump_to_bootloader(tofcore::Sensor& s)
+{
+    s.jumpToBootloader();
+
+}
+
 
 PYBIND11_MODULE(pytofcore, m) {
     m.doc() = "Sensor object that represents a connect to a TOF depth sensor.";
@@ -332,6 +362,7 @@ PYBIND11_MODULE(pytofcore, m) {
     py::class_<tofcore::Sensor>(m, "Sensor")
         .def(py::init<uint16_t, const std::string&, uint32_t>(), py::arg("protocol_version")=tofcore::DEFAULT_PROTOCOL_VERSION, py::arg("port_name")=tofcore::DEFAULT_PORT_NAME, py::arg("baud_rate")=tofcore::DEFAULT_BAUD_RATE)
         .def_property_readonly("pixel_rays", &getPixelRays, "Obtain unit vector ray information for all pixels based on the lens information stored on the sensor. Returns a namedtuple with fields x, y, z. Each field is a list of floats of length width x height.", py::call_guard<py::gil_scoped_release>())
+        .def_property_readonly("lens_info", &getLensInfo, "Obtain Lens information stored on sensor. Returns a namedtuple with fields rowOffset, columnOffset, rowFocalLength, columnFocalLength, undistortionCoeffs.", py::call_guard<py::gil_scoped_release>())
         .def("stop_stream", &tofcore::Sensor::stopStream, "Command the sensor to stop streaming", py::call_guard<py::gil_scoped_release>())
         .def("stream_dcs", &tofcore::Sensor::streamDCS, "Command the sensor to stream DCS frames", py::call_guard<py::gil_scoped_release>())
         .def("stream_dcs_ambient", &tofcore::Sensor::streamDCSAmbient, "Command the sensor to stream DCS and Ambient frames. Ambient frames are of type Frame::DataType::GRAYSCALE", py::call_guard<py::gil_scoped_release>())
@@ -347,6 +378,7 @@ PYBIND11_MODULE(pytofcore, m) {
         .def("subscribe_measurement", &subscribeMeasurement, "Set a function object to be called when new measurement data is received", py::arg("callback"))
         .def("get_sensor_info", &getSensorInfo, "Get the sensor version and build info")
         .def("get_sensor_status", &getSensorStatus, "Get the sensor status info")
+        .def("jump_to_bootloader", &jump_to_bootloader, "Activate bootloader mode to flash firmware")
         .def_property("hflip", &hflip_get, &hflip_set, "State of the image horizontal flip option (default False)")
         .def_property("vflip", &vflip_get, &vflip_set, "State of the image vertical flip option (default False)")
 

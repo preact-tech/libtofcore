@@ -25,6 +25,15 @@ constexpr uint32_t      DEFAULT_BAUD_RATE           { 115200 };
 constexpr const char*   DEFAULT_PORT_NAME           { "" }; 
 constexpr uint16_t      DEFAULT_PROTOCOL_VERSION    { 1 };
 
+struct LensIntrinsics_t
+{
+    double m_rowOffset { 0.0 };
+    double m_columnOffset { 0.0 };
+    double m_rowFocalLength { 0.0 };
+    double m_columnFocalLength { 0.0 };
+    std::array<double, 5> m_undistortionCoeffs { 0.0, 0.0, 0.0, 0.0, 0.0 };
+};
+
 class Sensor
 {
 public:
@@ -38,6 +47,7 @@ public:
 
     std::optional<std::vector<uint16_t>> getIntegrationTimes();
     bool getLensInfo(std::vector<double> &rays_x, std::vector<double> &rays_y, std::vector<double> &rays_z);
+    std::optional<LensIntrinsics_t> getLensIntrinsics();
     bool getSensorInfo(TofComm::versionData_t &versionData);
     bool getSensorStatus(TofComm::Sensor_Status_t &sensorStatus);
     bool getSettings(std::string& jsonSettings);

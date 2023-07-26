@@ -42,6 +42,7 @@ constexpr uint16_t COMMAND_SET_HORIZ_FLIP_STATE     = 0x33;
 constexpr uint16_t COMMAND_SET_VERT_FLIP_STATE      = 0x36;
 
 constexpr uint16_t COMMAND_GET_LENS_INFO            = 0x50;
+    constexpr size_t RAW_SENSOR_INFO_DATA_SIZE          = 32;
 
 constexpr uint16_t COMMAND_JUMP_TO_BOOLOADER        = 0x6F;
 
