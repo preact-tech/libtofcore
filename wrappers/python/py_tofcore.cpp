@@ -51,6 +51,39 @@ static void subscribeMeasurement(tofcore::Sensor& s, tofcore::Sensor::on_measure
     s.subscribeMeasurement(f);
 }
 
+static auto getIPv4Settings(tofcore::Sensor& s)
+{
+    //Use static and a lambda to create the IPv4Settings namedtuple type only once.
+    static auto IPv4Settings_type = []() {
+        auto namedTuple_attr = pybind11::module::import("collections").attr("namedtuple");
+        py::list fields;
+        fields.append("ipv4Address");
+        fields.append("ipv4Mask");
+        fields.append("ipv4Gateway");
+        return namedTuple_attr("IPv4Settings", fields);
+    }();
+
+    std::array<std::byte, 4> ipv4Address;
+    std::array<std::byte, 4> ipv4Mask;
+    std::array<std::byte, 4> ipv4Gateway;
+
+    if(!s.getIPv4Settings(ipv4Address, ipv4Mask, ipv4Gateway))
+    {
+        throw std::runtime_error("An error occured while getting IPv4 settings");
+    }
+
+    return IPv4Settings_type(ipv4Address, ipv4Mask, ipv4Gateway);
+}
+
+static void setIPv4Settings(tofcore::Sensor &s, const std::array<std::byte, 4>& adrs, const std::array<std::byte, 4>& mask, const std::array<std::byte, 4>& gateway)
+{
+    const auto ok = s.setIPv4Settings(adrs, mask, gateway);
+    if(!ok)
+    {
+        throw std::runtime_error("An error occcured setting sequencer version");
+    }
+}
+
 static auto getLensInfo(tofcore::Sensor& s)
 {
     //Use static and a lambda to create the LensInfo_type namedtuple type only once.
@@ -381,6 +414,7 @@ PYBIND11_MODULE(pytofcore, m) {
         .def("jump_to_bootloader", &jump_to_bootloader, "Activate bootloader mode to flash firmware")
         .def_property("hflip", &hflip_get, &hflip_set, "State of the image horizontal flip option (default False)")
         .def_property("vflip", &vflip_get, &vflip_set, "State of the image vertical flip option (default False)")
+        .def_property("ipv4_settings", &getIPv4Settings, &setIPv4Settings, "IPv4 address, mask, and gateway settings")
 
         .def_property_readonly_static("DEFAULT_PORT_NAME", [](py::object /* self */){return tofcore::DEFAULT_PORT_NAME;})
         .def_property_readonly_static("DEFAULT_BAUD_RATE", [](py::object /* self */){return tofcore::DEFAULT_BAUD_RATE;})

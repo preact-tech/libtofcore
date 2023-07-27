@@ -34,6 +34,9 @@ constexpr uint16_t COMMAND_SET_MODULATION           = 0x17;
 constexpr uint16_t COMMAND_SET_BINNING              = 0x18;
 constexpr uint16_t COMMAND_SET_HDR                  = 0x19;
 
+constexpr uint16_t COMMAND_SET_CAMERA_IP_SETTINGS   = 0x28;
+constexpr uint16_t COMMAND_GET_CAMERA_IP_SETTINGS   = 0x29;
+
 constexpr uint16_t COMMAND_GET_HORIZ_FLIP_STATE     = 0x30;
 constexpr uint16_t COMMAND_GET_VERT_FLIP_STATE      = 0x31;
 
