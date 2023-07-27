@@ -396,9 +396,9 @@ bool Sensor::setMinAmplitude(uint16_t minAmplitude)
     return this->send_receive(COMMAND_SET_MIN_AMPLITUDE, minAmplitude).has_value();
 }
 
-bool Sensor::setModulation(const uint8_t index, const uint8_t channel)
+bool Sensor::setModulation(const uint16_t modFreqkHz)
 {
-    uint8_t params[] = {index, channel};
+    uint8_t params[] = {modFreqkHz};
     return this->send_receive(COMMAND_SET_MODULATION, {(std::byte*)params, sizeof(params)}).has_value();
 }
 

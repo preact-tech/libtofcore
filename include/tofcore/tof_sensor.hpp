@@ -65,7 +65,7 @@ public:
     bool setIntegrationTime(uint16_t);
     bool setIntegrationTimes(uint16_t, uint16_t, uint16_t);
     bool setMinAmplitude(uint16_t minAmplitude);
-    bool setModulation(const uint8_t index, const uint8_t channel);
+    bool setModulation(uint16_t modFreqkHz);
     bool setOffset(int16_t offset);
 
     bool stopStream();
