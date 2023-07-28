@@ -72,12 +72,31 @@ static auto getIPv4Settings(tofcore::Sensor& s)
         throw std::runtime_error("An error occured while getting IPv4 settings");
     }
 
-    return IPv4Settings_type(ipv4Address, ipv4Mask, ipv4Gateway);
+    std::array<uint8_t, 4> adrs;
+    std::array<uint8_t, 4> mask;
+    std::array<uint8_t, 4> gw;
+    for (size_t i = 0; i < 4; ++i)
+    {
+        adrs[i] = static_cast<uint8_t>(ipv4Address[i]);
+        mask[i] = static_cast<uint8_t>(ipv4Mask[i]);
+        gw[i] = static_cast<uint8_t>(ipv4Gateway[i]);
+    }
+
+    return IPv4Settings_type(adrs, mask, gw);
 }
 
-static void setIPv4Settings(tofcore::Sensor &s, const std::array<std::byte, 4>& adrs, const std::array<std::byte, 4>& mask, const std::array<std::byte, 4>& gateway)
+static void setIPv4Settings(tofcore::Sensor &s, const std::array<uint8_t, 4>& adrs, const std::array<uint8_t, 4>& mask, const std::array<uint8_t, 4>& gateway)
 {
-    const auto ok = s.setIPv4Settings(adrs, mask, gateway);
+    std::array<std::byte, 4> ipv4Address;
+    std::array<std::byte, 4> ipv4Mask;
+    std::array<std::byte, 4> ipv4Gateway;
+    for (size_t i = 0; i < 4; ++i)
+    {
+        ipv4Address[i] = static_cast<std::byte>(adrs[i]);
+        ipv4Mask[i] = static_cast<std::byte>(mask[i]);
+        ipv4Gateway[i] = static_cast<std::byte>(gateway[i]);
+    }
+    const auto ok = s.setIPv4Settings(ipv4Address, ipv4Mask, ipv4Gateway);
     if(!ok)
     {
         throw std::runtime_error("An error occcured setting sequencer version");
@@ -414,7 +433,8 @@ PYBIND11_MODULE(pytofcore, m) {
         .def("jump_to_bootloader", &jump_to_bootloader, "Activate bootloader mode to flash firmware")
         .def_property("hflip", &hflip_get, &hflip_set, "State of the image horizontal flip option (default False)")
         .def_property("vflip", &vflip_get, &vflip_set, "State of the image vertical flip option (default False)")
-        .def_property("ipv4_settings", &getIPv4Settings, &setIPv4Settings, "IPv4 address, mask, and gateway settings")
+        .def_property_readonly("ipv4_settings", &getIPv4Settings, "Get IPv4 address, mask, and gateway settings")
+        .def("set_ipv4", &setIPv4Settings, "Set the IPv4 address, mask, and gateway", py::call_guard<py::gil_scoped_release>())
 
         .def_property_readonly_static("DEFAULT_PORT_NAME", [](py::object /* self */){return tofcore::DEFAULT_PORT_NAME;})
         .def_property_readonly_static("DEFAULT_BAUD_RATE", [](py::object /* self */){return tofcore::DEFAULT_BAUD_RATE;})
