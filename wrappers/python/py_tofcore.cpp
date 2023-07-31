@@ -107,7 +107,7 @@ static auto getIPv4Settings(tofcore::Sensor& s)
     std::stringstream if_ss;
     if_ss <<
         (int)ipv4Address[0] << '.' << (int)ipv4Address[1] << '.' << (int)ipv4Address[2] << '.' << (int)ipv4Address[3] << '/' <<
-        (int)ipv4Mask[0] << '.' << (int)ipv4Mask[1] << '.' << (int)ipv4Mask[2] << '.' << (int)ipv4Mask[4];
+        (int)ipv4Mask[0] << '.' << (int)ipv4Mask[1] << '.' << (int)ipv4Mask[2] << '.' << (int)ipv4Mask[3];
 
     std::stringstream gw_ss;
     gw_ss << (int)ipv4Gateway[0] << '.' << (int)ipv4Gateway[1] << '.' << (int)ipv4Gateway[2] << '.' << (int)ipv4Gateway[3];
