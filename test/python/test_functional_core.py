@@ -4,6 +4,7 @@ import pytest
 import pytofcore
 import threading
 import random
+import ipaddress
 from typing import List
 from functools import partial
 
@@ -124,6 +125,28 @@ def test_get_lens_rays(dut: pytofcore.Sensor):
     assert len(pixel_rays.x) == (320*240)
     assert len(pixel_rays.y) == (320*240)
     assert len(pixel_rays.z) == (320*240)
+
+
+@pytest.mark.functional
+def test_ipv4_settings(dut: pytofcore.Sensor):
+
+    settings = dut.ipv4_settings
+    assert( isinstance(settings, pytofcore.IPv4Settings))
+    assert( isinstance(settings.interface, ipaddress.IPv4Interface))
+    assert( isinstance(settings.interface, ipaddress.IPv4Address))
+
+    with pytest.raises(TypeError, match="pytofcore.IPv4Settings"):
+        dut.ipv4_settings = None
+
+    with pytest.raises(TypeError, match="ipaddress.IPv4Interface"):
+        dut.ipv4_settings = pytofcore.IPv4Settings(None, None)
+
+    with pytest.raises(TypeError, match="ipaddress.IPv4Address"):
+        dut.ipv4_settings = pytofcore.IPv4Settings(settings.interface, None)
+
+    dut.ipv4_settings = pytofcore.IPv4Settings(settings.interface, settings.gateway)
+
+    assert settings == dut.ipv4_settings
 
 
 @pytest.mark.functional
