@@ -5,10 +5,11 @@
  *
  * Implements API for libtofcore
  */
+#include "tof_sensor.hpp"
+#include "connection.hpp"
 #include "comm_serial/serial_connection.hpp"
 #include "tofcore/device_discovery.hpp"
 #include "tofcore/TofEndian.hpp"
-#include "tof_sensor.hpp"
 #include "TofCommand_IF.hpp"
 #include "TofEndian.hpp"
 #include "Measurement_T.hpp"
@@ -28,7 +29,7 @@ using namespace TofComm;
 struct Sensor::Impl
 {
     Impl(uint16_t protocolVersion, const std::string &portName, uint32_t baudrate) :
-                connection(ioService, portName, baudrate, protocolVersion),
+                connection(Connection_T::create(ioService, portName)/*, portName, baudrate, protocolVersion)*/),
                 measurement_timer_(ioService)
     {
     }
@@ -39,7 +40,7 @@ struct Sensor::Impl
     std::thread serverThread_;
     std::mutex measurementReadyMutex;
     on_measurement_ready_t measurementReady;
-    SerialConnection connection;
+    std::unique_ptr<Connection_T> connection;
 
     /// The items below are specifically used for streaming via polling.
     /// Note: This mode is currently only used on Windows systems due to a strange Windows only phenomenon.
@@ -73,7 +74,7 @@ struct Sensor::Impl
         else
         {
             //TODO Consider changing this to send_receive() so we can really know if it succeeds.
-            this->connection.send(this->measurement_command_, &TofComm::CONTINUOUS_MEASUREMENT, sizeof(TofComm::CONTINUOUS_MEASUREMENT));
+            this->connection->send(this->measurement_command_, &TofComm::CONTINUOUS_MEASUREMENT, sizeof(TofComm::CONTINUOUS_MEASUREMENT));
             return true;
         }
     }
@@ -87,7 +88,7 @@ struct Sensor::Impl
         {
             if ((error != boost::asio::error::operation_aborted) && this->stream_via_polling_)
             {
-                this->connection.reset_parser();
+                this->connection->reset_parser();
                 this->request_next_measurement();
             }
         };
@@ -96,7 +97,7 @@ struct Sensor::Impl
         this->measurement_timer_.expires_after(250ms);
         this->measurement_timer_.async_wait(f);
 
-        this->connection.send(this->measurement_command_, &TofComm::SINGLE_MEASUREMENT, sizeof(TofComm::SINGLE_MEASUREMENT));
+        this->connection->send(this->measurement_command_, &TofComm::SINGLE_MEASUREMENT, sizeof(TofComm::SINGLE_MEASUREMENT));
         //Assume success: Note we can't use send_receive() here because this method could be called
         // from the context of the measurement callback and we would deadlock.
         return true;
@@ -417,7 +418,7 @@ bool Sensor::setOffset(int16_t offset)
 
 bool Sensor::setProtocolVersion(uint16_t version)
 {
-    return pimpl->connection.set_protocol_version(version);
+    return pimpl->connection->set_protocol_version(version);
 }
 
 bool Sensor:: getIPv4Settings(std::array<std::byte, 4>& adrs, std::array<std::byte, 4>& mask, std::array<std::byte, 4>& gateway)
@@ -441,7 +442,7 @@ bool Sensor:: getIPv4Settings(std::array<std::byte, 4>& adrs, std::array<std::by
 
 uint16_t Sensor::getProtocolVersion() const
 {
-    return pimpl->connection.get_protocol_version();
+    return pimpl->connection->get_protocol_version();
 }
 
 bool Sensor::stopStream()
@@ -525,14 +526,14 @@ void Sensor::Impl::init()
                 }
             }
         };
-    connection.subscribe(f);
+    connection->subscribe(f);
 }
 
 
 Sensor::send_receive_result_t Sensor::send_receive(const uint16_t command, const std::vector<Sensor::send_receive_payload_t>& payload,
         std::chrono::steady_clock::duration timeout /*= 5s*/) const
 {
-    auto result = pimpl->connection.send_receive(command, payload, timeout);
+    auto result = pimpl->connection->send_receive(command, payload, timeout);
     if(!result)
     {
         return std::nullopt;

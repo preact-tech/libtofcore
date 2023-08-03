@@ -1,25 +1,25 @@
 /**
- * @file serial_connection.h
+ * @file ip_connection.h
  *
  * Copyright 2023 PreAct Technologies
  *
  * API for serial connection to T10 sensor
  * @{
  */
-#ifndef _SERIAL_CONNECTION_H_
-#define _SERIAL_CONNECTION_H_
+#ifndef _IP_CONNECTION_H_
+#define _IP_CONNECTION_H_
 
 #include "connection.hpp"
 
 namespace tofcore
 {
 
-class SerialConnection : public Connection_T
+class IpConnection : public Connection_T
 {
 public:
-    SerialConnection(boost::asio::io_service&, const std::string &portName, uint32_t baudrate, uint16_t protocolVersion);
+    IpConnection(boost::asio::io_service&, const std::string &uri, uint16_t protocolVersion);
 
-    virtual ~SerialConnection();
+    virtual ~IpConnection();
 
     virtual uint16_t get_protocol_version() const override;
 
@@ -55,6 +55,6 @@ private:
 
 } //end namespace
 
-#endif // _SERIAL_CONNECTION_H_
+#endif // _IP_CONNECTION_H_
 
 /** @} */

@@ -2,13 +2,13 @@
 #define __TOFCORE_UDPSERVER_H__
 
 #include <boost/asio.hpp>
-#include <boost/signals2.hpp>
+#include <functional>
 
 using boost::asio::ip::udp;
 
 namespace tofcore {
 
-    typedef std::vector<uint8_t> Packet;
+    typedef std::vector<std::byte> Packet;
 
     class UdpServer {
       static const int PORT = 45454;
@@ -18,14 +18,14 @@ namespace tofcore {
       UdpServer(boost::asio::io_service &);
       ~UdpServer();
 
-      boost::signals2::connection subscribe(std::function<void(Packet &)>);
+      void subscribe(std::function<void(Packet &)>);
 
     private:
       udp::socket socket;
       udp::endpoint remoteEndpoint;
       Packet recvBuffer;
 
-      boost::signals2::signal<void (Packet &)> dataReady;
+      std::function<void (Packet &)> dataReady;
 
       void startReceive();
       void handleReceive(const boost::system::error_code &, std::size_t);

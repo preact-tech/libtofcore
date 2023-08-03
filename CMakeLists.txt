@@ -41,13 +41,15 @@ target_compile_features(tofcore PUBLIC cxx_std_17)  # Require C99 and C++17
 
 target_sources(tofcore
   PRIVATE
+    src/connection.cpp
     src/comm_serial/serial_connection.cpp
+    src/comm_ip/ip_connection.cpp
+    src/comm_ip/tcp_connection.cpp
+    src/comm_ip/udp_server.cpp
     src/device_discovery/device_discovery.cpp
     src/measurement.cpp
     src/tof_sensor.cpp
     src/cartesian_transform.cpp
-    # src/comm_ethernet/tcp_connection.cpp
-    # src/comm_ethernet/udp_server.cpp
     src/crc32.cpp
     src/klv_decoder.cpp
 )
