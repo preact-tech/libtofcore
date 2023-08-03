@@ -8,24 +8,23 @@ using boost::asio::ip::udp;
 
 namespace tofcore {
 
-    typedef std::vector<std::byte> Packet;
-
     class UdpServer {
-      static const int PORT = 45454;
-      static const int RECV_BUFF_SIZE = 2048;
 
     public:
+      typedef std::function<void (const std::vector<std::byte> &)> on_data_ready_t;
       UdpServer(boost::asio::io_service &);
       ~UdpServer();
 
-      void subscribe(std::function<void(Packet &)>);
+      void subscribe(on_data_ready_t);
 
     private:
-      udp::socket socket;
-      udp::endpoint remoteEndpoint;
-      Packet recvBuffer;
+      udp::socket m_socket;
+      udp::endpoint m_remoteEndpoint;
+      std::vector<std::byte> m_recvBuffer;
+      std::vector<std::byte> m_measurement;
+      uint16_t m_currentMeasurementNum {0};
 
-      std::function<void (Packet &)> dataReady;
+      on_data_ready_t m_dataReady;
 
       void startReceive();
       void handleReceive(const boost::system::error_code &, std::size_t);
