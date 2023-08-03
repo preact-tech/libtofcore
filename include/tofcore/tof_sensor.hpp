@@ -50,6 +50,8 @@ public:
     std::optional<LensIntrinsics_t> getLensIntrinsics();
     bool getIPv4Settings(std::array<std::byte, 4>& adrs, std::array<std::byte, 4>& mask, std::array<std::byte, 4>& gateway);
     bool getSensorInfo(TofComm::versionData_t &versionData);
+    std::optional<std::string> getSensorLocation();
+    std::optional<std::string> getSensorName();
     bool getSensorStatus(TofComm::Sensor_Status_t &sensorStatus);
     bool getSettings(std::string& jsonSettings);
 
@@ -69,6 +71,8 @@ public:
     bool setMinAmplitude(uint16_t minAmplitude);
     bool setModulation(const uint8_t index, const uint8_t channel);
     bool setOffset(int16_t offset);
+    bool setSensorLocation(std::string location);
+    bool setSensorName(std::string name);
 
     bool stopStream();
     bool storeSettings();
