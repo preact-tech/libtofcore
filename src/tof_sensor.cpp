@@ -32,6 +32,8 @@ struct Sensor::Impl
                 connection(Connection_T::create(ioService, portName)/*, portName, baudrate, protocolVersion)*/),
                 measurement_timer_(ioService)
     {
+        (void)protocolVersion;
+        (void)baudrate;
     }
 
     void init();
