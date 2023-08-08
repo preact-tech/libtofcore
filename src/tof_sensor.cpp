@@ -414,7 +414,7 @@ uint16_t Sensor::getModulation(void)
     const auto &payload = *result;
 
     uint16_t modFreqkHz;
-    BE_Get(modFreqkHz, &payload[0]);
+    LE_Get(modFreqkHz, &payload[0]);
 
     return modFreqkHz;
 }
