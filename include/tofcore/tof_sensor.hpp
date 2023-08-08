@@ -66,6 +66,7 @@ public:
     bool setIntegrationTimes(uint16_t, uint16_t, uint16_t);
     bool setMinAmplitude(uint16_t minAmplitude);
     bool setModulation(uint16_t modFreqkHz);
+    uint16_t getModulation();
     bool setOffset(int16_t offset);
 
     bool stopStream();

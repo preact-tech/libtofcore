@@ -33,6 +33,8 @@ constexpr uint16_t COMMAND_SET_MIN_AMPLITUDE        = 0x15;
 constexpr uint16_t COMMAND_SET_MODULATION           = 0x17;
 constexpr uint16_t COMMAND_SET_BINNING              = 0x18;
 constexpr uint16_t COMMAND_SET_HDR                  = 0x19;
+constexpr uint16_t COMMAND_GET_MODULATION           = 0x2F; 
+
 
 constexpr uint16_t COMMAND_GET_HORIZ_FLIP_STATE     = 0x30;
 constexpr uint16_t COMMAND_GET_VERT_FLIP_STATE      = 0x31;
