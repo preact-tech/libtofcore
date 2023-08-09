@@ -36,53 +36,70 @@ namespace tofcore
     {
         if (!isConnected())
             return;
-
-        uint32_t data_len = data.size();
-
-        std::ostringstream os;
-        os << START_MARKER;
-        os << static_cast<uint8_t>((data_len >> 24) & 0xff);
-        os << static_cast<uint8_t>((data_len >> 16) & 0xff);
-        os << static_cast<uint8_t>((data_len >> 8) & 0xff);
-        os << static_cast<uint8_t>((data_len >> 0) & 0xff);
-        for (uint32_t i = 0; i < data_len; ++i)
-        {
-            os << static_cast<uint8_t>(data[i]);
-        }
-        os << END_MARKER;
-
+        /*
+         * Send the command stream
+         */
         boost::system::error_code error;
-        socket.write_some(boost::asio::buffer(os.str(), os.tellp()), error);
+        socket.write_some(boost::asio::buffer(data.data(), data.size()), error);
         if (error)
         {
             throw boost::system::system_error(error);
         }
-
-        // Read the start mark, the answer type and size info (6 bytes), that will give us the information needed to read the complete payload.
-        Packet buf(8);
+        /*
+         * Read the command response
+         *              ------------ ---------- ---------- ------------ ----------- -------- ------------ -----------
+         * VERS. 1     | 0xFFFFAA55 | PID      | TYPE (0) | LEN (sz+3) |   CID     | Result |  Payload   | CRC32     |
+         * CMD Answer: |            | (1 byte) | (1 byte) | (4 bytes)  | (2 bytes) | 1 byte | (sz bytes) | (4 bytes) |
+         *              ------------ ---------- ---------- ------------ ----------- -------- ------------ -----------
+         *             |<------------------- prolog --------------------------------------->|
+         */
+        constexpr uint32_t ANSWER_START_PATTERN = 0xFFFFAA55;   ///< Pattern marking the start of an answer
+        constexpr size_t ANSWER_PROLOG_SIZE { 2 * sizeof(uint32_t) + sizeof(uint16_t) + 3 * sizeof(uint8_t) };
+        Packet buf(ANSWER_PROLOG_SIZE);
 
         auto len = boost::asio::read(socket, boost::asio::buffer(buf));
-        assert(len == buf.size());
-        (void)(len);
-        uint32_t start_marker = ::ntohl(*reinterpret_cast<uint32_t *>(buf.data() + 0));
-        assert(start_marker == 0xFFFFAA55);
-        (void)(start_marker);
-        // assert(buf[0] == 0xFF);
-        // assert(buf[1] == 0xFF);
-        // assert(buf[2] == 0xAA);
-        // assert(buf[3] == 0x55);
-        uint32_t payload_size = ::ntohl(*reinterpret_cast<uint32_t *>(buf.data() + 4));
+        if (len != buf.size())
+        {
+            throw std::runtime_error("Failed to read command response prolog");
+        }
+        const uint32_t start_marker = ::ntohl(*reinterpret_cast<const uint32_t *>(buf.data() + 0));
+        if (start_marker != ANSWER_START_PATTERN)
+        {
+            throw std::runtime_error("Command response start pattern is incorrect");
+        }
+//        const uint8_t pid = *reinterpret_cast<const uint8_t *>(buf.data() + 4);
+//        const uint8_t type = *reinterpret_cast<const uint8_t *>(buf.data() + 5);
+        constexpr uint32_t MAX_ANSWER_PAYLOAD_EXPECTED { (4 * 1024) + 256 };
+        const uint32_t answerSize = ::ntohl(*reinterpret_cast<const uint32_t *>(buf.data() + 6));
+        if ((answerSize < 3) ||(answerSize > MAX_ANSWER_PAYLOAD_EXPECTED + 3))
+        {
+            throw std::runtime_error("Command response too big");
+        }
+        const uint32_t payload_size { answerSize - 3 };
+//        const uint16_t cid = ::ntohl(*reinterpret_cast<const uint32_t *>(buf.data() + 10));
+        const uint8_t result = *reinterpret_cast<const uint8_t *>(buf.data() + 12);
+        if (result != 0)
+        {
+            throw std::runtime_error("Command failed");
+        }
 
         // Now read the payload
         payload.resize(payload_size);
-        len = boost::asio::read(socket, boost::asio::buffer(payload));
-        assert(len == payload_size);
-
-        // Read the end mark
+        if (payload_size > 0)
+        {
+            len = boost::asio::read(socket, boost::asio::buffer(payload));
+            if (payload_size != len)
+            {
+                throw std::runtime_error("Failed to read command response's payload");
+            }
+        }
+        // Read the CRC
         buf.resize(4);
         len = boost::asio::read(socket, boost::asio::buffer(buf));
-        assert(len == buf.size());
-        assert(::ntohl(*reinterpret_cast<uint32_t *>(buf.data())) == 0xFFFF55AA);
+        if (buf.size() != len)
+        {
+            throw std::runtime_error("Failed to read command response's CRC");
+        }
     }
 
     void TcpConnection::connect()

@@ -46,6 +46,7 @@ public:
     virtual void subscribe(on_measurement_callback_t callback) override;
 
 private:
+    std::vector<std::byte> generateCommandStream(uint16_t command, const std::vector<ScatterGatherElement> &data);
     void sendv0(uint16_t command, const std::vector<ScatterGatherElement> &data);
     void sendv1(uint16_t command, const std::vector<ScatterGatherElement> &data);
 

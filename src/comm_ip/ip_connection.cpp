@@ -1,10 +1,11 @@
 
 
 #include "ip_connection.hpp"
-#include "tcp_connection.hpp"
-#include "udp_server.hpp"
 
+#include "crc32.h"
+#include "tcp_connection.hpp"
 #include "TofEndian.hpp"
+#include "udp_server.hpp"
 #include <array>
 #include <boost/scope_exit.hpp>
 #include <condition_variable>
@@ -55,25 +56,52 @@ uint16_t IpConnection::get_protocol_version() const
     return pimpl->m_protocol_version;
 }
 
+std::vector<std::byte> IpConnection::generateCommandStream(uint16_t command, const std::vector<ScatterGatherElement> &data)
+{
+    //TODO: This is a quick implementation that requires an extra copy.
+     /*
+      *           ------------ ---------- ----------- ----------- ------------- -----------
+      * VERS. 1  | 0xFFFFAA55 | PID      |   CID     | LEN       |  Payload    | CRC32     |
+      * COMMAND: |            | (1 byte) | (2 bytes) | (4 bytes) | (LEN bytes) | (4 bytes) |
+      *           ------------ ---------- ----------- ----------- ------------- -----------
+      *          |<----------------- prolog ------------------->|
+      */
+     constexpr uint32_t START_MARKER = 0xFFFFAA55;
+     constexpr size_t OVERHEAD_SIZE = 3 * sizeof(uint32_t) + sizeof(uint8_t) + sizeof(uint16_t); // non-payload portion
+     uint32_t payloadSize = 0;
+     for(const auto &n : data) // .. and now find out the payload portion
+     {
+         payloadSize += n.size_bytes();
+     }
+     const size_t totalSize { payloadSize + OVERHEAD_SIZE };
+     std::vector<std::byte> result(totalSize);
+
+     auto dest = result.data();
+     BE_Put(dest, START_MARKER);
+     dest += sizeof(START_MARKER);
+     static uint8_t s_pid;
+     *dest = static_cast<std::byte>(s_pid);
+     dest += sizeof(s_pid);
+     ++s_pid;
+     BE_Put(dest, command);
+     dest += sizeof(command);
+     BE_Put(dest, payloadSize);
+     dest += sizeof(payloadSize);
+     for(const auto &n : data)
+     {
+         dest = std::copy(n.begin(), n.end(), dest);
+     }
+     const uint8_t* buf = reinterpret_cast<const uint8_t*>(result.data());
+     uint32_t crc = calcCrc32(buf, totalSize - sizeof(uint32_t));
+     BE_Put(dest, crc);
+
+     return result;
+}
 
 void IpConnection::send(uint16_t command, const std::vector<ScatterGatherElement> &data)
 {
-    //TODO: This is a quick implementation that requires an extra copy.
-    size_t total = sizeof(command);
-    for(const auto &n : data)
-    {
-        total += n.size_bytes();
-    }
-
-    std::vector<std::byte> tmp(total);
-    BE_Put(tmp.data(), command);
-    auto dest = tmp.begin() + 2;
-    for(const auto &n : data)
-    {
-        dest = std::copy(n.begin(), n.end(), dest);
-    }
-
-    pimpl->m_tcp.sendCommand(tmp);
+    auto cmdStream = generateCommandStream(command, data);
+    pimpl->m_tcp.sendCommand(cmdStream);
 }
 
 
@@ -94,26 +122,27 @@ void IpConnection::send(uint16_t command, const std::vector<uint8_t> &buf)
 std::optional<std::vector<std::byte> > IpConnection::send_receive(uint16_t command,
     const std::vector<ScatterGatherElement> &data, std::chrono::steady_clock::duration timeout)
 {
-    //TODO: This is a quick implementation that requires an extra copy.
+    //TODO: Implement timeout
     (void)timeout;
-    size_t total = sizeof(command);
-    for(const auto &n : data)
-    {
-        total += n.size_bytes();
-    }
-
-    std::vector<std::byte> tmp(total);
-    BE_Put(tmp.data(), command);
-    auto dest = tmp.begin() + 2;
-    for(const auto &n : data)
-    {
-        dest = std::copy(n.begin(), n.end(), dest);
-    }
-
+    auto cmdStream = generateCommandStream(command, data);
     std::vector<std::byte> answer;
-    pimpl->m_tcp.sendCommand(tmp, answer);
-
-    return {answer};
+    bool error = false;
+    try
+    {
+        pimpl->m_tcp.sendCommand(cmdStream, answer);
+    }
+    catch(...)
+    {
+        error = true;
+    }
+    if (error)
+    {
+        return std::nullopt;
+    }
+    else
+    {
+        return {answer};
+    }
 }
 
 
