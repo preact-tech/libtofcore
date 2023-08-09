@@ -18,6 +18,10 @@ static uint32_t baudRate { DEFAULT_BAUD_RATE };
 static std::string devicePort { DEFAULT_PORT_NAME };
 static volatile bool exitRequested { false };
 static uint16_t protocolVersion { DEFAULT_PROTOCOL_VERSION };
+static std::string sensorLocation { };
+static std::string sensorName { };
+static bool setSensorLocation { false };
+static bool setSensorName { false };
 static bool storeSettings { false };
 
 static void parseArgs(int argc, char *argv[])
@@ -30,6 +34,8 @@ static void parseArgs(int argc, char *argv[])
         ("protocol-version,v", po::value<uint16_t>(&protocolVersion)->default_value(DEFAULT_PROTOCOL_VERSION))
         ("baud-rate,b", po::value<uint32_t>(&baudRate)->default_value(DEFAULT_BAUD_RATE))
         ("store-settings,s", po::bool_switch(&storeSettings), "Have sensor store current sensor settings in persistent memory")
+        ("sensor-location,l", po::value<std::string>(&sensorLocation), "Set location of sensor")
+        ("sensor-name,n", po::value<std::string>(&sensorName), "Set name of sensor")
         ;
 
     po::variables_map vm;
@@ -39,6 +45,9 @@ static void parseArgs(int argc, char *argv[])
         std::cout << desc << "\n";
         exit(0);
     }
+
+    setSensorLocation = (vm.count("sensor-location") > 0);
+    setSensorName = (vm.count("sensor-name") > 0);
 }
 
 static void signalHandler(int signum)
@@ -96,6 +105,31 @@ int main(int argc, char *argv[])
             std::cerr << "Failed to read sensor settings" << std::endl;
         }
         /*
+         * Set sensor name/location
+         */
+        if (setSensorName)
+        {
+            if (sensor.setSensorName(sensorName))
+            {
+                std::cout << "Sensor name set to '" << sensorName << "'" << std::endl;
+            }
+            else
+            {
+                std::cerr << "FAILED to set sensor name" << std::endl;
+            }
+        }
+        if (setSensorLocation)
+        {
+            if (sensor.setSensorLocation(sensorLocation))
+            {
+                std::cout << "Sensor location set to '" << sensorLocation << "'" << std::endl;
+            }
+            else
+            {
+                std::cerr << "FAILED to set sensor location" << std::endl;
+            }
+        }
+        /*
          * Store settings (optional)
          */
         if (storeSettings)
@@ -109,7 +143,6 @@ int main(int argc, char *argv[])
                 std::cerr << "Failed to store sensor settings in persistent memory" << std::endl;
             }
         }
-
         /*
          * Read Sensor Status
          */
@@ -123,6 +156,27 @@ int main(int argc, char *argv[])
         else
         {
             std::cerr << "Failed to read sensor status" << std::endl;
+        }
+        /*
+         * Read Sensor Name and Location
+         */
+        auto sensorName = sensor.getSensorName();
+        if (sensorName)
+        {
+            std::cout << "Sensor name: '" << sensorName->c_str() << "'" << std::endl;
+        }
+        else
+        {
+            std::cerr << "Failed to read sensor name" << std::endl;
+        }
+        auto sensorLocation = sensor.getSensorLocation();
+        if (sensorLocation)
+        {
+            std::cout << "Sensor location: '" << sensorLocation->c_str() << "'" << std::endl;
+        }
+        else
+        {
+            std::cerr << "Failed to read sensor location" << std::endl;
         }
     } // when scope is exited, sensor connection is cleaned up
 
