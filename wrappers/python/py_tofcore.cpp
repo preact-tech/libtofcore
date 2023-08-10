@@ -90,8 +90,6 @@ static void subscribeMeasurement(tofcore::Sensor& s, tofcore::Sensor::on_measure
     s.subscribeMeasurement(f);
 }
 
-
-
 static auto getIPv4Settings(tofcore::Sensor& s)
 {
     //Use static and a lambda to create the IPv4Settings namedtuple type only once.
@@ -250,6 +248,44 @@ static auto getSensorInfo(tofcore::Sensor& s)
                             versionData.m_illuminatorSwSourceId,
                             versionData.m_illuminatorHwCfg,
                             (uint8_t)versionData.m_backpackModule);
+}
+
+static auto getSensorLocation(tofcore::Sensor& s)
+{
+    auto sensorLocation = s.getSensorLocation();
+    if(!sensorLocation)
+    {
+        throw std::runtime_error("An error occured while getting the sensor location");
+    }
+    return *sensorLocation;
+}
+
+static void setSensorLocation(tofcore::Sensor &s, std::string& location)
+{
+    const auto ok = s.setSensorLocation(location);
+    if(!ok)
+    {
+        throw std::runtime_error("An error occcured setting sensor location");
+    }
+}
+
+static auto getSensorName(tofcore::Sensor& s)
+{
+    auto sensorName = s.getSensorName();
+    if(!sensorName)
+    {
+        throw std::runtime_error("An error occured while getting the sensor name");
+    }
+    return *sensorName;
+}
+
+static void setSensorName(tofcore::Sensor &s, std::string& name)
+{
+    const auto ok = s.setSensorName(name);
+    if(!ok)
+    {
+        throw std::runtime_error("An error occcured setting sensor name");
+    }
 }
 
 static auto getSensorStatus(tofcore::Sensor& s)
@@ -481,9 +517,12 @@ PYBIND11_MODULE(pytofcore, m) {
         .def("get_sensor_info", &getSensorInfo, "Get the sensor version and build info")
         .def("get_sensor_status", &getSensorStatus, "Get the sensor status info")
         .def("jump_to_bootloader", &jump_to_bootloader, "Activate bootloader mode to flash firmware")
+        .def("storeSettings", &tofcore::Sensor::storeSettings, "Store the sensor's settings to persistent memory")
         .def_property("hflip", &hflip_get, &hflip_set, "State of the image horizontal flip option (default False)")
         .def_property("vflip", &vflip_get, &vflip_set, "State of the image vertical flip option (default False)")
         .def_property("ipv4_settings", &getIPv4Settings, &setIPv4Settings, "Set the IPv4 address, mask, and gateway", py::call_guard<py::gil_scoped_release>() )
+        .def_property("sensor_location", &getSensorLocation, &setSensorLocation, "The sensor's location", py::call_guard<py::gil_scoped_release>() )
+        .def_property("sensor_name", &getSensorName, &setSensorName, "The sensor's name", py::call_guard<py::gil_scoped_release>() )
 
         .def_property_readonly_static("DEFAULT_PORT_NAME", [](py::object /* self */){return tofcore::DEFAULT_PORT_NAME;})
         .def_property_readonly_static("DEFAULT_BAUD_RATE", [](py::object /* self */){return tofcore::DEFAULT_BAUD_RATE;})

@@ -395,3 +395,23 @@ def test_rapid_commands_with_streaming(dut: pytofcore.Sensor):
     dut.stop_stream()
     assert callback.count != 0
 
+
+@pytest.mark.functional
+def test_sensor_location(dut: pytofcore.Sensor):
+
+    sensor_location = dut.sensor_location
+
+    dut.sensor_location = sensor_location
+
+    assert sensor_location == dut.sensor_location
+
+
+@pytest.mark.functional
+def test_sensor_name(dut: pytofcore.Sensor):
+
+    sensor_name = dut.sensor_name
+
+    dut.sensor_name = sensor_name
+
+    assert sensor_name == dut.sensor_name
+

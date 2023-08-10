@@ -256,6 +256,32 @@ bool Sensor::getSensorInfo(TofComm::versionData_t &versionData)
     return ok;
 }
 
+std::optional<std::string> Sensor::getSensorLocation()
+{
+    auto result = this->send_receive(COMMAND_GET_SENSOR_LOCATION);
+    if (!result)
+    {
+        return std::nullopt; // failed to get information
+    }
+    else
+    {
+        return { std::string(reinterpret_cast<const char*>(result->data()), result->size()) };
+    }
+}
+
+std::optional<std::string> Sensor::getSensorName()
+{
+    auto result = this->send_receive(COMMAND_GET_SENSOR_NAME);
+    if (!result)
+    {
+        return std::nullopt; // failed to get information
+    }
+    else
+    {
+        return { std::string(reinterpret_cast<const char*>(result->data()), result->size()) };
+    }
+}
+
 bool Sensor::getSensorStatus(TofComm::Sensor_Status_t &sensorStatus)
 {
     auto result = this->send_receive(COMMAND_READ_SENSOR_STATUS);
@@ -421,6 +447,16 @@ bool Sensor::setOffset(int16_t offset)
 bool Sensor::setProtocolVersion(uint16_t version)
 {
     return pimpl->connection->set_protocol_version(version);
+}
+
+bool Sensor::setSensorLocation(std::string location)
+{
+    return this->send_receive(COMMAND_SET_SENSOR_LOCATION, {(std::byte*)location.data(), location.size()}).has_value();
+}
+
+bool Sensor::setSensorName(std::string name)
+{
+    return this->send_receive(COMMAND_SET_SENSOR_NAME, {(std::byte*)name.data(), name.length()}).has_value();
 }
 
 bool Sensor:: getIPv4Settings(std::array<std::byte, 4>& adrs, std::array<std::byte, 4>& mask, std::array<std::byte, 4>& gateway)
