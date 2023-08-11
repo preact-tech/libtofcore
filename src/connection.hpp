@@ -18,9 +18,6 @@ public:
     typedef std::function<void(const std::vector<std::byte>&)> on_measurement_callback_t;
     typedef tcb::span<std::byte> ScatterGatherElement;
 
-    //TODO: MZS this probably doesn't belong here.
-    typedef std::function<void(bool, const std::vector<std::byte>&)> on_command_response_callback_t; 
-
 public:
     virtual ~Connection_T() = default;
 
@@ -38,9 +35,6 @@ public:
 
     virtual std::optional<std::vector<std::byte> > send_receive(uint16_t command, const uint8_t *data, uint32_t size,
                                                          std::chrono::steady_clock::duration timeout) = 0;
-
-    virtual void send_receive_async(uint16_t command, const std::vector<ScatterGatherElement> &data,
-                            std::chrono::steady_clock::duration timeout, on_command_response_callback_t callback) = 0;
 
     virtual bool set_protocol_version(uint16_t version) = 0;
 

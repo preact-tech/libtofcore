@@ -59,49 +59,49 @@ uint16_t IpConnection::get_protocol_version() const
 std::vector<std::byte> IpConnection::generateCommandStream(uint16_t command, const std::vector<ScatterGatherElement> &data)
 {
     //TODO: This is a quick implementation that requires an extra copy.
-     /*
-      *           ------------ ---------- ----------- ----------- ------------- -----------
-      * VERS. 1  | 0xFFFFAA55 | PID      |   CID     | LEN       |  Payload    | CRC32     |
-      * COMMAND: |            | (1 byte) | (2 bytes) | (4 bytes) | (LEN bytes) | (4 bytes) |
-      *           ------------ ---------- ----------- ----------- ------------- -----------
-      *          |<----------------- prolog ------------------->|
-      */
-     constexpr uint32_t START_MARKER = 0xFFFFAA55;
-     constexpr size_t OVERHEAD_SIZE = 3 * sizeof(uint32_t) + sizeof(uint8_t) + sizeof(uint16_t); // non-payload portion
-     uint32_t payloadSize = 0;
-     for(const auto &n : data) // .. and now find out the payload portion
-     {
-         payloadSize += n.size_bytes();
-     }
-     const size_t totalSize { payloadSize + OVERHEAD_SIZE };
-     std::vector<std::byte> result(totalSize);
+    /*
+    *           ------------ ---------- ----------- ----------- ------------- -----------
+    * VERS. 1  | 0xFFFFAA55 | PID      |   CID     | LEN       |  Payload    | CRC32     |
+    * COMMAND: |            | (1 byte) | (2 bytes) | (4 bytes) | (LEN bytes) | (4 bytes) |
+    *           ------------ ---------- ----------- ----------- ------------- -----------
+    *          |<----------------- prolog ------------------->|
+    */
+    constexpr uint32_t START_MARKER = 0xFFFFAA55;
+    constexpr size_t OVERHEAD_SIZE = 3 * sizeof(uint32_t) + sizeof(uint8_t) + sizeof(uint16_t); // non-payload portion
+    uint32_t payloadSize = 0;
+    for(const auto &n : data) // .. and now find out the payload portion
+    {
+        payloadSize += n.size_bytes();
+    }
+    const size_t totalSize { payloadSize + OVERHEAD_SIZE };
+    std::vector<std::byte> result(totalSize);
 
-     auto dest = result.data();
-     BE_Put(dest, START_MARKER);
-     dest += sizeof(START_MARKER);
-     static uint8_t s_pid;
-     *dest = static_cast<std::byte>(s_pid);
-     dest += sizeof(s_pid);
-     ++s_pid;
-     BE_Put(dest, command);
-     dest += sizeof(command);
-     BE_Put(dest, payloadSize);
-     dest += sizeof(payloadSize);
-     for(const auto &n : data)
-     {
-         dest = std::copy(n.begin(), n.end(), dest);
-     }
-     const uint8_t* buf = reinterpret_cast<const uint8_t*>(result.data());
-     uint32_t crc = calcCrc32(buf, totalSize - sizeof(uint32_t));
-     BE_Put(dest, crc);
+    auto dest = result.data();
+    BE_Put(dest, START_MARKER);
+    dest += sizeof(START_MARKER);
+    static uint8_t s_pid;
+    *dest = static_cast<std::byte>(s_pid);
+    dest += sizeof(s_pid);
+    ++s_pid;
+    BE_Put(dest, command);
+    dest += sizeof(command);
+    BE_Put(dest, payloadSize);
+    dest += sizeof(payloadSize);
+    for(const auto &n : data)
+    {
+        dest = std::copy(n.begin(), n.end(), dest);
+    }
+    const uint8_t* buf = reinterpret_cast<const uint8_t*>(result.data());
+    uint32_t crc = calcCrc32(buf, totalSize - sizeof(uint32_t));
+    BE_Put(dest, crc);
 
-     return result;
+    return result;
 }
 
 void IpConnection::send(uint16_t command, const std::vector<ScatterGatherElement> &data)
 {
     auto cmdStream = generateCommandStream(command, data);
-    pimpl->m_tcp.sendCommand(cmdStream);
+    pimpl->m_tcp.send(cmdStream);
 }
 
 
@@ -122,27 +122,32 @@ void IpConnection::send(uint16_t command, const std::vector<uint8_t> &buf)
 std::optional<std::vector<std::byte> > IpConnection::send_receive(uint16_t command,
     const std::vector<ScatterGatherElement> &data, std::chrono::steady_clock::duration timeout)
 {
-    //TODO: Implement timeout
-    (void)timeout;
+    std::mutex m;
+    std::condition_variable cv;
+    bool ready = false;
+    bool errOccurred = false;
+    std::vector<std::byte> retval;
+    auto f = [&](bool err, const std::vector<std::byte> &response_payload)
+    {
+        {
+            std::unique_lock<std::mutex> lk(m);
+            ready = true;
+        }
+
+        errOccurred = err;
+        retval = response_payload;
+        cv.notify_one();
+    };
+
+    std::unique_lock<std::mutex> lk(m);
     auto cmdStream = generateCommandStream(command, data);
-    std::vector<std::byte> answer;
-    bool error = false;
-    try
-    {
-        pimpl->m_tcp.sendCommand(cmdStream, answer);
-    }
-    catch(...)
-    {
-        error = true;
-    }
-    if (error)
+    pimpl->m_tcp.send_receive_async(cmdStream, timeout, f);
+    cv.wait(lk, [&] { return ready; });
+    if(errOccurred) 
     {
         return std::nullopt;
     }
-    else
-    {
-        return {answer};
-    }
+    return std::make_optional(retval);
 }
 
 
@@ -167,18 +172,6 @@ bool IpConnection::set_protocol_version(uint16_t version)
     // the client only asks for version 0)
     return (version == 0);
 }
-
-
-void IpConnection::send_receive_async(uint16_t command, const std::vector<ScatterGatherElement> &data,
-    std::chrono::steady_clock::duration timeout, on_command_response_callback_t callback)
-{
-    (void)command;
-    (void)data;
-    (void)timeout;
-    (void)callback;
-    //TODO:
-}
-
 
 void IpConnection::reset_parser()
 {

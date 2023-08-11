@@ -37,15 +37,16 @@ public:
                                                          std::chrono::steady_clock::duration timeout) override;
     virtual bool set_protocol_version(uint16_t version) override;
 
-    virtual void send_receive_async(uint16_t command, const std::vector<ScatterGatherElement> &data,
-                            std::chrono::steady_clock::duration timeout, on_command_response_callback_t callback) override;
-
     virtual void reset_parser() override;
 
     /// Callback function that will be called when a complete measurement data packet has been received.
     virtual void subscribe(on_measurement_callback_t callback) override;
 
 private:
+    typedef std::function<void(bool, const std::vector<std::byte>&)> on_command_response_callback_t; 
+    void send_receive_async(uint16_t command, const std::vector<ScatterGatherElement> &data,
+                            std::chrono::steady_clock::duration timeout, on_command_response_callback_t callback);
+
     void sendv0(uint16_t command, const std::vector<ScatterGatherElement> &data);
     void sendv1(uint16_t command, const std::vector<ScatterGatherElement> &data);
 

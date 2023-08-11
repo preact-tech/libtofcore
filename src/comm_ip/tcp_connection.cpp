@@ -1,15 +1,41 @@
 #include <iostream>
 #include "tcp_connection.hpp"
 
-using boost::asio::ip::tcp;
 
 namespace tofcore
 {
+    using namespace boost;
+    using namespace boost::system;
+    using namespace boost::asio;
+    using boost::asio::ip::tcp;
 
     typedef std::vector<uint8_t> Packet;
+    constexpr uint32_t ANSWER_START_PATTERN = 0xFFFFAA55;   ///< Pattern marking the start of an answer
+
+    #define DBG(l) //std::cout << l << std::endl
+    #define ERR(l) std::cerr << l << std::endl
+
+    bool process_error(const system::error_code &error, const char* where)
+    {
+        if (!error)
+        {
+            DBG("NO ERROR in " << where );
+            return true;
+        }
+        else if((error == boost::asio::error::operation_aborted))
+        {
+            DBG("OPERATION aborted in " << where );
+            return false;
+        }
+        else
+        {
+            ERR("ERROR in " << where << ": " << error.message());
+            return false;
+        }
+    }
 
     TcpConnection::TcpConnection(boost::asio::io_service &ioService)
-        : state(STATE_DISCONNECTED), socket(ioService), resolver(ioService)
+        : state(STATE_DISCONNECTED), socket(ioService), resolver(ioService), m_response_timer(ioService)
     {
         connect();
     }
@@ -26,16 +52,57 @@ namespace tofcore
         }
     }
 
-    void TcpConnection::sendCommand(const std::vector<std::byte> &data)
+
+    void TcpConnection::send_receive_async(const std::vector<std::byte> &data,
+        std::chrono::steady_clock::duration timeout, TcpConnection::on_command_response_callback_t callback)
     {
-        std::vector<std::byte> answer;
-        this->sendCommand(data, answer);
+        this->send(data);
+        this->receive_async(callback);
+        this->begin_response_timer(timeout);
     }
 
-    void TcpConnection::sendCommand(const std::vector<std::byte> &data, std::vector<std::byte> &payload)
+
+    void TcpConnection::begin_response_timer(std::chrono::steady_clock::duration timeout)
+    {
+        auto f = [&](const auto &error)
+        {
+            this->on_response_timeout(error);
+        };
+
+        this->m_response_timer.expires_after(timeout);
+        this->m_response_timer.async_wait(f);
+    }
+
+
+    void TcpConnection::on_response_timeout(const system::error_code &error)
+    {
+        // If the timer expires (timeout), there is no error
+        if (error && ( (error == boost::asio::error::operation_aborted) ||
+                    !process_error(error, __FUNCTION__)
+                    ))
+        {
+            return;
+        }
+
+        //The timer went off and so a "timeout" occurred while waiting for the response
+        //First make sure to cancel any pending reads, 
+        //TODO figure out how to make sure the canceled has completed, prior to allowing another request to be sent
+        // otherwise we could end up in a race condition where the next command read is canceled.
+        this->socket.cancel();
+        if (this->m_on_command_response)
+        {
+            std::vector<std::byte> tmp;
+            this->m_on_command_response(true, tmp);
+            this->m_on_command_response = nullptr;
+        }
+    }
+
+    void TcpConnection::send(const std::vector<std::byte> &data)
     {
         if (!isConnected())
+        {
             return;
+        }
         /*
          * Send the command stream
          */
@@ -45,67 +112,110 @@ namespace tofcore
         {
             throw boost::system::system_error(error);
         }
-        /*
-         * Read the command response
-         *              ------------ ---------- ---------- ------------ ----------- -------- ------------ -----------
-         * VERS. 1     | 0xFFFFAA55 | PID      | TYPE (0) | LEN (sz+3) |   CID     | Result |  Payload   | CRC32     |
-         * CMD Answer: |            | (1 byte) | (1 byte) | (4 bytes)  | (2 bytes) | 1 byte | (sz bytes) | (4 bytes) |
-         *              ------------ ---------- ---------- ------------ ----------- -------- ------------ -----------
-         *             |<------------------- prolog --------------------------------------->|
-         */
-        constexpr uint32_t ANSWER_START_PATTERN = 0xFFFFAA55;   ///< Pattern marking the start of an answer
-        constexpr size_t ANSWER_PROLOG_SIZE { 2 * sizeof(uint32_t) + sizeof(uint16_t) + 3 * sizeof(uint8_t) };
-        Packet buf(ANSWER_PROLOG_SIZE);
+    }
 
-        auto len = boost::asio::read(socket, boost::asio::buffer(buf));
-        if (len != buf.size())
+    void TcpConnection::begin_receive_prolog()
+    {
+        auto f = [&](const auto &error, auto)
         {
-            throw std::runtime_error("Failed to read command response prolog");
+            this->on_receive_prolog(error);
+        };
+        constexpr size_t ANSWER_PROLOG_SIZE { 2 * sizeof(uint32_t) + sizeof(uint16_t) + 3 * sizeof(uint8_t) };
+
+        this->m_prolog_epilog_buf.resize(ANSWER_PROLOG_SIZE);
+        boost::asio::async_read(this->socket, buffer(this->m_prolog_epilog_buf, ANSWER_PROLOG_SIZE), f);
+    }
+
+    void TcpConnection::on_receive_prolog(const system::error_code &error)
+    {
+        if (error && !process_error(error, __FUNCTION__))
+        {
+            return;
         }
-        const uint32_t start_marker = ::ntohl(*reinterpret_cast<const uint32_t *>(buf.data() + 0));
+        const uint32_t start_marker = ::ntohl(*reinterpret_cast<const uint32_t *>(m_prolog_epilog_buf.data() + 0));
         if (start_marker != ANSWER_START_PATTERN)
         {
-            throw std::runtime_error("Command response start pattern is incorrect");
+            DBG("Command response start pattern is incorrect");
+            //Could be cruft from previous response, try again.
+            this->begin_receive_prolog();
+            return;
         }
-//        const uint8_t pid = *reinterpret_cast<const uint8_t *>(buf.data() + 4);
-//        const uint8_t type = *reinterpret_cast<const uint8_t *>(buf.data() + 5);
         constexpr uint32_t MAX_ANSWER_PAYLOAD_EXPECTED { (4 * 1024) + 256 };
-        const uint32_t answerSize = ::ntohl(*reinterpret_cast<const uint32_t *>(buf.data() + 6));
+        const uint32_t answerSize = ::ntohl(*reinterpret_cast<const uint32_t *>(m_prolog_epilog_buf.data() + 6));
         if ((answerSize < 3) ||(answerSize > MAX_ANSWER_PAYLOAD_EXPECTED + 3))
         {
-            throw std::runtime_error("Command response too big");
+            DBG("Command response too big");
+            //Could have been cruft from previous response, try again.
+            this->begin_receive_prolog();
+            return;
         }
         const uint32_t payload_size { answerSize - 3 };
-//        const uint16_t cid = ::ntohl(*reinterpret_cast<const uint32_t *>(buf.data() + 10));
-        const uint8_t result = *reinterpret_cast<const uint8_t *>(buf.data() + 12);
-        if (result != 0)
-        {
-            throw std::runtime_error("Command failed");
-        }
+        //this->m_response_cid = ::ntohl(*reinterpret_cast<const uint32_t *>(buf.data() + 10));
+        this->m_response_result = *(m_prolog_epilog_buf.data() + 12);
 
-        // Now read the payload
-        payload.resize(payload_size);
-        if (payload_size > 0)
+        // Now read the payload and final CRC bytes
+        m_response_buf.resize(payload_size);
+        m_prolog_epilog_buf.resize(4);
+        auto f = [&](const auto &error, auto)
         {
-            len = boost::asio::read(socket, boost::asio::buffer(payload));
-            if (payload_size != len)
-            {
-                throw std::runtime_error("Failed to read command response's payload");
-            }
+            this->on_receive_payload(error);
+        };
+        auto bufs = std::array<boost::asio::mutable_buffer, 2>{buffer(this->m_response_buf, payload_size), buffer(m_prolog_epilog_buf, 4)};
+        boost::asio::async_read(this->socket, bufs, f);
+    }
+
+
+    void TcpConnection::on_receive_payload(const system::error_code &error)
+    {
+        if (error && !process_error(error, __FUNCTION__))
+        {
+            return;
         }
-        // Read the CRC
-        buf.resize(4);
-        len = boost::asio::read(socket, boost::asio::buffer(buf));
-        if (buf.size() != len)
+        //RECEIVED the payload and the CRC, validate the CRC and then deliver the payload to the client
+        //via the callback.
+        //TODO check the crc
+        if(this->m_on_command_response)
         {
-            throw std::runtime_error("Failed to read command response's CRC");
+            //Make sure to clear the handler `m_on_command_response` 
+            // member variable and cancel the timer before calling 
+            // the handler. Otherwise a race condition can ensue due
+            // to the fact that the client is likely running in another
+            // thread that could become unblocked and even run far enough
+            // to start another command sequence prior to this thread
+            // returning from the handler callback.
+            auto on_command_response = this->m_on_command_response;
+            this->m_on_command_response = nullptr;
+            this->m_response_timer.cancel();
+            auto isValid = this->is_valid_response();
+            on_command_response(!isValid, this->m_response_buf);
         }
     }
+
+
+    bool TcpConnection::is_valid_response()
+    {
+        auto isValid { true };
+        if(this->m_response_result != std::byte{0})
+        {
+            isValid = false;
+        }
+        return isValid;
+    }
+
+
+    void TcpConnection::receive_async(TcpConnection::on_command_response_callback_t callback)
+    {
+        this->m_on_command_response = callback;
+        this->begin_receive_prolog();
+    }
+
 
     void TcpConnection::connect()
     {
         if (isConnected())
+        {
             return;
+        }
 
         updateState(STATE_CONNECTING);
         tcp::resolver::query query(HOST, PORT);
@@ -128,7 +238,9 @@ namespace tofcore
     void TcpConnection::disconnect()
     {
         if (isDisconnected())
+        {
             return;
+        }
 
         updateState(STATE_CLOSING);
 
@@ -140,21 +252,6 @@ namespace tofcore
             throw boost::system::system_error(error);
         }
         updateState(STATE_DISCONNECTED);
-    }
-
-    void TcpConnection::waitAck()
-    {
-        Packet buf(ACK_BUF_SIZE);
-        boost::system::error_code error;
-
-        this->updateState(STATE_WAIT_ACK);
-        size_t len = socket.read_some(boost::asio::buffer(buf), error);
-        (void)len;
-        if (error)
-        {
-            throw boost::system::system_error(error);
-        }
-        this->revertState();
     }
 
     void TcpConnection::updateState(State state_) const

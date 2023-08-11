@@ -3,19 +3,12 @@
 
 #include <boost/asio.hpp>
 
-using boost::asio::ip::tcp;
-
 namespace tofcore
 {
-
     class TcpConnection
     {
-        static const int MARKER_SIZE = 4;
-        static const int ACK_BUF_SIZE = 128;
         static constexpr const char *PORT = "50660";
         static constexpr const char *HOST = "10.10.31.180";
-        static constexpr const char *END_MARKER = "\xff\xff\x55\xaa";
-        static constexpr const char *START_MARKER = "\xff\xff\xaa\x55";
 
     public:
         enum State
@@ -27,24 +20,44 @@ namespace tofcore
             STATE_WAIT_ACK
         };
 
+
         TcpConnection(boost::asio::io_service &);
         ~TcpConnection();
 
-        void sendCommand(const std::vector<std::byte> &);
-        void sendCommand(const std::vector<std::byte> &, std::vector<std::byte> &payload);
+        typedef std::function<void(bool, const std::vector<std::byte>&)> on_command_response_callback_t; 
+        void send_receive_async(const std::vector<std::byte> &data,
+            std::chrono::steady_clock::duration timeout, on_command_response_callback_t callback);
+
+        void send(const std::vector<std::byte> &data);
 
     private:
         mutable State state, previousState;
-        tcp::socket socket;
-        tcp::resolver resolver;
+        boost::asio::ip::tcp::socket socket;
+        boost::asio::ip::tcp::resolver resolver;
+        on_command_response_callback_t m_on_command_response;
+        boost::asio::steady_timer m_response_timer;
+        std::vector<std::byte> m_prolog_epilog_buf;
+        std::vector<std::byte> m_response_buf;
+
+        //uint16_t m_response_cid { 0 };
+        std::byte m_response_result { 0 };
 
         void connect();
         void disconnect();
-        void waitAck();
         void updateState(State) const;
         void revertState() const;
         bool isConnected() const;
         bool isDisconnected() const;
+
+        void begin_response_timer(std::chrono::steady_clock::duration timeout);
+        void on_response_timeout(const boost::system::error_code &error);
+
+        void receive_async(TcpConnection::on_command_response_callback_t callback);
+        void begin_receive_prolog();
+        void on_receive_prolog(const boost::system::error_code &error);
+        void on_receive_payload(const boost::system::error_code &error);
+        bool is_valid_response();
+
     };
 
 } // end namespace tofcore
