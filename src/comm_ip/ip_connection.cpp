@@ -25,7 +25,7 @@ struct IpConnection::Impl
 {
     TcpConnection m_tcp;
     UdpServer m_udp;
-    uint16_t m_protocol_version { 0 };
+    uint16_t m_protocol_version { 1 };
 
     std::function<void(bool, const std::vector<std::byte>&)> on_command_response_ {};
 
@@ -168,9 +168,9 @@ std::optional<std::vector<std::byte> > IpConnection::send_receive(uint16_t comma
 
 bool IpConnection::set_protocol_version(uint16_t version)
 {
-    //TODO: for now only supporting version 0 (which is the default so just check
-    // the client only asks for version 0)
-    return (version == 0);
+    //TODO: for now only supporting version 1 (which is the default so just check
+    // the client only asks for version 1)
+    return (version == 1);
 }
 
 void IpConnection::reset_parser()
