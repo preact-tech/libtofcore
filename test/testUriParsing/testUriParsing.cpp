@@ -7,6 +7,8 @@
 #include <gtest/gtest.h>
 #include "uri.hpp"
 
+using namespace std::string_literals;
+
 TEST(testUriParsing, devicePath)
 {
     {
@@ -16,18 +18,18 @@ TEST(testUriParsing, devicePath)
         EXPECT_EQ(test_uri.get_path(), "") << "expected path to be ''";
     }
     {
-        uri test_uri("device:/dev/ttyACM0?baudrate=19200&protocol_version=1");
-        EXPECT_EQ(test_uri.get_scheme(), "device") << "expected scheme to be 'dev'";
+        uri test_uri("tofserial:/dev/ttyACM0?baudrate=19200&protocol_version=1");
+        EXPECT_EQ(test_uri.get_scheme(), "tofserial") << "expected scheme to be 'tofserial'";
         EXPECT_EQ(test_uri.get_host(), "") << "expected host to be ''";
-        EXPECT_EQ(test_uri.get_path(), "dev/ttyACM0") << "expected path to be 'dev/ttyACM0'";
+        EXPECT_EQ(test_uri.get_path(), "/dev/ttyACM0") << "expected path to be '/dev/ttyACM0'";
         EXPECT_TRUE(test_uri.is_rooted()) << "expected path to be rooted";
         auto query_dict = test_uri.get_query_dictionary();
         EXPECT_EQ(query_dict["baudrate"], "19200");
         EXPECT_EQ(query_dict["protocol_version"], "1");
     }
     {
-        uri test_uri("device:COM1?protocol_version=1&baudrate=115200");
-        EXPECT_EQ(test_uri.get_scheme(), "device") << "expected scheme to be 'dev'";
+        uri test_uri("tofserial:COM1?protocol_version=1&baudrate=115200");
+        EXPECT_EQ(test_uri.get_scheme(), "tofserial") << "expected scheme to be 'dev'";
         EXPECT_EQ(test_uri.get_host(), "") << "unexpected host value";
         EXPECT_EQ(test_uri.get_path(), "COM1") << "unexpected path value";
         auto query_dict = test_uri.get_query_dictionary();
@@ -46,11 +48,19 @@ TEST(testUriParsing, devicePath)
     }
 
     {
-        uri test_uri("COM1", uri::scheme_category::Hierarchical);
-        EXPECT_EQ(test_uri.get_scheme(), "") << "unexpected scheme";
-        EXPECT_EQ(test_uri.get_host(), "") << "unexpected host value";
-        EXPECT_EQ(test_uri.get_port(), 0) << "unexpected port value";
-        EXPECT_EQ(test_uri.get_path(), "") << "unexpected path value";
+        try
+        {
+            uri test_uri("COM1", uri::scheme_category::Hierarchical);
+            FAIL() << "Expected an exception to be thrown";
+        }
+        catch(const std::invalid_argument& err)
+        {
+            EXPECT_EQ(err.what(), "End of URI found while parsing the scheme. Supplied URI was: \"COM1\"."s);
+        }
+        catch(...)
+        {
+            FAIL() << "expected std::invalid_argument exception";
+        }
     }
 
 }

@@ -285,11 +285,15 @@ public:
         return m_port;
     };
 
-    std::string const &get_path() const
+    std::string const get_path() const
     {
         if (m_category != scheme_category::Hierarchical)
         {
             throw std::domain_error("The path component is only valid for hierarchical URIs.");
+        }
+        if(this->is_rooted())
+        {
+            return std::string("/") + m_path;
         }
         return m_path;
     };
@@ -368,6 +372,7 @@ public:
 private:
     void setup(std::string const &uri_text, scheme_category category)
     {
+        (void)category;
         size_t const uri_length = uri_text.length();
 
         if (uri_length == 0)
@@ -489,6 +494,7 @@ private:
                                                std::string const &content,
                                                std::string::const_iterator username_start)
     {
+        (void)content;
         std::string::const_iterator username_end = username_start;
         // Since this is only reachable when '@' was in the content string, we can
         // ignore the end-of-string case.
@@ -508,6 +514,8 @@ private:
                                                std::string const &content,
                                                std::string::const_iterator password_start)
     {
+        (void)uri_text;
+        (void)content;
         std::string::const_iterator password_end = password_start;
         while (*password_end != '@')
         {
