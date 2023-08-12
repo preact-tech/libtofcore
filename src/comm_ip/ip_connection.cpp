@@ -29,18 +29,16 @@ struct IpConnection::Impl
 
     std::function<void(bool, const std::vector<std::byte>&)> on_command_response_ {};
 
-    Impl(io_service &io, const std::string &uri, uint16_t protocolVersion) :
-            m_tcp(io),
-            m_udp(io),
-            m_protocol_version(protocolVersion)
+    Impl(io_service &io, const uri& uri) :
+            m_tcp(io, uri),
+            m_udp(io)
     {
-        (void)uri;
     }
 };
 
 
-IpConnection::IpConnection(boost::asio::io_service& io, const std::string &uri, uint16_t protocolVersion) :
-    pimpl { new Impl(io, uri, protocolVersion) }
+IpConnection::IpConnection(boost::asio::io_service& io, const uri& uri) :
+    pimpl { new Impl(io, uri) }
 {
 }
 

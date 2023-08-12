@@ -9,7 +9,9 @@ namespace tofcore
     using namespace boost::asio;
     using boost::asio::ip::tcp;
 
-    typedef std::vector<uint8_t> Packet;
+    constexpr auto DEFAULT_PORT { 50660ul };
+    constexpr auto DEFAULT_HOST {"10.10.31.180"};
+
     constexpr uint32_t ANSWER_START_PATTERN = 0xFFFFAA55;   ///< Pattern marking the start of an answer
 
     #define DBG(l) //std::cout << l << std::endl
@@ -34,10 +36,20 @@ namespace tofcore
         }
     }
 
-    TcpConnection::TcpConnection(boost::asio::io_service &ioService)
+    TcpConnection::TcpConnection(boost::asio::io_service &ioService, const uri& uri)
         : state(STATE_DISCONNECTED), socket(ioService), resolver(ioService), m_response_timer(ioService)
     {
-        connect();
+        auto host = uri.get_host();
+        auto port = uri.get_port();
+        if(host.empty())
+        {
+            host = DEFAULT_HOST;
+        }
+        if(port == 0)
+        {
+            port = DEFAULT_PORT;
+        }
+        connect(host, port);
     }
 
     TcpConnection::~TcpConnection()
@@ -48,7 +60,7 @@ namespace tofcore
         }
         catch (boost::system::system_error &e)
         {
-            std::cerr << e.what() << std::endl;
+            ERR(e.what());
         }
     }
 
@@ -210,7 +222,7 @@ namespace tofcore
     }
 
 
-    void TcpConnection::connect()
+    void TcpConnection::connect(const std::string& host, unsigned long port)
     {
         if (isConnected())
         {
@@ -218,7 +230,7 @@ namespace tofcore
         }
 
         updateState(STATE_CONNECTING);
-        tcp::resolver::query query(HOST, PORT);
+        tcp::resolver::query query(host, std::to_string(port));
         tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
         tcp::resolver::iterator end;
 

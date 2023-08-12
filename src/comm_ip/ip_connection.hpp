@@ -10,6 +10,7 @@
 #define _IP_CONNECTION_H_
 
 #include "connection.hpp"
+#include "uri.hpp"
 
 namespace tofcore
 {
@@ -17,7 +18,7 @@ namespace tofcore
 class IpConnection : public Connection_T
 {
 public:
-    IpConnection(boost::asio::io_service&, const std::string &uri, uint16_t protocolVersion);
+    IpConnection(boost::asio::io_service&, const uri& uri);
 
     virtual ~IpConnection();
 

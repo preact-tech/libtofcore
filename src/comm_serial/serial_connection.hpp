@@ -10,6 +10,7 @@
 #define _SERIAL_CONNECTION_H_
 
 #include "connection.hpp"
+#include "uri.hpp"
 
 namespace tofcore
 {
@@ -17,7 +18,7 @@ namespace tofcore
 class SerialConnection : public Connection_T
 {
 public:
-    SerialConnection(boost::asio::io_service&, const std::string &portName, uint32_t baudrate, uint16_t protocolVersion);
+    SerialConnection(boost::asio::io_service&, const uri& uri);
 
     virtual ~SerialConnection();
 

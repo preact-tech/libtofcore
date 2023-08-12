@@ -28,12 +28,10 @@ using namespace TofComm;
 
 struct Sensor::Impl
 {
-    Impl(uint16_t protocolVersion, const std::string &portName, uint32_t baudrate) :
-                connection(Connection_T::create(ioService, portName)/*, portName, baudrate, protocolVersion)*/),
-                measurement_timer_(ioService)
+    Impl(const std::string &uri) :
+        connection(Connection_T::create(ioService, uri)),
+        measurement_timer_(ioService)
     {
-        (void)protocolVersion;
-        (void)baudrate;
     }
 
     void init();
@@ -112,11 +110,32 @@ struct Sensor::Impl
  *
  * ######################################################################### */
 
+Sensor::Sensor(const std::string& uri /*= std::string()*/)
+{
+    std::string connection_uri = uri;
+    if (connection_uri.empty())
+    {
+        // Get all PreAct Devices
+        const auto devices = find_all_devices();
+        
+        // No PreAct Devices
+        if (devices.empty())
+        {
+            throw std::runtime_error("No PreAct Devices Found");
+        }
+
+        connection_uri = devices[0].connector_uri;
+    }
+    this->pimpl = std::unique_ptr<Impl>(new Impl(connection_uri));
+    pimpl->init();
+}
+
+
 Sensor::Sensor(uint16_t protocolVersion, const std::string &portName, uint32_t baudrate) 
 {
-    std::string connector_uri;
+    std::string connection_uri = portName;
     // If no port name given. Find first PreAct device avaiable
-    if (portName.empty()){
+    if (connection_uri.empty()){
 
         // Get all PreAct Devices
         std::vector<device_info_t> devices = find_all_devices();
@@ -125,16 +144,16 @@ Sensor::Sensor(uint16_t protocolVersion, const std::string &portName, uint32_t b
         if (devices.empty()){
             throw std::runtime_error("No PreAct Devices Found");
         }
-
-        connector_uri = devices[0].connector_uri;
+        connection_uri = devices[0].connector_uri;
     }
 
-    // Use port name given
-    else {
-        connector_uri = portName;
-    }
+    //Add protocol version and baudrate to uri query parameters
+    connection_uri += "?baudrate=";
+    connection_uri += std::to_string(baudrate);
+    connection_uri += ";protocol_version=";
+    connection_uri += std::to_string(protocolVersion);
 
-    this->pimpl = std::unique_ptr<Impl>(new Impl(protocolVersion, connector_uri, baudrate));
+    this->pimpl = std::unique_ptr<Impl>(new Impl(connection_uri));
     pimpl->init();
 }
 

@@ -37,6 +37,7 @@ struct LensIntrinsics_t
 class Sensor
 {
 public:
+    Sensor(const std::string& uri = std::string());
     Sensor(uint16_t protocolVersion = DEFAULT_PROTOCOL_VERSION,
            const std::string &portName = DEFAULT_PORT_NAME,
            uint32_t baudrate = DEFAULT_BAUD_RATE);

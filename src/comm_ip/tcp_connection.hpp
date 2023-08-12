@@ -1,15 +1,13 @@
 #ifndef __TOFCORE_TCPCONNECTION_H__
 #define __TOFCORE_TCPCONNECTION_H__
 
+#include "uri.hpp"
 #include <boost/asio.hpp>
 
 namespace tofcore
 {
     class TcpConnection
     {
-        static constexpr const char *PORT = "50660";
-        static constexpr const char *HOST = "10.10.31.180";
-
     public:
         enum State
         {
@@ -21,7 +19,7 @@ namespace tofcore
         };
 
 
-        TcpConnection(boost::asio::io_service &);
+        TcpConnection(boost::asio::io_service &, const uri& uri);
         ~TcpConnection();
 
         typedef std::function<void(bool, const std::vector<std::byte>&)> on_command_response_callback_t; 
@@ -42,7 +40,7 @@ namespace tofcore
         //uint16_t m_response_cid { 0 };
         std::byte m_response_result { 0 };
 
-        void connect();
+        void connect(const std::string& host, unsigned long port);
         void disconnect();
         void updateState(State) const;
         void revertState() const;
