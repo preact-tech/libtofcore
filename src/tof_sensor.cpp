@@ -398,12 +398,10 @@ bool Sensor::setMinAmplitude(uint16_t minAmplitude)
 
 bool Sensor::setModulation(const uint16_t modFreqkHz)
 {
-    std::cout << "Mod Freq. Request: " << modFreqkHz << std::endl;
-
     return this->send_receive(COMMAND_SET_MODULATION, modFreqkHz).has_value();
 }
 
-uint16_t Sensor::getModulation(void)
+std::optional<uint16_t> Sensor::getModulation(void)
 {
     auto result = this->send_receive(COMMAND_GET_MODULATION);
 
