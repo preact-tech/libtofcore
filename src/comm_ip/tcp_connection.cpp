@@ -152,7 +152,7 @@ namespace tofcore
             this->begin_receive_prolog();
             return;
         }
-        constexpr uint32_t MAX_ANSWER_PAYLOAD_EXPECTED { (4 * 1024) + 256 };
+        constexpr uint32_t MAX_ANSWER_PAYLOAD_EXPECTED { 64 * 1024 * 1024 }; // We should never have an answer this big
         const uint32_t answerSize = ::ntohl(*reinterpret_cast<const uint32_t *>(m_prolog_epilog_buf.data() + 6));
         if ((answerSize < 3) ||(answerSize > MAX_ANSWER_PAYLOAD_EXPECTED + 3))
         {
