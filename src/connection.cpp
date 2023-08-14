@@ -31,7 +31,7 @@ uri parse_as_uri(const std::string& str)
         else
         {
             //assume it's an IP address or hostname
-            return uri("tofnet:" + str);
+            return uri("tofnet://" + str);
         }
     }
 }
