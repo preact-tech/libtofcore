@@ -313,6 +313,24 @@ static py::object get_illuminator_info(const tofcore::Measurement_T &m)
                       (*info).photodiode_v);
 }
 
+static std::optional<uint16_t> modulation_get(tofcore::Sensor &sensor)
+{
+    auto modulation = sensor.getModulation();
+    if (modulation)
+    {
+        return *modulation;
+    }
+    else
+    {
+        throw std::runtime_error("An error occcured attempting to read modulation frequency state.");
+    }
+}
+
+static bool modulation_set(tofcore::Sensor &sensor, uint16_t modFreqkHz)
+{
+    return sensor.setModulation(modFreqkHz);
+}
+
 static bool hflip_get(tofcore::Sensor &sensor)
 {
     auto hflip = sensor.isFlipHorizontallyActive();
@@ -374,15 +392,13 @@ PYBIND11_MODULE(pytofcore, m) {
         .def("set_integration_times", &tofcore::Sensor::setIntegrationTimes, "Set all integration time parameters on the sensor", py::arg("low"), py::arg("mid"), py::arg("high"), py::call_guard<py::gil_scoped_release>())
         .def("get_integration_times", &getSensorIntegrationTimes, "query the device for the currently configured integration time settings", py::call_guard<py::gil_scoped_release>())
         .def("set_hdr_mode", &tofcore::Sensor::setHDRMode, "Set the High Dynamic Range mode on the sensor", py::arg("mode"), py::call_guard<py::gil_scoped_release>())
-        .def("set_modulation", &tofcore::Sensor::setModulation, "Set the modulation frequency to use during TOF measurements", py::arg("modFreqkHz"), py::call_guard<py::gil_scoped_release>())
-        .def_property_readonly("get_modulation", &tofcore::Sensor::getModulation, "Obtain modulation frequency", py::call_guard<py::gil_scoped_release>())
         .def("subscribe_measurement", &subscribeMeasurement, "Set a function object to be called when new measurement data is received", py::arg("callback"))
         .def("get_sensor_info", &getSensorInfo, "Get the sensor version and build info")
         .def("get_sensor_status", &getSensorStatus, "Get the sensor status info")
         .def("jump_to_bootloader", &jump_to_bootloader, "Activate bootloader mode to flash firmware")
         .def_property("hflip", &hflip_get, &hflip_set, "State of the image horizontal flip option (default False)")
         .def_property("vflip", &vflip_get, &vflip_set, "State of the image vertical flip option (default False)")
-
+        .def_property("modulation_frequency", &modulation_get, &modulation_set, "LED Modulation Frequency in kHz (default 24000)")
         .def_property_readonly_static("DEFAULT_PORT_NAME", [](py::object /* self */){return tofcore::DEFAULT_PORT_NAME;})
         .def_property_readonly_static("DEFAULT_BAUD_RATE", [](py::object /* self */){return tofcore::DEFAULT_BAUD_RATE;})
         .def_property_readonly_static("DEFAULT_PROTOCOL_VERSION", [](py::object /* self */){return tofcore::DEFAULT_PROTOCOL_VERSION;});
