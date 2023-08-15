@@ -441,14 +441,14 @@ std::optional<uint16_t> Sensor::getModulation(void)
 
     if (!result)
     {
-        return 0;
+        return std::nullopt;
     }
     const auto &payload = *result;
 
     uint16_t modFreqkHz;
     LE_Get(modFreqkHz, &payload[0]);
 
-    return modFreqkHz;
+    return {modFreqkHz};
 }
 
 bool Sensor::setOffset(int16_t offset)
