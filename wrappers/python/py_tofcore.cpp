@@ -92,14 +92,17 @@ static void subscribeMeasurement(tofcore::Sensor& s, tofcore::Sensor::on_measure
 
 static auto getIPv4Settings(tofcore::Sensor& s)
 {
-    py::gil_scoped_release gsr;
-
     //Use static and a lambda to create the IPv4Settings namedtuple type only once.
     std::array<std::byte, 4> ipv4Address;
     std::array<std::byte, 4> ipv4Mask;
     std::array<std::byte, 4> ipv4Gateway;
 
-    if(!s.getIPv4Settings(ipv4Address, ipv4Mask, ipv4Gateway))
+    bool result = false;
+    {
+        py::gil_scoped_release gsr;
+        result = s.getIPv4Settings(ipv4Address, ipv4Mask, ipv4Gateway);
+    }
+    if(!result)
     {
         throw std::runtime_error("An error occured while getting IPv4 settings");
     }
@@ -119,8 +122,6 @@ static auto getIPv4Settings(tofcore::Sensor& s)
 
 static void setIPv4Settings(tofcore::Sensor &s, py::object& settings)
 {
-    py::gil_scoped_release gsr;
-
     if(!py::isinstance(settings, PyIPv4Settings))
     {
         throw pybind11::type_error("IPv4Settings must be of type pytofcore.IPv4Settings");
@@ -147,7 +148,11 @@ static void setIPv4Settings(tofcore::Sensor &s, py::object& settings)
     auto ipv4Mask = py_ip_to_array(interface.attr("network").attr("netmask"));
     auto ipv4Gateway = py_ip_to_array(settings.attr("gateway"));
 
-    const auto ok = s.setIPv4Settings(ipv4Address, ipv4Mask, ipv4Gateway);
+    bool ok = false;
+    {
+        py::gil_scoped_release gsr;
+        ok = s.setIPv4Settings(ipv4Address, ipv4Mask, ipv4Gateway);
+    }
     if(!ok)
     {
         throw std::runtime_error("An error occcured setting sequencer version");
@@ -156,8 +161,6 @@ static void setIPv4Settings(tofcore::Sensor &s, py::object& settings)
 
 static auto getLensInfo(tofcore::Sensor& s)
 {
-    py::gil_scoped_release gsr;
-
     //Use static and a lambda to create the LensInfo_type namedtuple type only once.
     static auto LensInfo_type = []() {
         auto namedTuple_attr = pybind11::module::import("collections").attr("namedtuple");
@@ -169,8 +172,11 @@ static auto getLensInfo(tofcore::Sensor& s)
         fields.append("undistortionCoeffs");
         return namedTuple_attr("LensInfo", fields);
     }();
-
-    auto result = s.getLensIntrinsics();
+    std::optional<tofcore::LensIntrinsics_t> result;
+    {
+        py::gil_scoped_release gsr;
+        result = s.getLensIntrinsics();
+    }
     if (!result)
     {
         throw std::runtime_error("An error occured while getting Lens information");
@@ -182,7 +188,6 @@ static auto getLensInfo(tofcore::Sensor& s)
 
 static auto getPixelRays(tofcore::Sensor& s)
 {
-    py::gil_scoped_release gsr;
     //Use static and a lambda to create the PixelRays namedtuple type only once.
     static auto PixelRays_type = []() {
         auto namedTuple_attr = pybind11::module::import("collections").attr("namedtuple");
@@ -197,7 +202,12 @@ static auto getPixelRays(tofcore::Sensor& s)
     std::vector<double> rays_y;
     std::vector<double> rays_z;
 
-    if(!s.getLensInfo(rays_x, rays_y, rays_z))
+    bool result {true};
+    {
+        py::gil_scoped_release gsr;
+        result = s.getLensInfo(rays_x, rays_y, rays_z);
+    }
+    if(!result)
     {
         throw std::runtime_error("An error occured while getting pixel ray information");
     }
