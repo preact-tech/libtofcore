@@ -31,6 +31,45 @@ constexpr auto ILLUMINATOR_INFO_DOCSTRING =
 
 namespace py = pybind11;
 
+#define PyCollectionsModule (ImportCollections())
+#define PyNamedTuple (ImportNamedTuple())
+#define PyIpaddressModule (ImportIpaddress())
+#define PyIPv4Interface (ImportIPv4Interface())
+#define PyIPv4Address (ImportIPv4Address())
+#define PyIPv4Settings (IPv4SettingsType())
+
+inline const py::module_& ImportCollections() {
+    static const py::module_* ptr = new py::module_{py::module_::import("collections")};
+    return *ptr;
+}
+inline const py::object& ImportNamedTuple() {
+    static const py::object* ptr = new py::object{py::getattr(PyCollectionsModule, "namedtuple")};
+    return *ptr;
+}
+inline const py::module_& ImportIpaddress() {
+    static const py::module_* ptr = new py::module_{py::module_::import("ipaddress")};
+    return *ptr;
+}
+inline const py::object& ImportIPv4Interface() {
+    static const py::object* ptr = new py::object{py::getattr(PyIpaddressModule, "IPv4Interface")};
+    return *ptr;
+}
+inline const py::object& ImportIPv4Address() {
+    static const py::object* ptr = new py::object{py::getattr(PyIpaddressModule, "IPv4Address")};
+    return *ptr;
+}
+
+inline const py::object& IPv4SettingsType() {
+    static const auto type = []() {
+        auto namedTuple_attr = PyNamedTuple;
+        py::list fields;
+        fields.append("interface");
+        fields.append("gateway");
+        return namedTuple_attr("IPv4Settings", fields);
+    }();
+    return type;
+}
+
 /// @brief Wrap python callback with lambda that will catch exceptions and handle them safely
 /// @param py_callback client callback functor
 static void subscribeMeasurement(tofcore::Sensor& s, tofcore::Sensor::on_measurement_ready_t py_callback)
@@ -49,6 +88,66 @@ static void subscribeMeasurement(tofcore::Sensor& s, tofcore::Sensor::on_measure
         }
     };
     s.subscribeMeasurement(f);
+}
+
+static auto getIPv4Settings(tofcore::Sensor& s)
+{
+    //Use static and a lambda to create the IPv4Settings namedtuple type only once.
+    std::array<std::byte, 4> ipv4Address;
+    std::array<std::byte, 4> ipv4Mask;
+    std::array<std::byte, 4> ipv4Gateway;
+
+    if(!s.getIPv4Settings(ipv4Address, ipv4Mask, ipv4Gateway))
+    {
+        throw std::runtime_error("An error occured while getting IPv4 settings");
+    }
+
+    std::stringstream if_ss;
+    if_ss <<
+        (int)ipv4Address[0] << '.' << (int)ipv4Address[1] << '.' << (int)ipv4Address[2] << '.' << (int)ipv4Address[3] << '/' <<
+        (int)ipv4Mask[0] << '.' << (int)ipv4Mask[1] << '.' << (int)ipv4Mask[2] << '.' << (int)ipv4Mask[3];
+
+    std::stringstream gw_ss;
+    gw_ss << (int)ipv4Gateway[0] << '.' << (int)ipv4Gateway[1] << '.' << (int)ipv4Gateway[2] << '.' << (int)ipv4Gateway[3];
+
+    return PyIPv4Settings(
+        PyIPv4Interface(py::str(if_ss.str())),
+        PyIPv4Address(py::str(gw_ss.str())));
+}
+
+static void setIPv4Settings(tofcore::Sensor &s, py::object& settings)
+{
+    if(!py::isinstance(settings, PyIPv4Settings))
+    {
+        throw pybind11::type_error("IPv4Settings must be of type pytofcore.IPv4Settings");
+    }
+    auto interface = settings.attr("interface");
+    auto gateway = settings.attr("gateway");
+    if(!py::isinstance(interface, PyIPv4Interface))
+    {
+        throw pybind11::type_error("IPv4Settings.interface attribute must be of type ipaddress.IPv4Interface");
+    }
+    if(!py::isinstance(gateway, PyIPv4Address))
+    {
+        throw pybind11::type_error("IPv4Settings.gateway attribute must be of type ipaddress.IPv4Address");
+    }
+
+    auto py_ip_to_array = [](const py::object& ip) -> std::array<std::byte, 4>
+    {
+        py::bytes bytes = ip.attr("packed");
+        auto sv = std::string_view(bytes);
+        return std::array<std::byte, 4>{std::byte(sv[0]), std::byte(sv[1]), std::byte(sv[2]), std::byte(sv[3])};
+    };
+
+    auto ipv4Address = py_ip_to_array(interface.attr("ip"));
+    auto ipv4Mask = py_ip_to_array(interface.attr("network").attr("netmask"));
+    auto ipv4Gateway = py_ip_to_array(settings.attr("gateway"));
+
+    const auto ok = s.setIPv4Settings(ipv4Address, ipv4Mask, ipv4Gateway);
+    if(!ok)
+    {
+        throw std::runtime_error("An error occcured setting sequencer version");
+    }
 }
 
 static auto getLensInfo(tofcore::Sensor& s)
@@ -149,6 +248,44 @@ static auto getSensorInfo(tofcore::Sensor& s)
                             versionData.m_illuminatorSwSourceId,
                             versionData.m_illuminatorHwCfg,
                             (uint8_t)versionData.m_backpackModule);
+}
+
+static auto getSensorLocation(tofcore::Sensor& s)
+{
+    auto sensorLocation = s.getSensorLocation();
+    if(!sensorLocation)
+    {
+        throw std::runtime_error("An error occured while getting the sensor location");
+    }
+    return *sensorLocation;
+}
+
+static void setSensorLocation(tofcore::Sensor &s, std::string& location)
+{
+    const auto ok = s.setSensorLocation(location);
+    if(!ok)
+    {
+        throw std::runtime_error("An error occcured setting sensor location");
+    }
+}
+
+static auto getSensorName(tofcore::Sensor& s)
+{
+    auto sensorName = s.getSensorName();
+    if(!sensorName)
+    {
+        throw std::runtime_error("An error occured while getting the sensor name");
+    }
+    return *sensorName;
+}
+
+static void setSensorName(tofcore::Sensor &s, std::string& name)
+{
+    const auto ok = s.setSensorName(name);
+    if(!ok)
+    {
+        throw std::runtime_error("An error occcured setting sensor name");
+    }
 }
 
 static auto getSensorStatus(tofcore::Sensor& s)
@@ -370,12 +507,13 @@ static bool vflip_set(tofcore::Sensor &sensor, bool active)
 static auto jump_to_bootloader(tofcore::Sensor& s)
 {
     s.jumpToBootloader();
-
 }
 
 
 PYBIND11_MODULE(pytofcore, m) {
     m.doc() = "Sensor object that represents a connect to a TOF depth sensor.";
+
+    m.attr("IPv4Settings") = PyIPv4Settings;
 
     py::class_<tofcore::Sensor>(m, "Sensor")
         .def(py::init<uint16_t, const std::string&, uint32_t>(), py::arg("protocol_version")=tofcore::DEFAULT_PROTOCOL_VERSION, py::arg("port_name")=tofcore::DEFAULT_PORT_NAME, py::arg("baud_rate")=tofcore::DEFAULT_BAUD_RATE)
@@ -396,9 +534,13 @@ PYBIND11_MODULE(pytofcore, m) {
         .def("get_sensor_info", &getSensorInfo, "Get the sensor version and build info")
         .def("get_sensor_status", &getSensorStatus, "Get the sensor status info")
         .def("jump_to_bootloader", &jump_to_bootloader, "Activate bootloader mode to flash firmware")
+        .def("storeSettings", &tofcore::Sensor::storeSettings, "Store the sensor's settings to persistent memory")
         .def_property("hflip", &hflip_get, &hflip_set, "State of the image horizontal flip option (default False)")
         .def_property("vflip", &vflip_get, &vflip_set, "State of the image vertical flip option (default False)")
-        .def_property("modulation_frequency", &modulation_get, &modulation_set, "LED Modulation Frequency in kHz (default 24000)")
+        .def_property("modulation_frequency", &modulation_get, &modulation_set, "LED Modulation Frequency in kHz (default 24000)")        .def_property("ipv4_settings", &getIPv4Settings, &setIPv4Settings, "Set the IPv4 address, mask, and gateway", py::call_guard<py::gil_scoped_release>() )
+        .def_property("sensor_location", &getSensorLocation, &setSensorLocation, "The sensor's location", py::call_guard<py::gil_scoped_release>() )
+        .def_property("sensor_name", &getSensorName, &setSensorName, "The sensor's name", py::call_guard<py::gil_scoped_release>() )
+
         .def_property_readonly_static("DEFAULT_PORT_NAME", [](py::object /* self */){return tofcore::DEFAULT_PORT_NAME;})
         .def_property_readonly_static("DEFAULT_BAUD_RATE", [](py::object /* self */){return tofcore::DEFAULT_BAUD_RATE;})
         .def_property_readonly_static("DEFAULT_PROTOCOL_VERSION", [](py::object /* self */){return tofcore::DEFAULT_PROTOCOL_VERSION;});

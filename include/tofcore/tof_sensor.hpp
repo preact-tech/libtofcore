@@ -48,7 +48,10 @@ public:
     std::optional<std::vector<uint16_t>> getIntegrationTimes();
     bool getLensInfo(std::vector<double> &rays_x, std::vector<double> &rays_y, std::vector<double> &rays_z);
     std::optional<LensIntrinsics_t> getLensIntrinsics();
+    bool getIPv4Settings(std::array<std::byte, 4>& adrs, std::array<std::byte, 4>& mask, std::array<std::byte, 4>& gateway);
     bool getSensorInfo(TofComm::versionData_t &versionData);
+    std::optional<std::string> getSensorLocation();
+    std::optional<std::string> getSensorName();
     bool getSensorStatus(TofComm::Sensor_Status_t &sensorStatus);
     bool getSettings(std::string& jsonSettings);
 
@@ -64,10 +67,13 @@ public:
     bool setHDRMode(uint8_t mode);
     bool setIntegrationTime(uint16_t);
     bool setIntegrationTimes(uint16_t, uint16_t, uint16_t);
+    bool setIPv4Settings(const std::array<std::byte, 4>& adrs, const std::array<std::byte, 4>& mask, const std::array<std::byte, 4>& gateway);
     bool setMinAmplitude(uint16_t minAmplitude);
     bool setModulation(uint16_t modFreqkHz);
     std::optional<uint16_t> getModulation();
     bool setOffset(int16_t offset);
+    bool setSensorLocation(std::string location);
+    bool setSensorName(std::string name);
 
     bool stopStream();
     bool storeSettings();

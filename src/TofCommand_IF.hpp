@@ -36,6 +36,9 @@ constexpr uint16_t COMMAND_SET_HDR                  = 0x19;
 constexpr uint16_t COMMAND_GET_MODULATION           = 0x2F; 
 
 
+constexpr uint16_t COMMAND_SET_CAMERA_IP_SETTINGS   = 0x28;
+constexpr uint16_t COMMAND_GET_CAMERA_IP_SETTINGS   = 0x29;
+
 constexpr uint16_t COMMAND_GET_HORIZ_FLIP_STATE     = 0x30;
 constexpr uint16_t COMMAND_GET_VERT_FLIP_STATE      = 0x31;
 
@@ -50,6 +53,11 @@ constexpr uint16_t COMMAND_JUMP_TO_BOOLOADER        = 0x6F;
 
 constexpr uint16_t COMMAND_STORE_SETTINGS           = 0x71;
 constexpr uint16_t COMMAND_READ_SETTINGS            = 0x72;
+
+constexpr uint16_t COMMAND_SET_SENSOR_NAME          = 0x78;
+constexpr uint16_t COMMAND_GET_SENSOR_NAME          = 0x79;
+constexpr uint16_t COMMAND_SET_SENSOR_LOCATION      = 0x7A;
+constexpr uint16_t COMMAND_GET_SENSOR_LOCATION      = 0x7B;
 
 constexpr uint16_t COMMAND_READ_SENSOR_INFO         = 0xD0;
 constexpr uint16_t COMMAND_READ_SENSOR_STATUS       = 0xD1;

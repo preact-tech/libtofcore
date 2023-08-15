@@ -27,15 +27,21 @@ typedef uint8_t(MAC_T)[6];
 
 constexpr unsigned SERIAL_NUMBER_SIZE       { 256U };
 constexpr unsigned TEST_STATION_DATA_SIZE   { 2040U };
+
+#define DEFAULT_MAC { 0x00, 0x1A, 0xF1, 0x99, 0x99, 0x99 } ///< Default MAC for Ethernet connection
+
 PACK_START struct ManufacturingData_T
 {
-    MAC_T m_MAC { 0x00, 0x1A, 0xF1, 0x99, 0x99, 0x99 };     ///< Default MAC for Ethernet connection
+    MAC_T m_MAC DEFAULT_MAC;
     uint8_t m_dummy[2] { 0, 0 };
-    char m_deviceSerialNumber[SERIAL_NUMBER_SIZE] { 0 };    ///<< Product serial number (string)
-    char m_cpuBoardSerialNumber[SERIAL_NUMBER_SIZE] { 0 };  ///<< Product model number (string)
+    char m_deviceSerialNumber[SERIAL_NUMBER_SIZE] { 0 };    ///<< Product's device serial number (string)
+    char m_cpuBoardSerialNumber[SERIAL_NUMBER_SIZE] { 0 };  ///<< Product's CPU board serial number (string)
     char m_modelName[SERIAL_NUMBER_SIZE] { 0 };             ///<< Product model number (string)
     char m_testStationData[TEST_STATION_DATA_SIZE] { 0 };   ///<< Storage for test station data
-    uint8_t m_pad[768] { 0 };                               ///<< pad for future expansion
+    uint8_t m_pad[756] { 0 };                               ///<< pad for future expansion
+    uint8_t m_ipv4Address[4] { 10, 10, 31, 180 };           ///<< IPV4 network address
+    uint8_t m_ipv4Mask[4] { 255, 255, 255, 0 };             ///<< IPV4 network mask
+    uint8_t m_ipv4Gateway[4] { 10, 10, 31, 1 };             ///<< IPV4 network gateway
 } PACK_END;
 
 // Mojave Backpack Modules

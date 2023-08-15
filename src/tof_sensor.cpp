@@ -253,6 +253,32 @@ bool Sensor::getSensorInfo(TofComm::versionData_t &versionData)
     return ok;
 }
 
+std::optional<std::string> Sensor::getSensorLocation()
+{
+    auto result = this->send_receive(COMMAND_GET_SENSOR_LOCATION);
+    if (!result)
+    {
+        return std::nullopt; // failed to get information
+    }
+    else
+    {
+        return { std::string(reinterpret_cast<const char*>(result->data()), result->size()) };
+    }
+}
+
+std::optional<std::string> Sensor::getSensorName()
+{
+    auto result = this->send_receive(COMMAND_GET_SENSOR_NAME);
+    if (!result)
+    {
+        return std::nullopt; // failed to get information
+    }
+    else
+    {
+        return { std::string(reinterpret_cast<const char*>(result->data()), result->size()) };
+    }
+}
+
 bool Sensor::getSensorStatus(TofComm::Sensor_Status_t &sensorStatus)
 {
     auto result = this->send_receive(COMMAND_READ_SENSOR_STATUS);
@@ -391,6 +417,14 @@ bool Sensor::setIntegrationTimes(uint16_t low, uint16_t mid, uint16_t high)
     return this->send_receive(COMMAND_SET_INT_TIMES, {(std::byte*)params, sizeof(params)}).has_value();
 }
 
+bool Sensor::setIPv4Settings(const std::array<std::byte, 4>& adrs, const std::array<std::byte, 4>& mask, const std::array<std::byte, 4>& gateway)
+{
+    std::vector<std::byte> ipData { std::begin(adrs), std::end(adrs) };
+    std::copy(std::begin(mask), std::end(mask), std::back_inserter(ipData));
+    std::copy(std::begin(gateway), std::end(gateway), std::back_inserter(ipData));
+    return this->send_receive(COMMAND_SET_CAMERA_IP_SETTINGS, {ipData.data(), ipData.size()}).has_value();
+}
+
 bool Sensor::setMinAmplitude(uint16_t minAmplitude)
 {
     return this->send_receive(COMMAND_SET_MIN_AMPLITUDE, minAmplitude).has_value();
@@ -425,6 +459,35 @@ bool Sensor::setOffset(int16_t offset)
 bool Sensor::setProtocolVersion(uint16_t version)
 {
     return pimpl->connection.set_protocol_version(version);
+}
+
+bool Sensor::setSensorLocation(std::string location)
+{
+    return this->send_receive(COMMAND_SET_SENSOR_LOCATION, {(std::byte*)location.data(), location.size()}).has_value();
+}
+
+bool Sensor::setSensorName(std::string name)
+{
+    return this->send_receive(COMMAND_SET_SENSOR_NAME, {(std::byte*)name.data(), name.length()}).has_value();
+}
+
+bool Sensor:: getIPv4Settings(std::array<std::byte, 4>& adrs, std::array<std::byte, 4>& mask, std::array<std::byte, 4>& gateway)
+{
+    auto result = this->send_receive(COMMAND_GET_CAMERA_IP_SETTINGS);
+    if (result && (result->size() == 12))
+    {
+        auto it = std::begin(*result);
+        std::copy(it, it + 4, std::begin(adrs));
+        it += 4;
+        std::copy(it, it + 4, std::begin(mask));
+        it += 4;
+        std::copy(it, it + 4, std::begin(gateway));
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
 
 uint16_t Sensor::getProtocolVersion() const
