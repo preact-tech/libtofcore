@@ -244,7 +244,13 @@ static auto getSensorInfo(tofcore::Sensor& s)
 
     TofComm::versionData_t versionData;
 
-    if (!s.getSensorInfo(versionData))
+    bool result = false;
+    {
+        py::gil_scoped_release gsr;
+        result = s.getSensorInfo(versionData);
+    }
+
+    if (!result)
     {
         throw std::runtime_error("An error occcured trying to read sensor version info");
     }
@@ -315,7 +321,6 @@ static void setSensorName(tofcore::Sensor &s, std::string& name)
 
 static auto getSensorStatus(tofcore::Sensor& s)
 {
-
     //Use static and a lambda to create the sensorStatus namedtuple type only once.
     static auto Sensor_Status_t = []() {
         auto namedTuple_attr = pybind11::module::import("collections").attr("namedtuple");
@@ -328,8 +333,13 @@ static auto getSensorStatus(tofcore::Sensor& s)
     }();
 
     TofComm::Sensor_Status_t sensorStatus;
-
-    if (!s.getSensorStatus(sensorStatus))
+    
+    bool result = false;
+    {
+        py::gil_scoped_release gsr;
+        result = s.getSensorStatus(sensorStatus);
+    }
+    if (!result)
     {
         throw std::runtime_error("An error occcured trying to read sensor status info");
     }
@@ -563,10 +573,10 @@ PYBIND11_MODULE(pytofcore, m) {
         .def("get_integration_times", &getSensorIntegrationTimes, "query the device for the currently configured integration time settings", py::call_guard<py::gil_scoped_release>())
         .def("set_hdr_mode", &tofcore::Sensor::setHDRMode, "Set the High Dynamic Range mode on the sensor", py::arg("mode"), py::call_guard<py::gil_scoped_release>())
         .def("subscribe_measurement", &subscribeMeasurement, "Set a function object to be called when new measurement data is received", py::arg("callback"))
-        .def("get_sensor_info", &getSensorInfo, "Get the sensor version and build info", py::call_guard<py::gil_scoped_release>())
-        .def("get_sensor_status", &getSensorStatus, "Get the sensor status info", py::call_guard<py::gil_scoped_release>())
+        .def("get_sensor_info", &getSensorInfo, "Get the sensor version and build info")
+        .def("get_sensor_status", &getSensorStatus, "Get the sensor status info")
         .def("jump_to_bootloader", &jump_to_bootloader, "Activate bootloader mode to flash firmware", py::call_guard<py::gil_scoped_release>())
-        .def("storeSettings", &tofcore::Sensor::storeSettings, "Store the sensor's settings to persistent memory")
+        .def("storeSettings", &tofcore::Sensor::storeSettings, "Store the sensor's settings to persistent memory", py::call_guard<py::gil_scoped_release>())
         .def_property("hflip", &hflip_get, &hflip_set, "State of the image horizontal flip option (default False)")
         .def_property("vflip", &vflip_get, &vflip_set, "State of the image vertical flip option (default False)")
         .def_property("modulation_frequency", &modulation_get, &modulation_set, "LED Modulation Frequency in kHz (default 24000)")        
