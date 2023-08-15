@@ -92,6 +92,8 @@ static void subscribeMeasurement(tofcore::Sensor& s, tofcore::Sensor::on_measure
 
 static auto getIPv4Settings(tofcore::Sensor& s)
 {
+    py::gil_scoped_release gsr;
+
     //Use static and a lambda to create the IPv4Settings namedtuple type only once.
     std::array<std::byte, 4> ipv4Address;
     std::array<std::byte, 4> ipv4Mask;
@@ -117,6 +119,8 @@ static auto getIPv4Settings(tofcore::Sensor& s)
 
 static void setIPv4Settings(tofcore::Sensor &s, py::object& settings)
 {
+    py::gil_scoped_release gsr;
+
     if(!py::isinstance(settings, PyIPv4Settings))
     {
         throw pybind11::type_error("IPv4Settings must be of type pytofcore.IPv4Settings");
@@ -152,6 +156,8 @@ static void setIPv4Settings(tofcore::Sensor &s, py::object& settings)
 
 static auto getLensInfo(tofcore::Sensor& s)
 {
+    py::gil_scoped_release gsr;
+
     //Use static and a lambda to create the LensInfo_type namedtuple type only once.
     static auto LensInfo_type = []() {
         auto namedTuple_attr = pybind11::module::import("collections").attr("namedtuple");
@@ -176,6 +182,7 @@ static auto getLensInfo(tofcore::Sensor& s)
 
 static auto getPixelRays(tofcore::Sensor& s)
 {
+    py::gil_scoped_release gsr;
     //Use static and a lambda to create the PixelRays namedtuple type only once.
     static auto PixelRays_type = []() {
         auto namedTuple_attr = pybind11::module::import("collections").attr("namedtuple");
@@ -252,6 +259,8 @@ static auto getSensorInfo(tofcore::Sensor& s)
 
 static auto getSensorLocation(tofcore::Sensor& s)
 {
+    py::gil_scoped_release gsr;
+
     auto sensorLocation = s.getSensorLocation();
     if(!sensorLocation)
     {
@@ -262,6 +271,8 @@ static auto getSensorLocation(tofcore::Sensor& s)
 
 static void setSensorLocation(tofcore::Sensor &s, std::string& location)
 {
+    py::gil_scoped_release gsr;
+
     const auto ok = s.setSensorLocation(location);
     if(!ok)
     {
@@ -271,6 +282,8 @@ static void setSensorLocation(tofcore::Sensor &s, std::string& location)
 
 static auto getSensorName(tofcore::Sensor& s)
 {
+    py::gil_scoped_release gsr;
+
     auto sensorName = s.getSensorName();
     if(!sensorName)
     {
@@ -281,6 +294,8 @@ static auto getSensorName(tofcore::Sensor& s)
 
 static void setSensorName(tofcore::Sensor &s, std::string& name)
 {
+    py::gil_scoped_release gsr;
+
     const auto ok = s.setSensorName(name);
     if(!ok)
     {
@@ -452,6 +467,8 @@ static py::object get_illuminator_info(const tofcore::Measurement_T &m)
 
 static std::optional<uint16_t> modulation_get(tofcore::Sensor &sensor)
 {
+    py::gil_scoped_release gsr;
+
     auto modulation = sensor.getModulation();
     if (modulation)
     {
@@ -465,11 +482,13 @@ static std::optional<uint16_t> modulation_get(tofcore::Sensor &sensor)
 
 static bool modulation_set(tofcore::Sensor &sensor, uint16_t modFreqkHz)
 {
+    py::gil_scoped_release gsr;
     return sensor.setModulation(modFreqkHz);
 }
 
 static bool hflip_get(tofcore::Sensor &sensor)
 {
+    py::gil_scoped_release gsr;
     auto hflip = sensor.isFlipHorizontallyActive();
     if (hflip)
     {
@@ -483,11 +502,13 @@ static bool hflip_get(tofcore::Sensor &sensor)
 
 static bool hflip_set(tofcore::Sensor &sensor, bool active)
 {
+    py::gil_scoped_release gsr;
     return sensor.setFlipHorizontally(active);
 }
 
 static bool vflip_get(tofcore::Sensor &sensor)
 {
+    py::gil_scoped_release gsr;
     auto vflip = sensor.isFlipVerticallyActive();
     if (vflip)
     {
@@ -501,6 +522,7 @@ static bool vflip_get(tofcore::Sensor &sensor)
 
 static bool vflip_set(tofcore::Sensor &sensor, bool active)
 {
+    py::gil_scoped_release gsr;
     return sensor.setFlipVertically(active);;
 }
 
@@ -517,8 +539,8 @@ PYBIND11_MODULE(pytofcore, m) {
 
     py::class_<tofcore::Sensor>(m, "Sensor")
         .def(py::init<uint16_t, const std::string&, uint32_t>(), py::arg("protocol_version")=tofcore::DEFAULT_PROTOCOL_VERSION, py::arg("port_name")=tofcore::DEFAULT_PORT_NAME, py::arg("baud_rate")=tofcore::DEFAULT_BAUD_RATE)
-        .def_property_readonly("pixel_rays", &getPixelRays, "Obtain unit vector ray information for all pixels based on the lens information stored on the sensor. Returns a namedtuple with fields x, y, z. Each field is a list of floats of length width x height.", py::call_guard<py::gil_scoped_release>())
-        .def_property_readonly("lens_info", &getLensInfo, "Obtain Lens information stored on sensor. Returns a namedtuple with fields rowOffset, columnOffset, rowFocalLength, columnFocalLength, undistortionCoeffs.", py::call_guard<py::gil_scoped_release>())
+        .def_property_readonly("pixel_rays", &getPixelRays, "Obtain unit vector ray information for all pixels based on the lens information stored on the sensor. Returns a namedtuple with fields x, y, z. Each field is a list of floats of length width x height.")
+        .def_property_readonly("lens_info", &getLensInfo, "Obtain Lens information stored on sensor. Returns a namedtuple with fields rowOffset, columnOffset, rowFocalLength, columnFocalLength, undistortionCoeffs.")
         .def("stop_stream", &tofcore::Sensor::stopStream, "Command the sensor to stop streaming", py::call_guard<py::gil_scoped_release>())
         .def("stream_dcs", &tofcore::Sensor::streamDCS, "Command the sensor to stream DCS frames", py::call_guard<py::gil_scoped_release>())
         .def("stream_dcs_ambient", &tofcore::Sensor::streamDCSAmbient, "Command the sensor to stream DCS and Ambient frames. Ambient frames are of type Frame::DataType::GRAYSCALE", py::call_guard<py::gil_scoped_release>())
@@ -534,13 +556,13 @@ PYBIND11_MODULE(pytofcore, m) {
         .def("get_sensor_info", &getSensorInfo, "Get the sensor version and build info", py::call_guard<py::gil_scoped_release>())
         .def("get_sensor_status", &getSensorStatus, "Get the sensor status info", py::call_guard<py::gil_scoped_release>())
         .def("jump_to_bootloader", &jump_to_bootloader, "Activate bootloader mode to flash firmware", py::call_guard<py::gil_scoped_release>())
-        .def("storeSettings", &tofcore::Sensor::storeSettings, "Store the sensor's settings to persistent memory", py::call_guard<py::gil_scoped_release>())
-        .def_property("hflip", &hflip_get, &hflip_set, "State of the image horizontal flip option (default False)", py::call_guard<py::gil_scoped_release>())
-        .def_property("vflip", &vflip_get, &vflip_set, "State of the image vertical flip option (default False)", py::call_guard<py::gil_scoped_release>())
-        .def_property("modulation_frequency", &modulation_get, &modulation_set, "LED Modulation Frequency in kHz (default 24000)", py::call_guard<py::gil_scoped_release>())        
-        .def_property("ipv4_settings", &getIPv4Settings, &setIPv4Settings, "Set the IPv4 address, mask, and gateway", py::call_guard<py::gil_scoped_release>() )
-        .def_property("sensor_location", &getSensorLocation, &setSensorLocation, "The sensor's location", py::call_guard<py::gil_scoped_release>() )
-        .def_property("sensor_name", &getSensorName, &setSensorName, "The sensor's name", py::call_guard<py::gil_scoped_release>() )
+        .def("storeSettings", &tofcore::Sensor::storeSettings, "Store the sensor's settings to persistent memory")
+        .def_property("hflip", &hflip_get, &hflip_set, "State of the image horizontal flip option (default False)")
+        .def_property("vflip", &vflip_get, &vflip_set, "State of the image vertical flip option (default False)")
+        .def_property("modulation_frequency", &modulation_get, &modulation_set, "LED Modulation Frequency in kHz (default 24000)")        
+        .def_property("ipv4_settings", &getIPv4Settings, &setIPv4Settings, "Set the IPv4 address, mask, and gateway")
+        .def_property("sensor_location", &getSensorLocation, &setSensorLocation, "The sensor's location")
+        .def_property("sensor_name", &getSensorName, &setSensorName, "The sensor's name")
 
         .def_property_readonly_static("DEFAULT_PORT_NAME", [](py::object /* self */){return tofcore::DEFAULT_PORT_NAME;})
         .def_property_readonly_static("DEFAULT_BAUD_RATE", [](py::object /* self */){return tofcore::DEFAULT_BAUD_RATE;})
