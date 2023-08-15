@@ -455,7 +455,7 @@ static std::optional<uint16_t> modulation_get(tofcore::Sensor &sensor)
     auto modulation = sensor.getModulation();
     if (modulation)
     {
-        return *modulation;
+        return modulation;
     }
     else
     {
