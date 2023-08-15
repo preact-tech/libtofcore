@@ -1,3 +1,6 @@
+include(CMakePackageConfigHelpers)
+include(GNUInstallDirs)
+
 # Settings for GCC
 if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
   # By default, symbols are not visible outside of the library.
@@ -119,7 +122,7 @@ install(EXPORT usbp-targets
   FILE
     usbpTargets.cmake
   DESTINATION
-    lib/cmake/uspbp
+    "${CMAKE_INSTALL_LIBDIR}/cmake/usbp"
 )
 
 export(EXPORT usbp-targets
@@ -127,3 +130,12 @@ export(EXPORT usbp-targets
 
 #Register package in the User Package Registry
 export(PACKAGE usbp)
+
+configure_package_config_file(
+  usbpConfig.cmake.in
+  "${PROJECT_BINARY_DIR}/usbpConfig.cmake"
+  INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/usbp"
+)
+install(FILES "${PROJECT_BINARY_DIR}/usbpConfig.cmake"
+  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/usbp"
+)
