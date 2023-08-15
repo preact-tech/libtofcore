@@ -537,7 +537,8 @@ PYBIND11_MODULE(pytofcore, m) {
         .def("storeSettings", &tofcore::Sensor::storeSettings, "Store the sensor's settings to persistent memory")
         .def_property("hflip", &hflip_get, &hflip_set, "State of the image horizontal flip option (default False)")
         .def_property("vflip", &vflip_get, &vflip_set, "State of the image vertical flip option (default False)")
-        .def_property("modulation_frequency", &modulation_get, &modulation_set, "LED Modulation Frequency in kHz (default 24000)")        .def_property("ipv4_settings", &getIPv4Settings, &setIPv4Settings, "Set the IPv4 address, mask, and gateway", py::call_guard<py::gil_scoped_release>() )
+        .def_property("modulation_frequency", &modulation_get, &modulation_set, "LED Modulation Frequency in kHz (default 24000)", py::call_guard<py::gil_scoped_release>())        
+        .def_property("ipv4_settings", &getIPv4Settings, &setIPv4Settings, "Set the IPv4 address, mask, and gateway", py::call_guard<py::gil_scoped_release>() )
         .def_property("sensor_location", &getSensorLocation, &setSensorLocation, "The sensor's location", py::call_guard<py::gil_scoped_release>() )
         .def_property("sensor_name", &getSensorName, &setSensorName, "The sensor's name", py::call_guard<py::gil_scoped_release>() )
 
