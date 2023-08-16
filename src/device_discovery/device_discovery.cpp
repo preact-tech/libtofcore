@@ -176,8 +176,8 @@ namespace tofcore
 
         std::vector<device_info_t> devices;
 
-        // Check if environment variable DUT_DEVICE_URI is set
-        if(const char* env_p = std::getenv("DUT_DEVICE_URI")) {
+        // Check if environment variable TOFCORE_DEVICE_URI is set
+        if(const char* env_p = std::getenv("TOFCORE_DEVICE_URI")) {
             // Create a new device_info_t instance with the environment variable as connector_uri
             device_info_t dut_device;
             dut_device.connector_uri = env_p;
