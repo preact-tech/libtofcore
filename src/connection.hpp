@@ -43,7 +43,10 @@ public:
     /// Callback function that will be called when a complete measurement data packet has been received.
     virtual void subscribe(on_measurement_callback_t callback) = 0;
 
-    //TODO: Move to factory
+    /// @brief Construct a concrete Connection object based on the provided URI string.
+    /// @param io service object that manages the context the connection will run under
+    /// @param uri_str URI specifing how to connect to the device to communicate with.
+    /// @return 
     static std::unique_ptr<Connection_T> create(boost::asio::io_service& io, const std::string& uri);
 
 }; //end class Connection_T
