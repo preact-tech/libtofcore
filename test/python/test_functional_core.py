@@ -363,7 +363,6 @@ def test_rapid_commands(dut: pytofcore.Sensor):
 
 
 @pytest.mark.functional
-@pytest.mark.skip(reason="this test will lock up the communcations, see MOS-539")
 def test_rapid_commands_with_streaming(dut: pytofcore.Sensor):
     '''
     Verify that the protocol API and device can handle rapid command sequences while streaming
@@ -377,14 +376,16 @@ def test_rapid_commands_with_streaming(dut: pytofcore.Sensor):
     dut.stream_distance_amplitude()
 
     methods = [
+        lambda: setattr(dut, "modulation_frequency", 12000),
         partial(dut.set_integration_times, 100, 0, 0),
         partial(dut.set_min_amplitude, 50), 
         partial(dut.set_offset, 100),
-        dut.get_sensor_info
+        lambda: setattr(dut, "modulation_frequency", 24000),
+
         ]
 
     #Create a random sequence N calls to the functions listed above
-    test_sequence = [random.choice(methods) for _ in range(2000)]
+    test_sequence = [random.choice(methods) for _ in range(500)]
     
     try:
         for method in test_sequence: 

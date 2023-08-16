@@ -16,6 +16,7 @@
 #include <mutex>
 #include <thread>
 #include <libusbp.hpp>
+#include <cstdlib>  // for std::getenv
 
 namespace tofcore
 {
@@ -174,6 +175,18 @@ namespace tofcore
     std::vector<device_info_t> find_all_devices(){
 
         std::vector<device_info_t> devices;
+
+        // Check if environment variable TOFCORE_DEVICE_URI is set
+        if(const char* env_p = std::getenv("TOFCORE_DEVICE_URI")) {
+            // Create a new device_info_t instance with the environment variable as connector_uri
+            device_info_t dut_device;
+            dut_device.connector_uri = env_p;
+            dut_device.serial_num = "";
+            dut_device.model = "";
+
+            // Add it to the devices vector
+            devices.insert(devices.begin(), dut_device);
+        }
 
         // Gather device by connection type
         // For furture development, might want seperate lists. 
