@@ -19,6 +19,7 @@
 
 namespace tofcore
 {
+    using namespace std::string_literals;
 
     constexpr uint16_t PREACT_VENDOR_ID = 0x35FA;
 
@@ -31,17 +32,6 @@ namespace tofcore
     // USB Channel Info
     constexpr uint8_t USB_INTERFACE_COMM_CH = 0;
     constexpr uint8_t USB_INTERFACE_DEBUG_CH = 2;
-
-    constexpr char FILE_PREFIX[] = "file:///";
-    constexpr char SERIAL_PREFIX[] = "serial:///";
-    constexpr char HTTP_PREFIX[] = "http://";
-    constexpr char VIDEO_PREFIX[] = "video:///";
-
-    /// @brief TODO: this is for future development, will need to determine device connection type
-    /// @return 
-    std::string GetDeviceType(){
-        return SERIAL_PREFIX;
-    }
 
     /// @brief Check whether a USB based device has PreAct's Vendor Id
     /// @param device, device in question
@@ -136,10 +126,7 @@ namespace tofcore
 
                 device_info_t deviceEntry;
 
-                // TODO: will eventually want to prepend device type prefix
-                //deviceEntry.connector_uri = GetDeviceType() + GetUsbCdcDeviceSerialPortName(device);
-
-                deviceEntry.connector_uri = GetUsbCdcDeviceSerialPortName(device);
+                deviceEntry.connector_uri = "tofserial:"s + GetUsbCdcDeviceSerialPortName(device);
                 deviceEntry.model = GetUsbDeviceModelName(device);
                 deviceEntry.serial_num = GetUsbDeviceSerialNumber(device);
 
