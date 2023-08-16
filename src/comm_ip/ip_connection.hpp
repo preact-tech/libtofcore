@@ -15,12 +15,15 @@
 namespace tofcore
 {
 
+/// @brief Connection class used for communcation with a PreACt ToF camera over IP protocols (TCP/UDP)
 class IpConnection : public Connection_T
 {
 public:
+    /// @param uri A URI (with scheme tofnet) specifying the IP address (or hostname) and optional port to connect
+    ///  to the device. The URI can include optional parmaeters used to configure the connection and or device.
     IpConnection(boost::asio::io_service&, const uri& uri);
 
-    virtual ~IpConnection();
+    virtual ~IpConnection() override;
 
     virtual uint16_t get_protocol_version() const override;
 
@@ -44,10 +47,6 @@ public:
     virtual void subscribe(on_measurement_callback_t callback) override;
 
 private:
-    std::vector<std::byte> generateCommandStream(uint16_t command, const std::vector<ScatterGatherElement> &data);
-    void sendv0(uint16_t command, const std::vector<ScatterGatherElement> &data);
-    void sendv1(uint16_t command, const std::vector<ScatterGatherElement> &data);
-
     struct Impl;
     std::unique_ptr<Impl> pimpl;
 };

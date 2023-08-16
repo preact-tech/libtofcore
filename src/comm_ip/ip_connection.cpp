@@ -29,6 +29,8 @@ struct IpConnection::Impl
 
     std::function<void(bool, const std::vector<std::byte>&)> on_command_response_ {};
 
+    std::vector<std::byte> generateCommandStream(uint16_t command, const std::vector<ScatterGatherElement> &data);
+
     Impl(io_service &io, const uri& uri) :
             m_tcp(io, uri),
             m_udp(io)
@@ -37,26 +39,9 @@ struct IpConnection::Impl
 };
 
 
-IpConnection::IpConnection(boost::asio::io_service& io, const uri& uri) :
-    pimpl { new Impl(io, uri) }
+std::vector<std::byte> IpConnection::Impl::generateCommandStream(uint16_t command, const std::vector<ScatterGatherElement> &data)
 {
-}
-
-
-IpConnection::~IpConnection()
-{
-    //TODO: Is there anything to do here? 
-}
-
-
-uint16_t IpConnection::get_protocol_version() const
-{
-    return pimpl->m_protocol_version;
-}
-
-std::vector<std::byte> IpConnection::generateCommandStream(uint16_t command, const std::vector<ScatterGatherElement> &data)
-{
-    //TODO: This is a quick implementation that requires an extra copy.
+    //This is a quick implementation that requires an extra copy.
     /*
     *           ------------ ---------- ----------- ----------- ------------- -----------
     * VERS. 1  | 0xFFFFAA55 | PID      |   CID     | LEN       |  Payload    | CRC32     |
@@ -96,10 +81,31 @@ std::vector<std::byte> IpConnection::generateCommandStream(uint16_t command, con
     return result;
 }
 
+
+IpConnection::IpConnection(boost::asio::io_service& io, const uri& uri) :
+    pimpl { new Impl(io, uri) }
+{
+}
+
+
+IpConnection::~IpConnection()
+{
+}
+
+
+uint16_t IpConnection::get_protocol_version() const
+{
+    return pimpl->m_protocol_version;
+}
+
+
 void IpConnection::send(uint16_t command, const std::vector<ScatterGatherElement> &data)
 {
-    auto cmdStream = generateCommandStream(command, data);
-    pimpl->m_tcp.send(cmdStream);
+    auto cmdStream = pimpl->generateCommandStream(command, data);
+    //we must use the TCP connection send_receive_async() method so that the response bytes are consumed, pass in a no-op
+    // function pointer to satisfy call requirements
+    auto noop_callback = [](auto, auto) {};
+    pimpl->m_tcp.send_receive_async(cmdStream, std::chrono::seconds(1), noop_callback);
 }
 
 
@@ -138,7 +144,7 @@ std::optional<std::vector<std::byte> > IpConnection::send_receive(uint16_t comma
     };
 
     std::unique_lock<std::mutex> lk(m);
-    auto cmdStream = generateCommandStream(command, data);
+    auto cmdStream = pimpl->generateCommandStream(command, data);
     pimpl->m_tcp.send_receive_async(cmdStream, timeout, f);
     cv.wait(lk, [&] { return ready; });
     if(errOccurred) 
@@ -166,8 +172,7 @@ std::optional<std::vector<std::byte> > IpConnection::send_receive(uint16_t comma
 
 bool IpConnection::set_protocol_version(uint16_t version)
 {
-    //TODO: for now only supporting version 1 (which is the default so just check
-    // the client only asks for version 1)
+    //Only supporting version 1 for commands so just check that is what the client asked for
     return (version == 1);
 }
 

@@ -6,19 +6,14 @@
 
 namespace tofcore
 {
+    /// @brief TCP Connection class that represents the command and control communications channel
+    ///  between a client and a ToF sensor.
+    ///  All messages sent over the TCP socket are request/response type messages (at a minimum an ACK
+    ///  is sent back for every request)
+    ///  The send functions re
     class TcpConnection
     {
     public:
-        enum State
-        {
-            STATE_CONNECTING,
-            STATE_DISCONNECTED,
-            STATE_CONNECTED,
-            STATE_CLOSING,
-            STATE_WAIT_ACK
-        };
-
-
         TcpConnection(boost::asio::io_service &, const uri& uri);
         ~TcpConnection();
 
@@ -26,10 +21,7 @@ namespace tofcore
         void send_receive_async(const std::vector<std::byte> &data,
             std::chrono::steady_clock::duration timeout, on_command_response_callback_t callback);
 
-        void send(const std::vector<std::byte> &data);
-
     private:
-        mutable State state, previousState;
         boost::asio::ip::tcp::socket socket;
         boost::asio::ip::tcp::resolver resolver;
         on_command_response_callback_t m_on_command_response;
@@ -40,10 +32,10 @@ namespace tofcore
         //uint16_t m_response_cid { 0 };
         std::byte m_response_result { 0 };
 
+        void send(const std::vector<std::byte> &data);
+        
         void connect(const std::string& host, unsigned long port);
         void disconnect();
-        void updateState(State) const;
-        void revertState() const;
         bool isConnected() const;
         bool isDisconnected() const;
 
@@ -55,7 +47,6 @@ namespace tofcore
         void on_receive_prolog(const boost::system::error_code &error);
         void on_receive_payload(const boost::system::error_code &error);
         bool is_valid_response();
-
     };
 
 } // end namespace tofcore

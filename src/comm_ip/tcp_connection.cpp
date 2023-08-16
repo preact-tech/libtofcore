@@ -37,7 +37,7 @@ namespace tofcore
     }
 
     TcpConnection::TcpConnection(boost::asio::io_service &ioService, const uri& uri)
-        : state(STATE_DISCONNECTED), socket(ioService), resolver(ioService), m_response_timer(ioService)
+        : socket(ioService), resolver(ioService), m_response_timer(ioService)
     {
         auto host = uri.get_host();
         auto port = uri.get_port();
@@ -229,7 +229,6 @@ namespace tofcore
             return;
         }
 
-        updateState(STATE_CONNECTING);
         tcp::resolver::query query(host, std::to_string(port));
         tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
         tcp::resolver::iterator end;
@@ -244,7 +243,6 @@ namespace tofcore
         {
             throw ::boost::system::system_error(error);
         }
-        updateState(STATE_CONNECTED);
     }
 
     void TcpConnection::disconnect()
@@ -254,37 +252,22 @@ namespace tofcore
             return;
         }
 
-        updateState(STATE_CLOSING);
-
         boost::system::error_code error;
         socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, error);
         if (error)
         {
-            revertState();
             throw boost::system::system_error(error);
         }
-        updateState(STATE_DISCONNECTED);
-    }
-
-    void TcpConnection::updateState(State state_) const
-    {
-        previousState = state;
-        state = state_;
-    }
-
-    void TcpConnection::revertState() const
-    {
-        state = previousState;
     }
 
     bool TcpConnection::isConnected() const
     {
-        return state == STATE_CONNECTED;
+        return this->socket.is_open();
     }
 
     bool TcpConnection::isDisconnected() const
     {
-        return state == STATE_DISCONNECTED;
+        return !this->isConnected();
     }
 
 } // end namespace tofcore
