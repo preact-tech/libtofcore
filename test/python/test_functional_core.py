@@ -17,10 +17,8 @@ def pytest_configure(config):
 def dut(request) -> pytofcore.Sensor:
     args = {}
 
-    if request.config.getoption('--sensor-port-name'):
-        args['port_name'] = request.config.getoption('--sensor-port-name')
-    if request.config.getoption('--sensor-baud-rate'):
-        args['baud_rate'] = request.config.getoption('--sensor-baud-rate')
+    if request.config.getoption('--sensor-uri'):
+        args['uri'] = request.config.getoption('--sensor-uri')
 
     sensor = pytofcore.Sensor(**args)
     yield sensor

@@ -1,10 +1,7 @@
 def pytest_addoption(parser):
     try:
         parser.addoption(
-            '--sensor-port-name', action='store', default=None, help='Device name for connecting to the sensor under test'
-        )
-        parser.addoption(
-            '--sensor-baud-rate', action='store', default=None, help='Baud rate to use when connecting to the sensor under test'
+            '--sensor-uri', action='store', default=None, help='URI to use when connecting to the device'
         )
     except ValueError:
         #Ignore ValueErrors due to adding the option more than once in different config files.
