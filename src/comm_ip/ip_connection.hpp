@@ -15,12 +15,12 @@
 namespace tofcore
 {
 
-/// @brief Connection class used for communcation with a PreACt ToF camera over IP protocols (TCP/UDP)
+/// @brief Connection class used for communication with a PreACt ToF camera over IP protocols (TCP/UDP)
 class IpConnection : public Connection_T
 {
 public:
     /// @param uri A URI (with scheme tofnet) specifying the IP address (or hostname) and optional port to connect
-    ///  to the device. The URI can include optional parmaeters used to configure the connection and or device.
+    ///  to the device. The URI can include optional parameters used to configure the connection and or device.
     IpConnection(boost::asio::io_service&, const uri& uri);
 
     virtual ~IpConnection() override;

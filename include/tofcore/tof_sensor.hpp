@@ -42,11 +42,11 @@ public:
     ///  the connection.
     /// @param uri The following uri schemes/formats are supported
     ///   - If uri is empty a scan for connected devices is done and a connection is made to the first device found.
-    ///   - tofserial: Sepecifies a serial type connection (i.e. UART, virtual USB COM, or emulated pts device).
-    ///                The connection baudrate and protocol version can be specifed as arguments.
+    ///   - tofserial: Specifies a serial type connection (i.e. UART, virtual USB COM, or emulated pts device).
+    ///                The connection baudrate and protocol version can be specified as arguments.
     ///                Examples: tofserial:/dev/ttyACM0?baudrate=19200&protocol_version=1   (Linux only)
     ///                          tofserial:COM1    (Windows only)
-    ///   - tofnet: Seecifies a IP network type connection (i.e. ethernet address or hostname and optional port). 
+    ///   - tofnet: Specifies a IP network type connection (i.e. Ethernet address or hostname and optional port).
     ///                Examples:  tofnet://10.10.31.180:50660
     ///                           tofnet://localhost  (e.g. to connect to emulator)
     ///
