@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
         }
         else
         {
-            std::cerr << "Failed to read version data" << std::endl;
+            std::cerr << "Failed to retrieve static sensor data" << std::endl;
         }
         /*
          * Persistent Sensor Settings

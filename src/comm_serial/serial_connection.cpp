@@ -99,7 +99,7 @@ struct SerialConnection::Impl
 {
     boost::asio::serial_port port_;
     boost::asio::steady_timer response_timer_;
-    uint16_t protocol_version_ { 0 };
+    uint16_t protocol_version_ { 1 };
 
     std::vector<std::byte> payload_{};
     std::array<std::byte, V1_RESP_PROLOG_SIZE> prolog_epilog_buf_ {};
@@ -130,6 +130,35 @@ struct SerialConnection::Impl
         //start a receive operation to receive the start of the next data packet. 
         this->begin_receive_start();
     }
+
+    Impl(io_service &io, const uri& uri) :
+                port_(io, uri.get_path()),
+                response_timer_(io)
+    {
+        auto query_dict = uri.get_query_dictionary();
+        auto it = query_dict.find("protocol_version");
+        if(it != query_dict.end())
+        {
+            this->protocol_version_ = std::atoi(it->second.c_str());
+        }
+
+        uint32_t baud_rate = 115200;
+        it = query_dict.find("baudrate");
+        if(it != query_dict.end())
+        {
+            baud_rate = std::atoi(it->second.c_str());
+        }
+
+        this->port_.set_option(serial_port_base::baud_rate(baud_rate));
+        this->port_.set_option(serial_port_base::parity(serial_port_base::parity::none));
+        this->port_.set_option(serial_port_base::stop_bits(serial_port_base::stop_bits::one));
+        this->port_.set_option(serial_port_base::flow_control(serial_port_base::flow_control::none));
+        this->port_.set_option(serial_port_base::character_size(8));
+
+        //start a receive operation to receive the start of the next data packet. 
+        this->begin_receive_start();
+    }
+
 
     void reset_parser();
 
@@ -164,11 +193,11 @@ struct SerialConnection::Impl
  *
  * ========================================================================= */
 
-SerialConnection::SerialConnection(boost::asio::io_service &io, const std::string &portName, uint32_t baud_rate, uint16_t protocolVersion) :
-    pimpl { new Impl(io, portName, baud_rate, protocolVersion) }
+SerialConnection::SerialConnection(boost::asio::io_service& io, const uri& uri) :
+    pimpl { new Impl(io, uri) }
 {
-    
 }
+
 
 SerialConnection::~SerialConnection()
 {

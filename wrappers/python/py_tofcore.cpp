@@ -558,6 +558,7 @@ PYBIND11_MODULE(pytofcore, m) {
     m.attr("IPv4Settings") = PyIPv4Settings;
 
     py::class_<tofcore::Sensor>(m, "Sensor")
+        .def(py::init<const std::string&>(), py::arg("uri")=tofcore::DEFAULT_URI)
         .def(py::init<uint16_t, const std::string&, uint32_t>(), py::arg("protocol_version")=tofcore::DEFAULT_PROTOCOL_VERSION, py::arg("port_name")=tofcore::DEFAULT_PORT_NAME, py::arg("baud_rate")=tofcore::DEFAULT_BAUD_RATE)
         .def_property_readonly("pixel_rays", &getPixelRays, "Obtain unit vector ray information for all pixels based on the lens information stored on the sensor. Returns a namedtuple with fields x, y, z. Each field is a list of floats of length width x height.")
         .def_property_readonly("lens_info", &getLensInfo, "Obtain Lens information stored on sensor. Returns a namedtuple with fields rowOffset, columnOffset, rowFocalLength, columnFocalLength, undistortionCoeffs.")
@@ -584,6 +585,7 @@ PYBIND11_MODULE(pytofcore, m) {
         .def_property("sensor_location", &getSensorLocation, &setSensorLocation, "The sensor's location")
         .def_property("sensor_name", &getSensorName, &setSensorName, "The sensor's name")
 
+        .def_property_readonly_static("DEFAULT_URI", [](py::object /* self */){return tofcore::DEFAULT_URI;})
         .def_property_readonly_static("DEFAULT_PORT_NAME", [](py::object /* self */){return tofcore::DEFAULT_PORT_NAME;})
         .def_property_readonly_static("DEFAULT_BAUD_RATE", [](py::object /* self */){return tofcore::DEFAULT_BAUD_RATE;})
         .def_property_readonly_static("DEFAULT_PROTOCOL_VERSION", [](py::object /* self */){return tofcore::DEFAULT_PROTOCOL_VERSION;});

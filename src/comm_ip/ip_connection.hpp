@@ -1,13 +1,13 @@
 /**
- * @file serial_connection.h
+ * @file ip_connection.h
  *
  * Copyright 2023 PreAct Technologies
  *
  * API for serial connection to T10 sensor
  * @{
  */
-#ifndef _SERIAL_CONNECTION_H_
-#define _SERIAL_CONNECTION_H_
+#ifndef _IP_CONNECTION_H_
+#define _IP_CONNECTION_H_
 
 #include "connection.hpp"
 #include "uri.hpp"
@@ -15,12 +15,15 @@
 namespace tofcore
 {
 
-class SerialConnection : public Connection_T
+/// @brief Connection class used for communication with a PreACt ToF camera over IP protocols (TCP/UDP)
+class IpConnection : public Connection_T
 {
 public:
-    SerialConnection(boost::asio::io_service&, const uri& uri);
+    /// @param uri A URI (with scheme tofnet) specifying the IP address (or hostname) and optional port to connect
+    ///  to the device. The URI can include optional parameters used to configure the connection and or device.
+    IpConnection(boost::asio::io_service&, const uri& uri);
 
-    virtual ~SerialConnection();
+    virtual ~IpConnection() override;
 
     virtual uint16_t get_protocol_version() const override;
 
@@ -44,19 +47,12 @@ public:
     virtual void subscribe(on_measurement_callback_t callback) override;
 
 private:
-    typedef std::function<void(bool, const std::vector<std::byte>&)> on_command_response_callback_t; 
-    void send_receive_async(uint16_t command, const std::vector<ScatterGatherElement> &data,
-                            std::chrono::steady_clock::duration timeout, on_command_response_callback_t callback);
-
-    void sendv0(uint16_t command, const std::vector<ScatterGatherElement> &data);
-    void sendv1(uint16_t command, const std::vector<ScatterGatherElement> &data);
-
     struct Impl;
     std::unique_ptr<Impl> pimpl;
 };
 
 } //end namespace
 
-#endif // _SERIAL_CONNECTION_H_
+#endif // _IP_CONNECTION_H_
 
 /** @} */

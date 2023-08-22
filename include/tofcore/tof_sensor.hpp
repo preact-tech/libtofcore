@@ -21,6 +21,7 @@
 namespace tofcore
 {
 
+constexpr const char*   DEFAULT_URI                 { "" }; 
 constexpr uint32_t      DEFAULT_BAUD_RATE           { 115200 };
 constexpr const char*   DEFAULT_PORT_NAME           { "" }; 
 constexpr uint16_t      DEFAULT_PROTOCOL_VERSION    { 1 };
@@ -37,6 +38,24 @@ struct LensIntrinsics_t
 class Sensor
 {
 public:
+    /// @brief Connect to a ToF sensor using the supplied uri string to locate the device and configure
+    ///  the connection.
+    /// @param uri The following uri schemes/formats are supported
+    ///   - If uri is empty a scan for connected devices is done and a connection is made to the first device found.
+    ///   - tofserial: Specifies a serial type connection (i.e. UART, virtual USB COM, or emulated pts device).
+    ///                The connection baudrate and protocol version can be specified as arguments.
+    ///                Examples: tofserial:/dev/ttyACM0?baudrate=19200&protocol_version=1   (Linux only)
+    ///                          tofserial:COM1    (Windows only)
+    ///   - tofnet: Specifies a IP network type connection (i.e. Ethernet address or hostname and optional port).
+    ///                Examples:  tofnet://10.10.31.180:50660
+    ///                           tofnet://localhost  (e.g. to connect to emulator)
+    ///
+    ///   If the uri scheme is not provided then some attempt is made to deduce the scheme based on
+    ///   uri content.
+    Sensor(const std::string& uri = std::string());
+
+    /// @brief Old style constructor for typically used for connecting over serial type devices. 
+    ///   (Note: this constructor will accept any URI.)
     Sensor(uint16_t protocolVersion = DEFAULT_PROTOCOL_VERSION,
            const std::string &portName = DEFAULT_PORT_NAME,
            uint32_t baudrate = DEFAULT_BAUD_RATE);
