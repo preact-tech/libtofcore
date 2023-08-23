@@ -506,6 +506,35 @@ static bool modulation_set(tofcore::Sensor &sensor, uint16_t modFreqkHz)
     return sensor.setModulation(modFreqkHz);
 }
 
+
+/// @brief Depricated version of modulation frequency set.
+/// This is just here to support the old method of setting modulation frequency using enumerated value
+/// where index values represented specific frequencies: 0 == 12mHz, 1 == 24mHz, 2 = 6mHz
+/// @return boolean indicating success or false
+static bool modulation_set_depricated(tofcore::Sensor &sensor, int index, int channel)
+{
+    (void)channel; //No longer used.
+
+    uint16_t modFreqkHz = 0;
+    switch (index)
+    {
+    case 0: //12mHz
+        modFreqkHz = 12000;
+        break;
+    case 1: //24mHz
+        modFreqkHz = 24000;
+        break;
+    case 2: //24mHz
+        modFreqkHz = 6000;
+        break;
+    default:
+        return false;
+        break;
+    }
+    return modulation_set(sensor, modFreqkHz);
+}
+
+
 static bool hflip_get(tofcore::Sensor &sensor)
 {
     py::gil_scoped_release gsr;
@@ -578,6 +607,7 @@ PYBIND11_MODULE(pytofcore, m) {
         .def("get_sensor_status", &getSensorStatus, "Get the sensor status info")
         .def("jump_to_bootloader", &jump_to_bootloader, "Activate bootloader mode to flash firmware", py::call_guard<py::gil_scoped_release>())
         .def("storeSettings", &tofcore::Sensor::storeSettings, "Store the sensor's settings to persistent memory", py::call_guard<py::gil_scoped_release>())
+        .def("set_modulation", &modulation_set_depricated, "DEPRICATED (use modulation_frequency property) Set the modulation frequency to use during TOF measurements", py::arg("index"), py::arg("channel"))
         .def_property("hflip", &hflip_get, &hflip_set, "State of the image horizontal flip option (default False)")
         .def_property("vflip", &vflip_get, &vflip_set, "State of the image vertical flip option (default False)")
         .def_property("modulation_frequency", &modulation_get, &modulation_set, "LED Modulation Frequency in kHz (default 24000)")        
