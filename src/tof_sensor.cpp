@@ -467,7 +467,7 @@ std::optional<uint16_t> Sensor::getModulation(void)
     }
     const auto &payload = *result;
 
-    uint16_t modFreqkHz;
+    uint16_t modFreqkHz = 0;
     BE_Get(modFreqkHz, &payload[0]);
 
     return {modFreqkHz};
