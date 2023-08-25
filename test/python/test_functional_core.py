@@ -227,7 +227,7 @@ def test_meta_data_integration_times(dut: pytofcore.Sensor):
 @pytest.mark.functional
 def test_meta_data_modulation_frequencies(dut: pytofcore.Sensor):
 
-    def run(TEST_VALUE: int):
+    def run(freq_khz_to_set: int, freq_khz_expected):
         def callback(measurement: pytofcore.Measurement, **kwargs):
             with callback.mutex:
                 callback.count += 1
@@ -242,23 +242,7 @@ def test_meta_data_modulation_frequencies(dut: pytofcore.Sensor):
         callback.count = 0
         callback.measurement = None
 
-        #TODO: remove this translation once we fix the set_modulation accessor to simply take the mod frequency. 
-        if TEST_VALUE == 12000000:
-            index = 0
-        elif TEST_VALUE == 24000000:
-            index = 1
-        elif TEST_VALUE == 6000000:
-            index = 2
-        elif TEST_VALUE == 3000000:
-            index = 3
-        elif TEST_VALUE == 1500000:
-            index = 4
-        elif TEST_VALUE == 750000:
-            index = 5
-        else:
-            assert False, "Unsupported modulation frequency requested"
- 
-        dut.set_modulation(index, 0)
+        dut.modulation_frequency = freq_khz_to_set
         dut.subscribe_measurement(callback)
         dut.stream_distance()
         count = 0 # we will wait for upto 1 second in 0.1 second increments
@@ -275,14 +259,15 @@ def test_meta_data_modulation_frequencies(dut: pytofcore.Sensor):
         mod_freqs = callback.measurement.modulation_frequencies
         assert mod_freqs, "No modulation frequency data included with the measurement"
         assert len(mod_freqs) == 1, "Not enough modulation frequency values in the meta-data"
-        assert TEST_VALUE == mod_freqs[0], "Incorrect modulation frequency values included in meta-data"
+        assert freq_khz_expected == mod_freqs[0]/1000, "Incorrect modulation frequency values included in meta-data"
 
-    run(750000)
-    run(1500000)
-    run(3000000)
-    run(6000000)
-    run(12000000)
-    run(24000000)
+    run(700, 6000)
+    run(7500, 6000)
+    run(15000, 12000)
+    run(30000, 24000)
+    run(6000, 6000)
+    run(12000, 12000)
+    run(24000, 24000)
 
 
 @pytest.mark.functional
