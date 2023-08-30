@@ -93,6 +93,18 @@ IpConnection::~IpConnection()
 }
 
 
+uint32_t IpConnection::getIpV4Addr() const
+{
+    return pimpl->m_tcp.getIpV4Addr();
+}
+
+
+uint16_t IpConnection::getDataPort() const
+{
+    return pimpl->m_udp.getDataPort();
+}
+
+
 uint16_t IpConnection::get_protocol_version() const
 {
     return pimpl->m_protocol_version;

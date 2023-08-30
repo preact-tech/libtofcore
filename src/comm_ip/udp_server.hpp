@@ -2,9 +2,12 @@
 #define __TOFCORE_UDPSERVER_H__
 
 #include <boost/asio.hpp>
+#include <cstdint>
 #include <functional>
 
 using boost::asio::ip::udp;
+
+constexpr uint16_t DEFAULT_UDP_PORT = 0; // Zero to use ephemeral port
 
 namespace tofcore {
 
@@ -12,8 +15,13 @@ namespace tofcore {
 
     public:
       typedef std::function<void (const std::vector<std::byte> &)> on_data_ready_t;
-      UdpServer(boost::asio::io_service &);
+      UdpServer(boost::asio::io_service& ios, uint16_t udpPort = DEFAULT_UDP_PORT);
       ~UdpServer();
+
+      uint16_t getDataPort() const
+      {
+          return m_socket.local_endpoint().port();
+      }
 
       void subscribe(on_data_ready_t);
 

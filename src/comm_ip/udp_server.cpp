@@ -7,12 +7,10 @@ using namespace TofComm;
 
 namespace tofcore
 {
-constexpr int PORT = 45454;
 constexpr int RECV_BUFF_SIZE = 2048;
 
-
-UdpServer::UdpServer(boost::asio::io_service &ios) : m_socket(ios, udp::endpoint(udp::v4(), PORT)),
-                                                     m_recvBuffer(RECV_BUFF_SIZE)
+UdpServer::UdpServer(boost::asio::io_service &ios, uint16_t udpPort) :
+            m_socket(ios, udp::endpoint(udp::v4(), udpPort)), m_recvBuffer(RECV_BUFF_SIZE)
 {
     startReceive();
 }

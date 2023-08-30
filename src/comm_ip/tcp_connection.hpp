@@ -17,6 +17,11 @@ namespace tofcore
         TcpConnection(boost::asio::io_service &, const uri& uri);
         ~TcpConnection();
 
+        uint32_t getIpV4Addr() const
+        {
+            return socket.local_endpoint().address().to_v4().to_uint();
+        }
+
         typedef std::function<void(bool, const std::vector<std::byte>&)> on_command_response_callback_t; 
         void send_receive_async(const std::vector<std::byte> &data,
             std::chrono::steady_clock::duration timeout, on_command_response_callback_t callback);

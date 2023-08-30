@@ -33,11 +33,14 @@ constexpr uint16_t COMMAND_SET_MIN_AMPLITUDE        = 0x15;
 constexpr uint16_t COMMAND_SET_MODULATION           = 0x17;
 constexpr uint16_t COMMAND_SET_BINNING              = 0x18;
 constexpr uint16_t COMMAND_SET_HDR                  = 0x19;
-constexpr uint16_t COMMAND_GET_MODULATION           = 0x2F; 
 
+constexpr uint16_t COMMAND_GET_DATA_IP_ADDRESS      = 0x25;
+constexpr uint16_t COMMAND_SET_DATA_IP_ADDRESS      = 0x26;
 
 constexpr uint16_t COMMAND_SET_CAMERA_IP_SETTINGS   = 0x28;
 constexpr uint16_t COMMAND_GET_CAMERA_IP_SETTINGS   = 0x29;
+
+constexpr uint16_t COMMAND_GET_MODULATION           = 0x2F;
 
 constexpr uint16_t COMMAND_GET_HORIZ_FLIP_STATE     = 0x30;
 constexpr uint16_t COMMAND_GET_VERT_FLIP_STATE      = 0x31;
