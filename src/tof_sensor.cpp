@@ -66,20 +66,6 @@ struct Sensor::Impl
 #else
         stream_via_polling_ = false;
 #endif
-        // Tell the sensor where to send the data (ipv4:port)s
-        const uint32_t ipv4Addr { this->connection->getIpV4Addr() };
-        const uint16_t dataPort { this->connection->getDataPort() };
-        if ((dataPort != 0) && (ipv4Addr != 0)) // true for an IP connection
-        {
-            uint8_t payload[sizeof(uint32_t) + sizeof(uint16_t)];
-            BE_Put(payload, ipv4Addr);
-            BE_Put(payload + sizeof(uint32_t), dataPort);
-            auto result = this->connection->send_receive(COMMAND_SET_DATA_IP_ADDRESS, payload, sizeof(payload), 5s);
-            if (!result)
-            {
-                return false;
-            }
-        }
 
         if(stream_via_polling_)
         {

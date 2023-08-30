@@ -21,8 +21,6 @@ public:
 public:
     virtual ~Connection_T() = default;
 
-    virtual uint32_t getIpV4Addr() const = 0;
-    virtual uint16_t getDataPort() const = 0;
     virtual uint16_t get_protocol_version() const = 0;
 
     virtual void send(uint16_t command, const std::vector<ScatterGatherElement> &data) = 0;

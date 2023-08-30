@@ -22,16 +22,6 @@ public:
 
     virtual ~SerialConnection();
 
-    virtual uint32_t getIpV4Addr() const override
-    {
-        return 0;
-    }
-
-    virtual uint16_t getDataPort() const override
-    {
-        return 0;
-    }
-
     virtual uint16_t get_protocol_version() const override;
 
     virtual void send(uint16_t command, const std::vector<ScatterGatherElement> &data) override;

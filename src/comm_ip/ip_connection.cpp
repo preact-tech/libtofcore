@@ -4,6 +4,7 @@
 
 #include "crc32.h"
 #include "tcp_connection.hpp"
+#include "TofCommand_IF.hpp"
 #include "TofEndian.hpp"
 #include "udp_server.hpp"
 #include <array>
@@ -18,6 +19,7 @@ namespace tofcore
 using namespace boost;
 using namespace boost::system;
 using namespace boost::asio;
+using namespace std::chrono_literals;
 using namespace TofComm;
 
 
@@ -90,18 +92,6 @@ IpConnection::IpConnection(boost::asio::io_service& io, const uri& uri) :
 
 IpConnection::~IpConnection()
 {
-}
-
-
-uint32_t IpConnection::getIpV4Addr() const
-{
-    return pimpl->m_tcp.getIpV4Addr();
-}
-
-
-uint16_t IpConnection::getDataPort() const
-{
-    return pimpl->m_udp.getDataPort();
 }
 
 
@@ -188,6 +178,19 @@ bool IpConnection::set_protocol_version(uint16_t version)
     return (version == 1);
 }
 
+
+void IpConnection::setupStreamingLocation()
+{
+    // Tell the sensor where to send the data (ipv4:port)
+    const uint32_t ipv4Addr { pimpl->m_tcp.getIpV4Addr() };
+    const uint16_t dataPort { pimpl->m_udp.getDataPort() };
+    uint8_t payload[sizeof(uint32_t) + sizeof(uint16_t)];
+    BE_Put(payload, ipv4Addr);
+    BE_Put(payload + sizeof(uint32_t), dataPort);
+    this->send_receive(COMMAND_SET_DATA_IP_ADDRESS, payload, sizeof(payload), 5s);
+}
+
+
 void IpConnection::reset_parser()
 {
     //TODO:
@@ -197,6 +200,7 @@ void IpConnection::reset_parser()
 void IpConnection::subscribe(on_measurement_callback_t callback)
 {
     pimpl->m_udp.subscribe(callback);
+    setupStreamingLocation();
 }
 
 } //end namespace tofcore
