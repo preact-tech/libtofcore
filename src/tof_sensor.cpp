@@ -62,11 +62,10 @@ struct Sensor::Impl
     {
         this->measurement_command_ = measurement_command;
 #if defined(_WIN32)
-        stream_via_polling_ = (dynamic_cast<SerialConnection*>(this->connection.get()) != nullptr);
+        stream_via_polling_ = true;
 #else
         stream_via_polling_ = false;
 #endif
-        //std::cerr << "Stream via polling: " << (stream_via_polling_ ? "true" : "false") << std::endl;
 
         if(stream_via_polling_)
         {
