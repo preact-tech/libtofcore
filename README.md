@@ -23,7 +23,6 @@ SUBSYSTEMS=="usb", ATTRS{idVendor}=="35FA", ATTRS{idProduct}=="0D0F", MODE:="066
 
 ## Building
  ```
- cd tofcore
  mkdir build && cd build
  cmake ..
  make -j$(nproc) 
