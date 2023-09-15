@@ -29,7 +29,7 @@ git checkout main
 echo
 echo "Add in changes"
 echo -----------------------------------------
-git subtree merge -P tofcore ${STAGING_BRANCH} --message "Update helmchart from https://github.com/icheko/libtofcore_internal/commit/${LIBTOFCORE_LATEST_COMMIT}"
+git subtree merge -P tofcore ${STAGING_BRANCH} --message "Update tofcore from internal repo, commit: ${LIBTOFCORE_LATEST_COMMIT}"
 
 
 
