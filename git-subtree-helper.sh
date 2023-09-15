@@ -25,12 +25,11 @@ git checkout main
 # take commits in the staging branch and set "/helm-charts/my-chart" as the commit root
 # after you run this script the first time, update the command below to:
 # "git subtree merge" with the same parameters (previously was subtree add)  
-#because of the weird copy and tmp folder required to add subtree to root directory I will leave this as add?
 #
 echo
 echo "Add in changes"
 echo -----------------------------------------
-git subtree add -P tofcore ${STAGING_BRANCH} --message "Update helmchart from https://github.com/icheko/libtofcore_internal/commit/${LIBTOFCORE_LATEST_COMMIT}"
+git subtree merge -P tofcore ${STAGING_BRANCH} --message "Update helmchart from https://github.com/icheko/libtofcore_internal/commit/${LIBTOFCORE_LATEST_COMMIT}"
 
 
 
