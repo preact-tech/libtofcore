@@ -27,10 +27,7 @@ SUBSYSTEMS=="usb", ATTRS{idVendor}=="35FA", ATTRS{idProduct}=="0D0F", MODE:="066
  cmake ..
  make -j$(nproc) 
  ``` 
-To install:
-```
-make install
-```
+
 
 ## Python Bindings installation
 
