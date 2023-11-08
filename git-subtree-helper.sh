@@ -9,7 +9,7 @@ git fetch libtofcore_internal release/1.1
 
 LIBTOFCORE_LATEST_COMMIT=`git ls-remote libtofcore_internal | grep "refs/heads/release/1.1" | awk '{ print $1}'`
 echo
-echo "libtofcore_internal latest commit: ${libtofcore_internal_LATEST_COMMIT}"
+echo "libtofcore_internal latest commit: ${LIBTOFCORE_LATEST_COMMIT}"
 echo
 
 # checkout source repo
