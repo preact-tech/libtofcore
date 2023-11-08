@@ -13,7 +13,7 @@ echo "libtofcore_internal latest commit: ${libtofcore_internal_LATEST_COMMIT}"
 echo
 
 # checkout source repo
-git checkout -b ${SOURCE_BRANCH} libtofcore_internal/develop
+git checkout -b ${SOURCE_BRANCH} libtofcore_internal/release/1.1
 
 ls
 # create new staging branch from all the commits impacting "/my-chart" from source repo
