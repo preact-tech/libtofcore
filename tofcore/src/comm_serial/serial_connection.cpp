@@ -346,7 +346,7 @@ void SerialConnection::sendv0(uint16_t command, const std::vector<ScatterGatherE
     }
     bufs.push_back(buffer(filler, filler_size));
     bufs.push_back(buffer(epilog));
-    write(pimpl->port_, bufs);
+    boost::asio::write(pimpl->port_, bufs);
 }
 
 void SerialConnection::sendv1(uint16_t command, const std::vector<ScatterGatherElement>& data)
@@ -379,7 +379,7 @@ void SerialConnection::sendv1(uint16_t command, const std::vector<ScatterGatherE
     std::array<uint8_t, sizeof(crc32)> epilog {};
     BE_Put(&epilog[0], crc32);
     bufs.push_back(buffer(epilog));
-    write(pimpl->port_, bufs);
+    boost::asio::write(pimpl->port_, bufs);
 }
 
 void SerialConnection::Impl::reset_parser()
@@ -722,7 +722,7 @@ bool SerialConnection::Impl::process_error(const system::error_code &error, cons
 {
     if (error)
     {
-        ERR("ERROR in " << where << ": " << error.category().name());
+        ERR("ERROR in " << where << ": " << error.message());
     }
     else
     {

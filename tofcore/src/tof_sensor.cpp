@@ -578,7 +578,19 @@ void Sensor::subscribeMeasurement(std::function<void (std::shared_ptr<Measuremen
 
 void Sensor::Impl::init()
 {
-    serverThread_ = std::thread{ [this]() { ioService.run(); } };
+    auto server_f = [this]() 
+        {
+            try
+            { 
+                ioService.run(); 
+            }
+            catch(std::exception& e)
+            {
+                std::cerr << "caught exception in background thread: " << e.what() << std::endl;
+            }
+        };
+
+    serverThread_ = std::thread{ server_f };
 
     auto f = [&](const std::vector<std::byte>& p)
         {
