@@ -53,6 +53,7 @@ _deps
 # VSCODE
 # VSCode IDE
 .vscode
+.vscode/settings.json
 .vscode/**/*
 !.vscode/settings.json
 !.vscode/tasks.json
