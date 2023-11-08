@@ -19,8 +19,6 @@ ls
 # create new staging branch from all the commits impacting "/my-chart" from source repo
 git subtree split -P tofcore -b ${STAGING_BRANCH}
 
-git add .vscode/settings.json
-git commit -m "hacky fix"
 # checkout develop
 git checkout main
 
