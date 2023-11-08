@@ -5,9 +5,9 @@ STAGING_BRANCH="libtofcore_internal-staging"
 echo
 echo "Fetch new changes from libtofcore_internal"
 echo -----------------------------------------
-git fetch libtofcore_internal develop
+git fetch libtofcore_internal release/1.1
 
-LIBTOFCORE_LATEST_COMMIT=`git ls-remote libtofcore_internal | grep "refs/heads/develop" | awk '{ print $1}'`
+LIBTOFCORE_LATEST_COMMIT=`git ls-remote libtofcore_internal | grep "refs/heads/release/1.1" | awk '{ print $1}'`
 echo
 echo "libtofcore_internal latest commit: ${libtofcore_internal_LATEST_COMMIT}"
 echo
