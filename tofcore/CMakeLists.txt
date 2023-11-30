@@ -19,7 +19,11 @@ set(MIN_BOOST_VERSION 1.70)
 set(Boost_USE_STATIC_LIBS   ON)
 find_package(Boost ${MIN_BOOST_VERSION} REQUIRED COMPONENTS)
 
-add_subdirectory(third_party/libusbp )
+find_package(usbp CONFIG QUIET)
+if(NOT TARGET usbp)
+    message(STATUS "libusbp not found, adding as sub_directory")
+    add_subdirectory(third_party/libusbp )
+endif()
 ###########################
 
 add_library(tofcore)

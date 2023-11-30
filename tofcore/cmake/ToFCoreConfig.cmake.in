@@ -7,6 +7,7 @@ list(APPEND CMAKE_MODULE_PATH ${TOFCORE_CMAKE_DIR})
 #list(REMOVE_AT CMAKE_MODULE_PATH -1)
 
 #find_dependency(boost_regex @MIN_BOOST_VERSION@)
+find_dependency(usbp CONFIG)
 
 if(NOT TARGET ToFCore::ToFCore)
     include("${TOFCORE_CMAKE_DIR}/ToFCoreTargets.cmake")
