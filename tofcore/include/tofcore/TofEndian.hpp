@@ -10,6 +10,37 @@
 #define TOFENDIAN_HPP
 
 #include <boost/endian/conversion.hpp>
+#include <array>
+#include <algorithm>
+#include <cstdint>
+#include <cstring>
+#include <type_traits>
+
+namespace util
+{
+
+template<typename T, typename IntegralType,
+         std::enable_if_t<std::is_integral_v<IntegralType> && // Only for unsigned integral types of more than 1 byte
+                          std::is_unsigned_v<IntegralType> &&
+                          1 < sizeof(IntegralType)
+                         , bool> = true>
+auto GetUIntFieldBigEndian(const T &obj, IntegralType T::*f)
+{
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+    auto res = IntegralType { };
+
+    uint8_t buf[sizeof(res)];
+    std::memcpy(&buf[0], &(obj.*f), std::size(buf));
+    std::reverse(&buf[0], &buf[0] + std::size(buf));
+    std::memcpy(&res, &buf[0], std::size(buf));
+
+    return res;
+#else
+    return obj.*f;
+#endif
+}
+
+} // namespace util
 
 namespace TofComm
 {

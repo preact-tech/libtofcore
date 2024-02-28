@@ -16,11 +16,10 @@ signal_handler.stop = False
 signal.signal(signal.SIGINT, signal_handler)
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--protocol-version', default=pytofcore.Sensor.DEFAULT_PROTOCOL_VERSION, type=int, help="Protocol version to use 0 or 1")
 parser.add_argument('--port-name', default=pytofcore.Sensor.DEFAULT_PORT_NAME, type=str, help="Port name to connect to sensor on.")
 args = parser.parse_args()
 
-s = pytofcore.Sensor(protocol_version=args.protocol_version, port_name=args.port_name)
+s = pytofcore.Sensor(port_name=args.port_name)
 
 def callback(frame, **kwargs) :
     '''Function to be called when a new frame of data is received
@@ -32,16 +31,16 @@ def callback(frame, **kwargs) :
 
     if callback.counter == 1:
         print(f"First frame received size: {len(frame.dcs_data)}")
-    if callback.counter == 5:
+#    if callback.counter == 5:
         #Exceptions raised from the callback are sent to stderr
-        raise RuntimeError("Wow something really bad happend")
+#        raise RuntimeError("Wow something really bad happend")
 
     if callback.counter % 10 == 0:
         print("Hey look I've received 10 more frames: ", callback.counter)
 
 callback.counter = 0
 
-s.set_integration_time(1, 0, 0)
+s.set_integration_time(100)
 s.subscribe_measurement(callback)
 s.stream_dcs()
 t_0 = timeit.default_timer()

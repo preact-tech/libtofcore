@@ -17,27 +17,33 @@ sudo apt-get install cmake libudev-dev
 
 USB Udev Rules
 Create new udev rules file for usb. Example: etc/udev/rules.d/99-usb-rules.rules
+```SUBSYSTEMS=="usb", ATTRS{idVendor}=="35FA", ATTRS{idProduct}=="0D0F", MODE:="0666"
 ```
-SUBSYSTEMS=="usb", ATTRS{idVendor}=="35FA", ATTRS{idProduct}=="0D0F", MODE:="0666"
+## Build and Install
+Normal build and install of library:
+
+```bash
+make build
 ```
 
-## Building
- ```
- mkdir build && cd build
- cmake ..
- make -j$(nproc) 
- ``` 
+Normal installation (for library only)
 
+```bash
+sudo cmake --build build -- install  # Installs to /usr/local on UNIX systems
+```
+
+_See [CMake documentaion](https://cmake.org/cmake/help/latest/variable/CMAKE_INSTALL_PREFIX.html) on default install location and how to change it._
 
 ## Python Bindings installation
 
-From either the tofcore or tofcrust python wrappers directory run setup.py.
 To install the python package into your personal python site-packages directory:
 
 ```
-cd tofcore/wrappers/python
-python3 setup.py install --user
+make pytofcore
 ```
+
+
+
 
 ## Testing
 NOTE: For tests to run successfully python needs to know where to find the .so module files.

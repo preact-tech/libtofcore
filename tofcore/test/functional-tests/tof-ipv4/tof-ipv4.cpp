@@ -7,17 +7,20 @@
  */
 #include "tofcore/tof_sensor.hpp"
 #include <array>
+#include <chrono>
 #include <csignal>
 #include <iomanip>
 #include <iostream>
+#include <thread>
 #include <boost/program_options.hpp>
 
 using namespace tofcore;
+using namespace std::chrono_literals;
+using namespace std::chrono;
 
 static uint32_t baudRate { DEFAULT_BAUD_RATE };
 static std::string devicePort { DEFAULT_PORT_NAME };
 static volatile bool exitRequested { false };
-static uint16_t protocolVersion { 1 };
 static std::vector<unsigned> ipv4Data {};
 
 
@@ -35,7 +38,6 @@ static void parseArgs(int argc, char *argv[])
     desc.add_options()
         ("help,h", "produce help message")
         ("device-uri,p", po::value<std::string>(&devicePort))
-        ("protocol-version,v", po::value<uint16_t>(&protocolVersion)->default_value(DEFAULT_PROTOCOL_VERSION))
         ("baud-rate,b", po::value<uint32_t>(&baudRate)->default_value(DEFAULT_BAUD_RATE))
         ("ipv4Data,i", po::value<std::vector<unsigned>>(&ipv4Data), "Set IPv4 (requires 12 unsigned values)")
         ;
@@ -72,7 +74,7 @@ int main(int argc, char *argv[])
     signal(SIGQUIT, signalHandler);
 #endif
     {
-        tofcore::Sensor sensor { protocolVersion, devicePort, baudRate };
+        tofcore::Sensor sensor { devicePort, baudRate };
         // Set the IPv4 values
         if (ipv4Data.size() == 12)
         {
@@ -95,6 +97,9 @@ int main(int argc, char *argv[])
         {
             std::cout << "Skipping setting of IPv4 data since 12 values were not provided" << std::endl;
         }
+
+        std::this_thread::sleep_for(500ms);
+
         // Read the IPv4 values
         std::array<std::byte, 4> adrs;
         std::array<std::byte, 4> mask;

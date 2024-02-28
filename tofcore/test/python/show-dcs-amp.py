@@ -6,7 +6,7 @@ import time
 
 import pytofcrust
 
-sensor = pytofcrust.Sensor(protocol_version=1)
+sensor = pytofcrust.Sensor()
 v_flip_default = False
 h_flip_default = False
 
@@ -111,7 +111,7 @@ cmd_delay()
 measurement_callback.EXIT = False
 measurement_callback.SWITCH = False
 
-success = sensor.set_integration_times(100,0,0)
+success = sensor.set_integration_time(100)
 cmd_delay()
 print(sensor.get_sensor_info)
 cmd_delay()
@@ -123,7 +123,7 @@ stream_modes[stream_state]()
 
 try:
     while not measurement_callback.EXIT:
-        time.sleep(0.01)
+        time.sleep(2.00)
         if measurement_callback.SWITCH:
             stream_state = 1 - stream_state
             stream_modes[stream_state]()

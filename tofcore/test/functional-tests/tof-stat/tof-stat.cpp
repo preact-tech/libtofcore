@@ -17,7 +17,6 @@ using namespace tofcore;
 static uint32_t baudRate { DEFAULT_BAUD_RATE };
 static std::string devicePort { DEFAULT_PORT_NAME };
 static volatile bool exitRequested { false };
-static uint16_t protocolVersion { DEFAULT_PROTOCOL_VERSION };
 static std::string sensorLocation { };
 static std::string sensorName { };
 static bool setSensorLocation { false };
@@ -31,7 +30,6 @@ static void parseArgs(int argc, char *argv[])
     desc.add_options()
         ("help,h", "produce help message")
         ("device-uri,p", po::value<std::string>(&devicePort))
-        ("protocol-version,v", po::value<uint16_t>(&protocolVersion)->default_value(DEFAULT_PROTOCOL_VERSION))
         ("baud-rate,b", po::value<uint32_t>(&baudRate)->default_value(DEFAULT_BAUD_RATE))
         ("store-settings,s", po::bool_switch(&storeSettings), "Have sensor store current sensor settings in persistent memory")
         ("sensor-location,l", po::value<std::string>(&sensorLocation), "Set location of sensor")
@@ -68,7 +66,7 @@ int main(int argc, char *argv[])
     signal(SIGQUIT, signalHandler);
     #endif
     {
-        tofcore::Sensor sensor { protocolVersion, devicePort, baudRate };
+        tofcore::Sensor sensor { devicePort, baudRate };
         /*
          * Version information
          */

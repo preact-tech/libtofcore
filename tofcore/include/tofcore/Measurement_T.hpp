@@ -8,6 +8,7 @@
  * API for libtofcore control
  */
 
+#include "CommandTypes.hpp"
 #include "MetaDataTypes.hpp"
 #include <array>
 #include <cstdint>
@@ -139,16 +140,14 @@ public:
     ///  will be empty.
     virtual std::optional<std::array<float,TofComm::KLV_NUM_TEMPERATURES>> sensor_temperatures() const = 0;
 
-    /// @brief Get the integration time settings that were active when the measurement was collected. 
-    ///  The sensor supports up to 3 different integration times, int0, int1, int2 (all in micro-seconds)
-    ///  int0 is used during the DCS distance collection phase, int1 and int2 are only used
-    ///  when one of the HDR modes are enabled.
+    /// @brief Get the integration time setting that was active when the measurement was collected.
+    ///  The sensor time in micro-seconds is used during the DCS distance collection phase,.
     ///  If the integration time data is not included with this measurement then std::nullopt is returned
-    virtual std::optional<std::array<uint16_t,TofComm::KLV_NUM_INTEGRATION_TIMES>> integration_times() const = 0;
+    virtual std::optional<uint16_t> integration_time() const = 0;
 
     /// @brief Get illuminator information that was recorded at the time of the measurement.
     ///
-    /// The folloing information is recorded just after the measurement is acquired: 
+    /// The following information is recorded just after the measurement is acquired:
     /// - Which LED segments were enabled
     /// - Temperature
     /// - VLED voltage applied to the LEDs
@@ -156,9 +155,9 @@ public:
     /// If the illuminator information data was not included with this measurement then std::nullopt is returned
     virtual std::optional<TofComm::illuminator_info_t> illuminator_info() const = 0;
 
-    /// @brief Get the modulation frequency settings (in HZ) that was active when the measurement was collected.
+    /// @brief Get the modulation frequency setting (in HZ) that was active when the measurement was collected.
     ///  If no data is found in the measurement header then std::nullopt is returned
-    virtual std::optional<std::vector<uint32_t>> modulation_frequencies() const = 0;
+    virtual std::optional<uint32_t> modulation_frequency() const = 0;
 
     /// @brief Get the horizontal binning setting that was active when the measurement was collected.
     ///  Binning refers here to the sensor setting which combines rectangular
@@ -187,6 +186,10 @@ public:
     ///  If no data is found in the measurement header then std::nullopt is returned
     virtual std::optional<std::array<uint8_t,TofComm::KLV_NUM_DLL_BYTES>> dll_settings() const = 0;
 
+    /// @brief Get Vector Sequence Mode (VSM) information that was recorded at the time of the measurement.
+    ///
+    /// If the VSM information data was not included with this measurement then std::nullopt is returned
+    virtual std::optional<TofComm::VsmControl_T> vsm_info() const = 0;
 };
 
 

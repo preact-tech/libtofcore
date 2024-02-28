@@ -32,7 +32,9 @@ constexpr uint16_t COMMAND_SET_MIN_AMPLITUDE        = 0x15;
 
 constexpr uint16_t COMMAND_SET_MODULATION           = 0x17;
 constexpr uint16_t COMMAND_SET_BINNING              = 0x18;
-constexpr uint16_t COMMAND_SET_HDR                  = 0x19;
+
+constexpr uint16_t COMMAND_SET_VSM                  = 0x1B;
+constexpr uint16_t COMMAND_GET_VSM                  = 0x1C;
 
 constexpr uint16_t COMMAND_GET_DATA_IP_ADDRESS      = 0x25;
 constexpr uint16_t COMMAND_SET_DATA_IP_ADDRESS      = 0x26;

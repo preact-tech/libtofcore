@@ -27,7 +27,6 @@ struct IpConnection::Impl
 {
     TcpConnection m_tcp;
     UdpServer m_udp;
-    uint16_t m_protocol_version { 1 };
 
     std::function<void(bool, const std::vector<std::byte>&)> on_command_response_ {};
 
@@ -92,12 +91,6 @@ IpConnection::IpConnection(boost::asio::io_service& io, const uri& uri) :
 
 IpConnection::~IpConnection()
 {
-}
-
-
-uint16_t IpConnection::get_protocol_version() const
-{
-    return pimpl->m_protocol_version;
 }
 
 
@@ -169,13 +162,6 @@ std::optional<std::vector<std::byte> > IpConnection::send_receive(uint16_t comma
 {
     const std::vector<ScatterGatherElement> singleDataChunk { { (std::byte*)data, (size_t)size } };
     return this->send_receive(command, singleDataChunk, timeout);
-}
-
-
-bool IpConnection::set_protocol_version(uint16_t version)
-{
-    //Only supporting version 1 for commands so just check that is what the client asked for
-    return (version == 1);
 }
 
 

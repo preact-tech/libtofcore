@@ -1,9 +1,10 @@
 /**
- * @file simple-streamer.cpp
+ * @file tof-mf-test.cpp
  *
  * Copyright 2023 PreAct Technologies
  *
- * Test program that uses libtofcore to stream DCS or DCS+Ambient data
+ * Test program that uses libtofcore to test modifications of the
+ * modulation frequency.
  */
 #include "tofcore/tof_sensor.hpp"
 #include <atomic>
@@ -44,7 +45,7 @@ static void measurement_callback(std::shared_ptr<tofcore::Measurement_T> pData)
         case DataType::DISTANCE_AMPLITUDE:
             ++amplitudeCount;
             ++distanceCount;
-            if (verbosity > 0)
+            if (verbosity > 1)
             {
                 std::cout << "received DISTANCE-AMPLITUDE measurement data, packet size "
                           << (pData->pixel_buffer().size()) << std::endl;
@@ -52,28 +53,28 @@ static void measurement_callback(std::shared_ptr<tofcore::Measurement_T> pData)
             break;
         case DataType::DCS:
             ++dcsCount;
-            if (verbosity > 0)
+            if (verbosity > 1)
             {
                 std::cout << "received DCS measurement data, packet size " << pData->pixel_buffer().size() << std::endl;
             }
             break;
         case DataType::GRAYSCALE:
             ++grayscaleCount;
-            if (verbosity > 0)
+            if (verbosity > 1)
             {
                 std::cout << "received GRAYSCALE measurement data, packet size " << pData->pixel_buffer().size() << std::endl;
             }
             break;
         case DataType::DISTANCE:
             ++distanceCount;
-            if (verbosity > 0)
+            if (verbosity > 1)
             {
                 std::cout << "received DISTANCE measurement data, packet size " << pData->pixel_buffer().size() << std::endl;
             }
             break;
         case DataType::AMPLITUDE:
             ++amplitudeCount;
-            if (verbosity > 0)
+            if (verbosity > 1)
             {
                 std::cout << "received AMPLITUDE measurement data, packet size "
                           << (pData->pixel_buffer().size()) << std::endl;
@@ -81,7 +82,7 @@ static void measurement_callback(std::shared_ptr<tofcore::Measurement_T> pData)
             break;
         case DataType::AMBIENT:
             ++amplitudeCount;
-            if (verbosity > 0)
+            if (verbosity > 1)
             {
                 std::cout << "received AMBIENT measurement data, packet size "
                           << (pData->pixel_buffer().size()) << std::endl;
@@ -91,7 +92,7 @@ static void measurement_callback(std::shared_ptr<tofcore::Measurement_T> pData)
         default:
             std::cout << "UNRECOGNIZED data type: " << static_cast<int16_t>(pData->type()) << std::endl;
     }
-    if(verbosity > 0)
+    if(verbosity > 1)
     {
         auto chip_temps = pData->sensor_temperatures();
         if(chip_temps) 
@@ -105,7 +106,7 @@ static void measurement_callback(std::shared_ptr<tofcore::Measurement_T> pData)
         auto integration_time = pData->integration_time();
         if(integration_time)
         {
-            std::cout << "  Integration time setting (uS): " << *integration_time << std::endl;
+            std::cout << "  Integration time settings (uS): " << *integration_time << std::endl;
         }
         else 
         {
@@ -167,11 +168,11 @@ static void measurement_callback(std::shared_ptr<tofcore::Measurement_T> pData)
                 VsmElement_T& element = vsmControl->m_elements[n];
                 std::cout << " [" << element.m_integrationTimeUs << ", " << element.m_modulationFreqKhz << "]";
             }
-            std::cout << "\n\n";
+            std::cout << std::endl << std::endl;
         }
         else
         {
-            std::cout << "  No VSM data" << "\n\n";
+            std::cout << "  No VSM data" << std::endl << std::endl;
         }
     }
 }
@@ -207,7 +208,7 @@ private:
 
 static void parseArgs(int argc, char *argv[])
 {
-    po::options_description desc("Simple Streamer Test");
+    po::options_description desc("ToF Modulation Frequency Test");
     desc.add_options()
         ("help,h", "produce help message")
         ("device-uri,p", po::value<std::string>(&devicePort))
@@ -236,6 +237,69 @@ static void signalHandler(int signum)
 {
     (void)signum;
     exitRequested = true;
+}
+
+static void test_mf(tofcore::Sensor& sensor, uint16_t testFreqKhz)
+{
+    if (verbosity > 0)
+    {
+        std::cout << "Setting MF to " << testFreqKhz << " kHz" << std::endl;
+    }
+    sensor.setModulation(testFreqKhz);
+    sensor.streamDistance();
+    /*
+     * It can take several hundred mS for the sensor to initially calculate
+     * the correction values for modulation frequencies that are not exactly
+     * the calibration frequencies (it has to interpolate)
+     */
+    std::this_thread::sleep_for(500ms);
+
+    sensor.stopStream();
+
+    uint16_t expectedKhz;
+    if (testFreqKhz < 6000)
+    {
+        expectedKhz = 6000;
+    }
+    else if (testFreqKhz > 24000)
+    {
+        expectedKhz = 24000;
+    }
+    else
+    {
+        expectedKhz = (uint16_t)((testFreqKhz/10.0) + 0.5) * 10;
+    }
+
+    auto actualKhz = sensor.getModulation();
+
+    if (actualKhz)
+    {
+        auto v = actualKhz.value();
+        if (v != expectedKhz)
+        {
+            std::cerr << "Expected " << expectedKhz << " kHz, got " << v << " kHz" << std::endl;
+            exit(-1);
+        }
+        else if (verbosity > 0)
+        {
+            std::cout << "Got expected value: " << expectedKhz << " kHz" << std::endl;
+        }
+    }
+    else
+    {
+        std::cerr << "Error reading modulation frequency" << std::endl;
+        exit(-1);
+    }
+}
+
+static void run_mf_tests(tofcore::Sensor& sensor)
+{
+    const uint16_t testValues[]
+        {6001, 6009, 6050, 8000, 10100, 13000, 22000, 6000, 7000, 12000, 23000, 24000};
+    for (auto testKhz : testValues)
+    {
+        test_mf(sensor, testKhz);
+    }
 }
 
 int main(int argc, char *argv[])
@@ -302,22 +366,15 @@ int main(int argc, char *argv[])
                 sensor.streamDCS();
             }
         }
-        auto lastTime = steady_clock::now();
+//        sensor.stopStream();
+        std::this_thread::sleep_for(100ms);
+        uint32_t testCount { 0 };
         while (!exitRequested) // wait for ^\ or ^C
         {
-            std::this_thread::sleep_until(lastTime + 1000ms);
-            lastTime = steady_clock::now();
-            const uint32_t amplitude { amplitudeCount };
-            amplitudeCount = 0;
-            const uint32_t dcs { 4 * dcsCount };
-            dcsCount = 0;
-            const uint32_t distance { distanceCount };
-            distanceCount = 0;
-            const uint32_t grayscale { grayscaleCount };
-            grayscaleCount = 0;
-            std::cout << "RAW FPS: amplitude = " << amplitude << "; dcs = " << dcs
-                      << "; distance = " << distance << "; grayscale = " << grayscale
-                      << "; total = " << (amplitude + dcs + distance + grayscale) << std::endl;
+            run_mf_tests(sensor);
+            ++testCount;
+            std::cout << "Tests run: " << testCount << std::endl;
+            std::this_thread::sleep_for(500ms);
         }
         std::cout << "Shutting down..." << std::endl;
         sensor.stopStream();

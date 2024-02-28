@@ -35,8 +35,11 @@ def test_stream_distance_amplitude_frames(dut: pytofcore.Sensor):
     callback.measurement = None
     dut.subscribe_measurement(callback)
     dut.stream_distance_amplitude()
-    
+    # It can take several hundred mS for the sensor to initially calculate
+    # the correction values for modulation frequencies that are not exactly
+    # the calibration frequencies (it has to interpolate)
     time.sleep(1.0)
+    dut.stop_stream()
     assert callback.measurement is not None, "No Distance & Amplitude measurements received"
 
 
@@ -50,8 +53,11 @@ def test_stream_distance(dut: pytofcore.Sensor):
     callback.measurement = None
     dut.subscribe_measurement(callback)
     dut.stream_distance()
-    
+    # It can take several hundred mS for the sensor to initially calculate
+    # the correction values for modulation frequencies that are not exactly
+    # the calibration frequencies (it has to interpolate)
     time.sleep(1.0)
+    dut.stop_stream()
     assert callback.measurement is not None, "No Distance measurements received"
 
 
@@ -65,8 +71,11 @@ def test_stream_dcs(dut: pytofcore.Sensor):
     callback.measurement = None
     dut.subscribe_measurement(callback)
     dut.stream_dcs()
-    
+    # It can take several hundred mS for the sensor to initially calculate
+    # the correction values for modulation frequencies that are not exactly
+    # the calibration frequencies (it has to interpolate)
     time.sleep(1.0)
+    dut.stop_stream()
     assert callback.measurement is not None, "No DCS measurements received"
 
 
@@ -83,7 +92,11 @@ def test_stream_dcs_ambient(dut: pytofcore.Sensor):
     callback.ambient_measurement = None
     dut.subscribe_measurement(callback)
     dut.stream_dcs_ambient()
+    # It can take several hundred mS for the sensor to initially calculate
+    # the correction values for modulation frequencies that are not exactly
+    # the calibration frequencies (it has to interpolate)
     time.sleep(1.0)
+    dut.stop_stream()
     assert callback.dcs_measurement is not None, "No DCS measurements received"
     assert callback.ambient_measurement is not None, "No ambient measurements received"
 
@@ -141,10 +154,43 @@ def test_ipv4_settings(dut: pytofcore.Sensor):
 
     with pytest.raises(TypeError, match="ipaddress.IPv4Address"):
         dut.ipv4_settings = pytofcore.IPv4Settings(settings.interface, None)
-
+    
     dut.ipv4_settings = pytofcore.IPv4Settings(settings.interface, settings.gateway)
 
+    time.sleep(2.0)
+
     assert settings == dut.ipv4_settings
+
+
+@pytest.mark.functional
+def test_ip_measurement_endpoint(dut: pytofcore.Sensor):
+    '''Test the pytofcore.Sensor.ip_measurement_endpoint property
+
+    Verify that the measurement endpoint property can be properly set and retrived.
+    That the property only accepts a valid endpoint (which is tuple of IP address and port). 
+    '''
+
+    ep = dut.ip_measurement_endpoint
+    assert( isinstance(ep, pytofcore.IPv4Endpoint))
+    assert( isinstance(ep.address, ipaddress.IPv4Address))
+    assert( isinstance(ep.port, int))
+
+    with pytest.raises(TypeError, match="pytofcore.IPv4Endpoint"):
+        dut.ip_measurement_endpoint = None
+
+    with pytest.raises(ipaddress.AddressValueError, match=r"Expected 4 octets in 'None'"):
+        dut.ip_measurement_endpoint = pytofcore.IPv4Endpoint(None, None)
+
+    with pytest.raises(TypeError, match=r"int\(\) argument must be a string, a bytes-like object or a number, not 'NoneType'"):
+        dut.ip_measurement_endpoint = pytofcore.IPv4Endpoint(ep.address, None)
+
+    #Verify the measurement_endpoint can be set
+    dut.ip_measurement_endpoint = pytofcore.IPv4Endpoint(ep.address, ep.port)
+    assert ep == dut.ip_measurement_endpoint
+
+    #Verify the measurement_endpoint can be set using a string for address and port
+    dut.ip_measurement_endpoint = pytofcore.IPv4Endpoint(str(ep.address), str(ep.port))
+    assert ep == dut.ip_measurement_endpoint
 
 
 @pytest.mark.functional
@@ -181,23 +227,23 @@ def test_meta_data_sensor_temperature(dut: pytofcore.Sensor):
 
 
 @pytest.mark.functional
-def test_meta_data_integration_times(dut: pytofcore.Sensor):
+def test_meta_data_integration_time(dut: pytofcore.Sensor):
 
-    def run(TEST_VALUES: List[int]):
+    def run(TEST_VALUE):
         def callback(measurement: pytofcore.Measurement, **kwargs):
             with callback.mutex:
                 callback.count += 1
-                #Note: for some reason it seems to take at least 2 measurement iterations 
+                #Note: for some reason it seems to take at least 3 measurement iterations 
                 # for new integration time settings to take effect
                 # this is probably a bug in the sensor firmware but it's not import ATM
-                if callback.count > 2:
+                if callback.count > 3:
                     if measurement.data_type == measurement.DataType.DISTANCE and not callback.measurement:
                         callback.measurement = measurement
 
         callback.mutex = threading.Lock()
         callback.count = 0
         callback.measurement = None
-        dut.set_integration_times(*TEST_VALUES)
+        dut.set_integration_time(TEST_VALUE)
         dut.subscribe_measurement(callback)
         dut.stream_distance()
         count = 0 # we will wait for upto 1 second in 0.1 second increments
@@ -212,29 +258,28 @@ def test_meta_data_integration_times(dut: pytofcore.Sensor):
         assert callback.measurement, "No measurement received"
 
         #check for integration time data with the measurement.
-        int_times = callback.measurement.integration_times
-        assert int_times, "No integration time data included with the measurement"
-        assert len(int_times) == 3, "Not enough integration time values in the meta-data"
-        assert TEST_VALUES == int_times, "Incorrect integration time values included in meta-data"
-        int_times = dut.get_integration_times()
-        assert TEST_VALUES == int_times, "Incorrect integration time values from get_integration_times()"
+        int_time = callback.measurement.integration_time
+        assert int_time, "No integration time data included with the measurement"
+        assert TEST_VALUE == int_time, "Incorrect integration time value included in meta-data"
+        int_time = dut.get_integration_time()
+        assert TEST_VALUE == int_time, "Incorrect integration time value from get_integration_time()"
 
-    run([11, 22, 33])
-    run([100, 0, 0])
-    run([111, 222, 333])
+    run(11)
+    run(100)
+    run(111)
 
 
 @pytest.mark.functional
-def test_meta_data_modulation_frequencies(dut: pytofcore.Sensor):
+def test_meta_data_modulation_frequency(dut: pytofcore.Sensor):
 
     def run(freq_khz_to_set: int, freq_khz_expected):
         def callback(measurement: pytofcore.Measurement, **kwargs):
             with callback.mutex:
                 callback.count += 1
-                #Note: for some reason it seems to take at least 2 measurement iterations 
+                #Note: for some reason it seems to take at least 3 measurement iterations 
                 # for new integration time settings to take effect
                 # this is probably a bug in the sensor firmware but it's not import ATM
-                if callback.count > 1:
+                if callback.count > 3:
                     if measurement.data_type == measurement.DataType.DISTANCE and not callback.measurement:
                         callback.measurement = measurement
 
@@ -256,18 +301,19 @@ def test_meta_data_modulation_frequencies(dut: pytofcore.Sensor):
         
         assert callback.measurement, "No measurement received"
 
-        mod_freqs = callback.measurement.modulation_frequencies
-        assert mod_freqs, "No modulation frequency data included with the measurement"
-        assert len(mod_freqs) == 1, "Not enough modulation frequency values in the meta-data"
-        assert freq_khz_expected == mod_freqs[0]/1000, "Incorrect modulation frequency values included in meta-data"
+        mod_freq = callback.measurement.modulation_frequency
+        assert mod_freq, "No modulation frequency data included with the measurement"
+        assert freq_khz_expected == mod_freq/1000, "Incorrect modulation frequency values included in meta-data"
 
     run(700, 6000)
-    run(7500, 6000)
-    run(15000, 12000)
+    run(7500, 7500)
+    run(15000, 15000)
     run(30000, 24000)
     run(6000, 6000)
     run(12000, 12000)
     run(24000, 24000)
+    run(12001, 12000)
+    run(12006, 12010)
 
 
 @pytest.mark.functional
@@ -277,10 +323,10 @@ def test_meta_data_binning(dut: pytofcore.Sensor):
         def callback(measurement: pytofcore.Measurement, **kwargs):
             with callback.mutex:
                 callback.count += 1
-                #Note: for some reason it seems to take at least 2 measurement iterations 
+                #Note: for some reason it seems to take at least 3 measurement iterations 
                 # for new settings to take effect this is probably a bug in the sensor
                 # firmware but it's not import ATM
-                if callback.count > 2:
+                if callback.count > 3:
                     if measurement.data_type == measurement.DataType.DISTANCE and not callback.measurement:
                         callback.measurement = measurement
 
@@ -324,8 +370,8 @@ def test_rapid_commands(dut: pytofcore.Sensor):
     Verify that the protocol API and device can handle rapid command sequences while not streaming
     '''
     methods = [
-        partial(dut.set_integration_times, 100, 0, 0),
-        partial(dut.set_integration_times, 200, 0, 0),
+        partial(dut.set_integration_time, 100),
+        partial(dut.set_integration_time, 200),
         partial(dut.set_binning, True, True),
         partial(dut.set_binning, False, False),
         partial(dut.set_min_amplitude, 50), 
@@ -360,7 +406,7 @@ def test_rapid_commands_with_streaming(dut: pytofcore.Sensor):
 
     methods = [
         lambda: setattr(dut, "modulation_frequency", 12000),
-        partial(dut.set_integration_times, 100, 0, 0),
+        partial(dut.set_integration_time, 100),
         partial(dut.set_min_amplitude, 50), 
         partial(dut.set_offset, 100),
         lambda: setattr(dut, "modulation_frequency", 24000),
@@ -387,6 +433,8 @@ def test_sensor_location(dut: pytofcore.Sensor):
 
     dut.sensor_location = sensor_location
 
+    time.sleep(1.0)
+
     assert sensor_location == dut.sensor_location
 
 
@@ -397,5 +445,66 @@ def test_sensor_name(dut: pytofcore.Sensor):
 
     dut.sensor_name = sensor_name
 
+    time.sleep(1.0)
+
     assert sensor_name == dut.sensor_name
+
+
+@pytest.mark.functional
+def test_vector_sequence_mode(dut: pytofcore.Sensor):
+
+    mfkHz = 5501
+    mfDeltakHz = 1545
+    intTimeUs = 250
+    intTimeDeltaUs = 300;
+    
+    new_elements = []
+    max_size = 16
+    for i in range(max_size):
+        e = pytofcore.VsmElement()
+        e.modulation_frequency = mfkHz
+        mfkHz += mfDeltakHz
+        e.integration_time = intTimeUs
+        intTimeUs += intTimeDeltaUs
+        new_elements.append(e)
+
+    vsm = pytofcore.VsmControl()
+    #vsm.m_numberOfElements = max_size
+    vsm.elements = new_elements
+    
+    dut.set_vsm(vsm)
+
+    vsm = dut.get_vsm()
+
+    assert vsm
+    assert len(vsm.elements) == max_size
+    mfkHz = 5501
+    intTimeUs = 250
+    for i in range(max_size):
+        e = vsm.elements[i]
+        # Check returned modulation frequency value for rounding and range
+        expectedKhz = (((mfkHz + 5) // 10)) * 10
+        if expectedKhz > 24000:
+            expectedKhz = 24000
+        elif expectedKhz < 6000:
+            expectedKhz = 6000
+        assert e.modulation_frequency == expectedKhz
+        mfkHz += mfDeltakHz
+        # Check returned integration time value/range
+        if intTimeUs > 4000:
+            assert e.integration_time == 4000
+        else:
+            assert e.integration_time == intTimeUs
+        intTimeUs += intTimeDeltaUs
+        
+    # Now turn VSM off
+    vsm = pytofcore.VsmControl()
+    dut.set_vsm(vsm)
+
+    vsm = dut.get_vsm()
+
+    assert vsm
+    assert len(vsm.elements) == 0
+
+    
 

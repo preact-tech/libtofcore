@@ -1,4 +1,5 @@
 
+#include "CommandTypes.hpp"
 #include "klv_decoder.hpp"
 #include "Measurement_T.hpp"
 #include "TofEndian.hpp"
@@ -206,18 +207,18 @@ public:
     }
 
 
-    /// @brief Obtain the integration time settings that were active at the time measurement was acquired.
-    virtual std::optional<std::array<uint16_t,TofComm::KLV_NUM_INTEGRATION_TIMES>> integration_times() const override
+    /// @brief Obtain the integration time setting that was active at the time measurement was acquired.
+    virtual std::optional<uint16_t> integration_time() const override
     {
         KLVDecoder decoder {m_meta_data.begin(), m_meta_data.end()};
-        return decode_integration_times(decoder);
+        return decode_integration_time(decoder);
     }
 
     /// @brief Obtain the modulation frequency setting that was active at the time the measurement was collected
-    virtual std::optional<std::vector<uint32_t>> modulation_frequencies() const override
+    virtual std::optional<uint32_t> modulation_frequency() const override
     {
         KLVDecoder decoder {m_meta_data.begin(), m_meta_data.end()};
-        return decode_modulation_frequencies(decoder);
+        return decode_modulation_frequency(decoder);
     }
 
     /// @brief Obtain the horizontal binning setting that was active at the time the measurement was collected
@@ -263,6 +264,12 @@ public:
     {
         KLVDecoder decoder {m_meta_data.begin(), m_meta_data.end()};
         return decode_illuminator_info(decoder);
+    }
+
+    virtual std::optional<TofComm::VsmControl_T> vsm_info() const override
+    {
+        KLVDecoder decoder {m_meta_data.begin(), m_meta_data.end()};
+        return decode_vsm_info(decoder);
     }
 
 protected:
@@ -346,3 +353,21 @@ std::shared_ptr<tofcore::Measurement_T> create_measurement(const std::vector<std
 }
 
 } //namespace tofcore
+
+namespace TofComm
+{
+
+void vsmEndianConversion(VsmControl_T& vsmControl)
+{
+    vsmControl.m_vsmFlags = util::GetUIntFieldBigEndian(vsmControl, &VsmControl_T::m_vsmFlags);
+    const uint8_t numElements { (vsmControl.m_numberOfElements <= VSM_MAX_NUMBER_OF_ELEMENTS) ?
+                                vsmControl.m_numberOfElements : (uint8_t)VSM_MAX_NUMBER_OF_ELEMENTS };
+    for (uint8_t n = 0; n < numElements; ++n)
+    {
+        VsmElement_T& element = vsmControl.m_elements[n];
+        element.m_integrationTimeUs = util::GetUIntFieldBigEndian(element, &VsmElement_T::m_integrationTimeUs);
+        element.m_modulationFreqKhz = util::GetUIntFieldBigEndian(element, &VsmElement_T::m_modulationFreqKhz);
+    }
+}
+
+} //namespace TofComm
