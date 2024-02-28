@@ -19,7 +19,6 @@ static std::string devicePort { DEFAULT_PORT_NAME };
 static volatile bool exitRequested { false };
 static uint16_t flipHorizontal { 0 };
 static uint16_t flipVertical { 0 };
-static uint16_t protocolVersion { DEFAULT_PROTOCOL_VERSION };
 static bool setHorizontal { false };
 static bool setVertical { false };
 static bool storeSettings { false };
@@ -32,7 +31,6 @@ static void parseArgs(int argc, char *argv[])
     desc.add_options()
         ("help,h", "produce help message")
         ("device-uri,p", po::value<std::string>(&devicePort))
-        ("protocol-version,v", po::value<uint16_t>(&protocolVersion)->default_value(DEFAULT_PROTOCOL_VERSION))
         ("baud-rate,b", po::value<uint32_t>(&baudRate)->default_value(DEFAULT_BAUD_RATE))
         ("horizontal-flip,H", po::value<uint16_t>(&flipHorizontal), "Turn horizontal flip off/on")
         ("vertical-flip,V", po::value<uint16_t>(&flipVertical), "turn vertical flip off/on")
@@ -75,7 +73,7 @@ int main(int argc, char *argv[])
     signal(SIGQUIT, signalHandler);
     #endif
     {
-        tofcore::Sensor sensor { protocolVersion, devicePort, baudRate };
+        tofcore::Sensor sensor { devicePort, baudRate };
 
         if (setHorizontal)
         {

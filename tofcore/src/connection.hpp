@@ -21,7 +21,6 @@ public:
 public:
     virtual ~Connection_T() = default;
 
-    virtual uint16_t get_protocol_version() const = 0;
 
     virtual void send(uint16_t command, const std::vector<ScatterGatherElement> &data) = 0;
     virtual void send(uint16_t command, const uint8_t *data, uint32_t size) = 0;
@@ -35,8 +34,6 @@ public:
 
     virtual std::optional<std::vector<std::byte> > send_receive(uint16_t command, const uint8_t *data, uint32_t size,
                                                          std::chrono::steady_clock::duration timeout) = 0;
-
-    virtual bool set_protocol_version(uint16_t version) = 0;
 
     virtual void reset_parser() = 0;
 

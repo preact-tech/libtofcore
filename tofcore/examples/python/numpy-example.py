@@ -5,7 +5,6 @@ import argparse
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--protocol-version', default=pytofcore.Sensor.DEFAULT_PROTOCOL_VERSION, type=int, help="Protocol version to use 0 or 1")
 parser.add_argument('--port-name', default='/dev/ttyACM1', type=str, help="Serial (type) device to connect to sensor", )
 parser.add_argument('--integration', default=1, type=int, help="Integration time to run at", )
 parser.add_argument('--plot-dcs-histogram', action='store_true', help="use matplotlib to plot historgram of dcs values" )
@@ -14,7 +13,7 @@ args = parser.parse_args()
 #Note: until we get auto discovery working you may need to specify the
 #      ttyACM port for the device if it's not ttyACM0.
 #      e.g. sensor = pytofcore.Sensor(port_name="/dev/ttyACM1")
-sensor = pytofcore.Sensor(protocol_version=1, port_name = args.port_name)
+sensor = pytofcore.Sensor(port_name = args.port_name)
 
 #Use streaming mechanism and a counter as a poor mans method
 # of collecting only 1 measurement of each type of frame.

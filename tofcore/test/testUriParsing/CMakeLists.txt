@@ -1,27 +1,29 @@
-
-add_executable(
-    testUriParsing
+add_executable(testUriParsing
     testUriParsing.cpp
 )
 
-target_link_libraries(
-    testUriParsing
-    GTest::gtest_main
-)
-
-target_include_directories(
-    testUriParsing
+target_link_libraries(testUriParsing
     PRIVATE
-    ${CMAKE_SOURCE_DIR}/tofcore/src
+        GTest::gtest_main
+        GTest::gtest
+        ToFCore::tofcore
 )
 
-# target_compile_options(testUriParsing PRIVATE 
-#     $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
-#         -Werror -Wall -Wextra -Wconversion -Wsign-conversion -pedantic-errors>
-#     $<$<CXX_COMPILER_ID:MSVC>:
-#         /WX /W4>
-# )
+target_include_directories(testUriParsing
+    PRIVATE
+        ${PROJECT_SOURCE_DIR}/tofcore/src
+        ${PROJECT_SOURCE_DIR}/src
+)
 
 include(GoogleTest)
-gtest_discover_tests(testUriParsing)
 
+if (WIN32)
+    add_custom_command(
+        TARGET testUriParsing
+        POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_RUNTIME_DLLS:testUriParsing> $<TARGET_FILE_DIR:testUriParsing>
+            COMMAND_EXPAND_LISTS
+    )
+endif()
+
+gtest_discover_tests(testUriParsing)

@@ -5,9 +5,9 @@ import pytofcore
 
 sensor = pytofcore.Sensor()
 
-def print_lens_info():
-    lensInfo = sensor.lens_info
-    print(lensInfo)
+def print_integration_time():
+    integration_time = sensor.get_integration_time()
+    print(integration_time)
     
 
 def cleanup_and_exit(s:pytofcore.Sensor):
@@ -16,6 +16,6 @@ def cleanup_and_exit(s:pytofcore.Sensor):
 
 # Setup arg parser and run the tool
 
-print_lens_info()
+print_integration_time()
 
 cleanup_and_exit(sensor)

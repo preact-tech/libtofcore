@@ -18,23 +18,21 @@ TEST(testUriParsing, devicePath)
         EXPECT_EQ(test_uri.get_path(), "") << "expected path to be ''";
     }
     {
-        uri test_uri("tofserial:/dev/ttyACM0?baudrate=19200&protocol_version=1");
+        uri test_uri("tofserial:/dev/ttyACM0?baudrate=19200&");
         EXPECT_EQ(test_uri.get_scheme(), "tofserial") << "expected scheme to be 'tofserial'";
         EXPECT_EQ(test_uri.get_host(), "") << "expected host to be ''";
         EXPECT_EQ(test_uri.get_path(), "/dev/ttyACM0") << "expected path to be '/dev/ttyACM0'";
         EXPECT_TRUE(test_uri.is_rooted()) << "expected path to be rooted";
         auto query_dict = test_uri.get_query_dictionary();
         EXPECT_EQ(query_dict["baudrate"], "19200");
-        EXPECT_EQ(query_dict["protocol_version"], "1");
     }
     {
-        uri test_uri("tofserial:COM1?protocol_version=1&baudrate=115200");
+        uri test_uri("tofserial:COM1?&baudrate=115200");
         EXPECT_EQ(test_uri.get_scheme(), "tofserial") << "expected scheme to be 'dev'";
         EXPECT_EQ(test_uri.get_host(), "") << "unexpected host value";
         EXPECT_EQ(test_uri.get_path(), "COM1") << "unexpected path value";
         auto query_dict = test_uri.get_query_dictionary();
         EXPECT_EQ(query_dict["baudrate"], "115200");
-        EXPECT_EQ(query_dict["protocol_version"], "1");
         EXPECT_FALSE(test_uri.is_rooted()) << "expected path should not be rooted";
     }
     {

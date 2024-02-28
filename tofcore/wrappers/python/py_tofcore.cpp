@@ -10,7 +10,7 @@
 #define MACRO_STRINGIFY(x) STRINGIFY(x)
 
 
-constexpr auto DCS_DATA_DOCSTRING = 
+constexpr auto DCS_DATA_DOCSTRING =
   "Obtain all 4 dcs frames in the measurement in a single MemoryView\n"
   "\n"
   "Data is packed in frame then row major order with Numpy shape (4, 240, 320)\n"
@@ -19,7 +19,7 @@ constexpr auto DCS_DATA_DOCSTRING =
   "Bit 14 is used to encode a saturation flag such that a saturated pixels bit-14 will"
   "be the opposite of the sign bit.";
 
-constexpr auto ILLUMINATOR_INFO_DOCSTRING = 
+constexpr auto ILLUMINATOR_INFO_DOCSTRING =
   "Obtain infromation on the illuminators state for the measurement\n"
   "\n"
   "The following information is available:\n"
@@ -37,6 +37,7 @@ namespace py = pybind11;
 #define PyIPv4Interface (ImportIPv4Interface())
 #define PyIPv4Address (ImportIPv4Address())
 #define PyIPv4Settings (IPv4SettingsType())
+#define PyIPv4Endpoint (IPv4EndpointType())
 
 inline const py::module_& ImportCollections() {
     static const py::module_* ptr = new py::module_{py::module_::import("collections")};
@@ -70,6 +71,17 @@ inline const py::object& IPv4SettingsType() {
     return type;
 }
 
+inline const py::object& IPv4EndpointType() {
+    static const auto type = []() {
+        auto namedTuple_attr = PyNamedTuple;
+        py::list fields;
+        fields.append("address");
+        fields.append("port");
+        return namedTuple_attr("IPv4Endpoint", fields);
+    }();
+    return type;
+}
+
 /// @brief Wrap python callback with lambda that will catch exceptions and handle them safely
 /// @param py_callback client callback functor
 static void subscribeMeasurement(tofcore::Sensor& s, tofcore::Sensor::on_measurement_ready_t py_callback)
@@ -92,7 +104,6 @@ static void subscribeMeasurement(tofcore::Sensor& s, tofcore::Sensor::on_measure
 
 static auto getIPv4Settings(tofcore::Sensor& s)
 {
-    //Use static and a lambda to create the IPv4Settings namedtuple type only once.
     std::array<std::byte, 4> ipv4Address;
     std::array<std::byte, 4> ipv4Mask;
     std::array<std::byte, 4> ipv4Gateway;
@@ -104,7 +115,7 @@ static auto getIPv4Settings(tofcore::Sensor& s)
     }
     if(!result)
     {
-        throw std::runtime_error("An error occured while getting IPv4 settings");
+        throw std::runtime_error("An error ocurred while getting IPv4 settings");
     }
 
     std::stringstream if_ss;
@@ -155,9 +166,65 @@ static void setIPv4Settings(tofcore::Sensor &s, py::object& settings)
     }
     if(!ok)
     {
-        throw std::runtime_error("An error occcured setting sequencer version");
+        throw std::runtime_error("An error occurred setting IPv4 settings");
     }
 }
+
+
+static auto getIPMeasurementEndpoint(tofcore::Sensor &s)
+{
+
+    auto result = [&]() {
+        py::gil_scoped_release gsr;
+        return s.getIPMeasurementEndpoint();
+    } ();
+
+    if(!result)
+    {
+        throw std::runtime_error("An error ocurred while getting IP measurement endpoint");
+    }
+
+    auto ipv4Address = std::get<0>(*result);
+    auto port = std::get<1>(*result);
+
+    std::stringstream ss;
+    ss << (int)ipv4Address[0] << '.' << (int)ipv4Address[1] << '.' << (int)ipv4Address[2] << '.' << (int)ipv4Address[3];
+
+    return PyIPv4Endpoint(
+        PyIPv4Address(py::str(ss.str())),
+        port);
+}
+
+
+static void setIPMeasurementEndpoint(tofcore::Sensor &s, py::object& endpoint)
+{
+    if(!py::isinstance(endpoint, PyIPv4Endpoint))
+    {
+        throw pybind11::type_error("IPv4MeasurementEndpoint must be of type pytofcore.IPv4Endpoint");
+    }
+    auto address = PyIPv4Address(endpoint.attr("address"));
+    auto port = py::int_(endpoint.attr("port"));
+
+    auto py_ip_to_array = [](const py::object& ip) -> std::array<std::byte, 4>
+    {
+        py::bytes bytes = ip.attr("packed");
+        auto sv = std::string_view(bytes);
+        return std::array<std::byte, 4>{std::byte(sv[0]), std::byte(sv[1]), std::byte(sv[2]), std::byte(sv[3])};
+    };
+
+    auto a = py_ip_to_array(address);
+    auto ok = false;
+    {
+        py::gil_scoped_release gsr;
+        ok = s.setIPMeasurementEndpoint(a, port);
+    }
+    if(!ok)
+    {
+        throw std::runtime_error("An error occurred setting IP measurement endpoint");
+    }
+}
+
+
 
 static auto getLensInfo(tofcore::Sensor& s)
 {
@@ -218,7 +285,7 @@ static auto getPixelRays(tofcore::Sensor& s)
 static auto getSensorInfo(tofcore::Sensor& s)
 {
 
-    //Use static and a lambda to create the VersionData namedtuple type only once. 
+    //Use static and a lambda to create the VersionData namedtuple type only once.
     static auto VersionData_type = []() {
         auto namedTuple_attr = pybind11::module::import("collections").attr("namedtuple");
         py::list fields;
@@ -252,7 +319,7 @@ static auto getSensorInfo(tofcore::Sensor& s)
 
     if (!result)
     {
-        throw std::runtime_error("An error occcured trying to read sensor version info");
+        throw std::runtime_error("An error occurred trying to read sensor version info");
     }
 
     // Extract packed value
@@ -266,7 +333,7 @@ static auto getSensorInfo(tofcore::Sensor& s)
                             versionData.m_softwareSourceID,
                             versionData.m_softwareVersion,
                             versionData.m_cpuVersion,
-                            chipId, 
+                            chipId,
                             versionData.m_illuminatorSwVersion,
                             versionData.m_illuminatorSwSourceId,
                             versionData.m_illuminatorHwCfg,
@@ -292,7 +359,7 @@ static void setSensorLocation(tofcore::Sensor &s, std::string& location)
     const auto ok = s.setSensorLocation(location);
     if(!ok)
     {
-        throw std::runtime_error("An error occcured setting sensor location");
+        throw std::runtime_error("An error occurred setting sensor location");
     }
 }
 
@@ -315,7 +382,7 @@ static void setSensorName(tofcore::Sensor &s, std::string& name)
     const auto ok = s.setSensorName(name);
     if(!ok)
     {
-        throw std::runtime_error("An error occcured setting sensor name");
+        throw std::runtime_error("An error occurred setting sensor name");
     }
 }
 
@@ -333,7 +400,7 @@ static auto getSensorStatus(tofcore::Sensor& s)
     }();
 
     TofComm::Sensor_Status_t sensorStatus;
-    
+
     bool result = false;
     {
         py::gil_scoped_release gsr;
@@ -341,7 +408,7 @@ static auto getSensorStatus(tofcore::Sensor& s)
     }
     if (!result)
     {
-        throw std::runtime_error("An error occcured trying to read sensor status info");
+        throw std::runtime_error("An error occurred trying to read sensor status info");
     }
 
     // Extract packed value
@@ -358,21 +425,21 @@ static auto getSensorStatus(tofcore::Sensor& s)
 
 /// @brief  Helper function to read the integration times from a sensor such that an
 ///         exception is thrown if the read fails.
-static auto getSensorIntegrationTimes(tofcore::Sensor& s)
+static auto getSensorIntegrationTime(tofcore::Sensor& s)
 {
-    auto integrationTimes = s.getIntegrationTimes();
-    if (!integrationTimes)
+    auto integrationTime = s.getIntegrationTime();
+    if (!integrationTime)
     {
-        throw std::runtime_error("An error occured while getting integration times");
+        throw std::runtime_error("An error occured while getting integration time");
     }
 
-    return integrationTimes;
+    return integrationTime;
 }
 
 
 /// @brief Helper function to obtain a memoryview of the distance data in
 ///        a Measurement object
-static auto get_distance_view(const tofcore::Measurement_T &m) 
+static auto get_distance_view(const tofcore::Measurement_T &m)
 {
     const auto view = m.distance();
     const auto* ptr = view.data();
@@ -386,7 +453,7 @@ static auto get_distance_view(const tofcore::Measurement_T &m)
 
 /// @brief Helper function to obtain a memoryview of the distance data in
 ///        a Measurement object
-static auto get_amplitude_view(const tofcore::Measurement_T &m) 
+static auto get_amplitude_view(const tofcore::Measurement_T &m)
 {
     const auto view = m.amplitude();
     const auto* ptr = view.data();
@@ -460,7 +527,7 @@ static py::object get_dll_settings(const tofcore::Measurement_T &m)
     return DllSettings_type((*settings)[0] != 0, (*settings)[1], (*settings)[2], (*settings)[3] );
 }
 
-/// @brief Helper function 
+/// @brief Helper function
 static py::object get_illuminator_info(const tofcore::Measurement_T &m)
 {
     //Use static and a lambda to create namedtuple type only once.
@@ -480,8 +547,8 @@ static py::object get_illuminator_info(const tofcore::Measurement_T &m)
         return py::cast<py::none>(Py_None);
     }
     return Tuple_type((*info).led_segments_enabled,
-                      (*info).temperature_c, 
-                      (*info).vled_v, 
+                      (*info).temperature_c,
+                      (*info).vled_v,
                       (*info).photodiode_v);
 }
 
@@ -496,7 +563,7 @@ static std::optional<uint16_t> modulation_get(tofcore::Sensor &sensor)
     }
     else
     {
-        throw std::runtime_error("An error occcured attempting to read modulation frequency state.");
+        throw std::runtime_error("An error occurred attempting to read modulation frequency state.");
     }
 }
 
@@ -507,11 +574,11 @@ static bool modulation_set(tofcore::Sensor &sensor, uint16_t modFreqkHz)
 }
 
 
-/// @brief Depricated version of modulation frequency set.
+/// @brief Deprecated version of modulation frequency set.
 /// This is just here to support the old method of setting modulation frequency using enumerated value
 /// where index values represented specific frequencies: 0 == 12mHz, 1 == 24mHz, 2 = 6mHz
 /// @return boolean indicating success or false
-static bool modulation_set_depricated(tofcore::Sensor &sensor, int index, int channel)
+static bool modulation_set_deprecated(tofcore::Sensor &sensor, int index, int channel)
 {
     (void)channel; //No longer used.
 
@@ -545,7 +612,7 @@ static bool hflip_get(tofcore::Sensor &sensor)
     }
     else
     {
-        throw std::runtime_error("An error occcured attempting to read Horizontal Flip state.");
+        throw std::runtime_error("An error occurred attempting to read Horizontal Flip state.");
     }
 }
 
@@ -565,7 +632,7 @@ static bool vflip_get(tofcore::Sensor &sensor)
     }
     else
     {
-        throw std::runtime_error("An error occcured attempting to read Vertical Flip state.");
+        throw std::runtime_error("An error occurred attempting to read Vertical Flip state.");
     }
 }
 
@@ -575,9 +642,48 @@ static bool vflip_set(tofcore::Sensor &sensor, bool active)
     return sensor.setFlipVertically(active);;
 }
 
+
+static std::optional<TofComm::VsmControl_T> get_vsm(tofcore::Sensor &sensor)
+{
+    py::gil_scoped_release gsr;
+    auto vsm = sensor.getVsmSettings();
+    if (vsm)
+    {
+        return vsm;
+    }
+    else
+    {
+        throw std::runtime_error("An error occurred attempting to get Vsm Settings.");
+    }
+}
+
+static bool set_vsm(tofcore::Sensor &sensor, const TofComm::VsmControl_T& vsmControl)
+{
+    py::gil_scoped_release gsr;
+    bool result = sensor.setVsm(vsmControl);
+    if (!result)
+    {
+        throw std::runtime_error("Unable to set Vsm Settings.");
+    }
+    return result;
+}
+
+
 static auto jump_to_bootloader(tofcore::Sensor& s)
 {
     s.jumpToBootloader();
+}
+
+auto durationToDuration(const float time_s)
+{
+    using namespace std::chrono;
+    using fsec = duration<float>;
+    return round<nanoseconds>(fsec{time_s});
+}
+
+static auto py_find_all_devices(double timeout_sec, std::size_t max_count)
+{
+    return tofcore::find_all_devices(durationToDuration(timeout_sec), max_count);
 }
 
 
@@ -585,10 +691,11 @@ PYBIND11_MODULE(pytofcore, m) {
     m.doc() = "Sensor object that represents a connect to a TOF depth sensor.";
 
     m.attr("IPv4Settings") = PyIPv4Settings;
+    m.attr("IPv4Endpoint") = PyIPv4Endpoint;
 
     py::class_<tofcore::Sensor>(m, "Sensor")
         .def(py::init<const std::string&>(), py::arg("uri")=tofcore::DEFAULT_URI)
-        .def(py::init<uint16_t, const std::string&, uint32_t>(), py::arg("protocol_version")=tofcore::DEFAULT_PROTOCOL_VERSION, py::arg("port_name")=tofcore::DEFAULT_PORT_NAME, py::arg("baud_rate")=tofcore::DEFAULT_BAUD_RATE)
+        .def(py::init<const std::string&, uint32_t>(), py::arg("port_name")=tofcore::DEFAULT_PORT_NAME, py::arg("baud_rate")=tofcore::DEFAULT_BAUD_RATE)
         .def_property_readonly("pixel_rays", &getPixelRays, "Obtain unit vector ray information for all pixels based on the lens information stored on the sensor. Returns a namedtuple with fields x, y, z. Each field is a list of floats of length width x height.")
         .def_property_readonly("lens_info", &getLensInfo, "Obtain Lens information stored on sensor. Returns a namedtuple with fields rowOffset, columnOffset, rowFocalLength, columnFocalLength, undistortionCoeffs.")
         .def("stop_stream", &tofcore::Sensor::stopStream, "Command the sensor to stop streaming", py::call_guard<py::gil_scoped_release>())
@@ -600,25 +707,27 @@ PYBIND11_MODULE(pytofcore, m) {
         .def("set_min_amplitude", &tofcore::Sensor::setMinAmplitude, py::arg("min_amplitude"), "Set minimum amplitude for distance pixel to be treated as good", py::call_guard<py::gil_scoped_release>())
         .def("set_binning", &tofcore::Sensor::setBinning, "Set horizontal and vertical binning settings on sensor", py::arg("vertical"), py::arg("horizontal"), py::call_guard<py::gil_scoped_release>())
         .def("set_integration_times", &tofcore::Sensor::setIntegrationTimes, "Set all integration time parameters on the sensor", py::arg("low"), py::arg("mid"), py::arg("high"), py::call_guard<py::gil_scoped_release>())
-        .def("get_integration_times", &getSensorIntegrationTimes, "query the device for the currently configured integration time settings", py::call_guard<py::gil_scoped_release>())
-        .def("set_hdr_mode", &tofcore::Sensor::setHDRMode, "Set the High Dynamic Range mode on the sensor", py::arg("mode"), py::call_guard<py::gil_scoped_release>())
+        .def("get_integration_time", &getSensorIntegrationTime, "query the device for the currently configured integration time setting", py::call_guard<py::gil_scoped_release>())
+        .def("set_integration_time", &tofcore::Sensor::setIntegrationTime, "Set the integration time parameter on the sensor", py::arg("timeUs"), py::call_guard<py::gil_scoped_release>())
         .def("subscribe_measurement", &subscribeMeasurement, "Set a function object to be called when new measurement data is received", py::arg("callback"))
         .def("get_sensor_info", &getSensorInfo, "Get the sensor version and build info")
         .def("get_sensor_status", &getSensorStatus, "Get the sensor status info")
         .def("jump_to_bootloader", &jump_to_bootloader, "Activate bootloader mode to flash firmware", py::call_guard<py::gil_scoped_release>())
         .def("storeSettings", &tofcore::Sensor::storeSettings, "Store the sensor's settings to persistent memory", py::call_guard<py::gil_scoped_release>())
-        .def("set_modulation", &modulation_set_depricated, "DEPRICATED (use modulation_frequency property) Set the modulation frequency to use during TOF measurements", py::arg("index"), py::arg("channel"))
+        .def("set_modulation", &modulation_set_deprecated, "DEPRECATED (use modulation_frequency property) Set the modulation frequency to use during TOF measurements", py::arg("index"), py::arg("channel"))
         .def_property("hflip", &hflip_get, &hflip_set, "State of the image horizontal flip option (default False)")
         .def_property("vflip", &vflip_get, &vflip_set, "State of the image vertical flip option (default False)")
-        .def_property("modulation_frequency", &modulation_get, &modulation_set, "LED Modulation Frequency in kHz (default 24000)")        
+        .def_property("modulation_frequency", &modulation_get, &modulation_set, "LED Modulation Frequency in kHz (default 24000)")
         .def_property("ipv4_settings", &getIPv4Settings, &setIPv4Settings, "Set the IPv4 address, mask, and gateway")
+        .def_property("ip_measurement_endpoint", &getIPMeasurementEndpoint, &setIPMeasurementEndpoint, "The IP address and port measurement data is set to")
         .def_property("sensor_location", &getSensorLocation, &setSensorLocation, "The sensor's location")
         .def_property("sensor_name", &getSensorName, &setSensorName, "The sensor's name")
+        .def("get_vsm", &get_vsm, "Get the current Vector Sequence Mode (VSM) settings")
+        .def("set_vsm", &set_vsm, "Set the current Vector Sequence Mode (VSM) settings")
 
         .def_property_readonly_static("DEFAULT_URI", [](py::object /* self */){return tofcore::DEFAULT_URI;})
         .def_property_readonly_static("DEFAULT_PORT_NAME", [](py::object /* self */){return tofcore::DEFAULT_PORT_NAME;})
-        .def_property_readonly_static("DEFAULT_BAUD_RATE", [](py::object /* self */){return tofcore::DEFAULT_BAUD_RATE;})
-        .def_property_readonly_static("DEFAULT_PROTOCOL_VERSION", [](py::object /* self */){return tofcore::DEFAULT_PROTOCOL_VERSION;});
+        .def_property_readonly_static("DEFAULT_BAUD_RATE", [](py::object /* self */){return tofcore::DEFAULT_BAUD_RATE;});
 
 
     py::class_<tofcore::Measurement_T, std::shared_ptr<tofcore::Measurement_T>> measurement(m, "Measurement");
@@ -634,8 +743,8 @@ PYBIND11_MODULE(pytofcore, m) {
         .def_property_readonly("dcs_data", &get_dcs_view, DCS_DATA_DOCSTRING)
         .def_property_readonly("meta_data", &get_meta_data_view, "obtain memoryview of the raw block of meta-data associated with the measurement (useful for custom decoding of data not otherwise available via the API)")
         .def_property_readonly("sensor_temperatures", &tofcore::Measurement_T::sensor_temperatures, "get imaging sensor temperature data")
-        .def_property_readonly("integration_times", &tofcore::Measurement_T::integration_times, "get integration time settings during capture [int0, int1, int2], values actually used depend on type of measurement and additional options")
-        .def_property_readonly("modulation_frequencies", &tofcore::Measurement_T::modulation_frequencies, "get modulation frequency (Hz) settings during capture")
+        .def_property_readonly("integration_time", &tofcore::Measurement_T::integration_time, "get integration time setting during capture (uint16_t uS)")
+        .def_property_readonly("modulation_frequency", &tofcore::Measurement_T::modulation_frequency, "get modulation frequency (Hz) setting during capture")
         .def_property_readonly("horizontal_binning", &tofcore::Measurement_T::horizontal_binning, "get horizontal binning setting used during capture, 0 means no binning, values above 1 indicate the amount of subsampling")
         .def_property_readonly("vertical_binning", &tofcore::Measurement_T::vertical_binning, "get vertical binning setting used during capture, 0 means no binning, values above 1 indicate the amount of subsampling")
         .def_property_readonly("dll_settings", &get_dll_settings, "get the dll settings used during capture as a named tuple of (enabled, coarseStep, fineStep, finestStep)")
@@ -653,6 +762,38 @@ PYBIND11_MODULE(pytofcore, m) {
         .value("DCS", tofcore::Measurement_T::DataType::DCS)
         .value("AMBIENT", tofcore::Measurement_T::DataType::AMBIENT)
         .export_values();
+
+    py::class_<TofComm::VsmElement_T>(m, "VsmElement")
+        .def(py::init<>())
+        .def_readwrite("integration_time", &TofComm::VsmElement_T::m_integrationTimeUs)
+        .def_readwrite("modulation_frequency", &TofComm::VsmElement_T::m_modulationFreqKhz)
+        ;
+
+    py::class_<TofComm::VsmControl_T>(m, "VsmControl")
+        .def(py::init<>())
+        .def_readwrite("vsm_flags", &TofComm::VsmControl_T::m_vsmFlags)
+        .def_readwrite("vsm_index", &TofComm::VsmControl_T::m_vsmIndex)
+        .def_property("elements",
+            [](const TofComm::VsmControl_T &obj) {
+                std::vector<TofComm::VsmElement_T> arr(obj.m_numberOfElements);
+                for (size_t i = 0; i < obj.m_numberOfElements; ++i) {
+                    arr[i] = obj.m_elements[i];
+                }
+                return arr;
+            },
+            [](TofComm::VsmControl_T &obj, const std::vector<TofComm::VsmElement_T> &arr) {
+                if (arr.size() > TofComm::VSM_MAX_NUMBER_OF_ELEMENTS) {
+                    throw std::runtime_error("Array of Vsm elements is the incorrect size");
+                }
+                for (size_t i = 0; i < arr.size(); ++i) {
+                    obj.m_elements[i] = arr[i];
+                }
+                obj.m_numberOfElements = arr.size();
+            }
+        )
+        ;
+
+
 
     m.attr("DataType") = data_type_enum;
 
@@ -672,6 +813,6 @@ PYBIND11_MODULE(pytofcore, m) {
                        + "', serial_num:'" + d.serial_num + "', model:'" + d.model + "')";
             });
 
-    m.def("find_all_devices", &tofcore::find_all_devices, "Get a list of all connected devices");
+    m.def("find_all_devices", &py_find_all_devices, py::arg("wait_time")=5, py::arg("max_count")=std::numeric_limits<std::size_t>::max(), "Get a list of all connected devices");
 
 }

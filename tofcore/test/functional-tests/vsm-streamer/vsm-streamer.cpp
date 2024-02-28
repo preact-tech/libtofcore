@@ -195,14 +195,13 @@ public:
     }
 
 private:
+    mutable std::size_t count_{ 0 };
 
     virtual void xparse(boost::any& store, const std::vector<std::string>& /*tokens*/) const
     {
         // Replace the stored value with the access count.
         store = boost::any(++count_);
     }
-
-    mutable std::size_t count_{ 0 };
 };
 
 static void parseArgs(int argc, char *argv[])
@@ -236,6 +235,59 @@ static void signalHandler(int signum)
 {
     (void)signum;
     exitRequested = true;
+}
+
+static uint16_t integrationUsStart { 250 };
+static uint16_t integrationUsIncrement { 250 };
+static uint16_t mfKhzStart { 0 };
+static uint16_t mfKhzIncrement { 0 };
+static int32_t numElements { 8 };
+
+static void setVsm(tofcore::Sensor& sensor)
+{
+    integrationUsStart += 50;
+    if (integrationUsStart > 1000)
+    {
+        integrationUsStart = 250;
+    }
+    std::cout << "SETTING VSM" << std::endl;
+    VsmControl_T vsmControl { };
+    vsmControl.m_numberOfElements = numElements;
+    uint16_t integrationTimeUs = integrationUsStart;
+    uint16_t modulationFreqKhz = mfKhzStart;
+    for (int32_t n = 0; n < numElements; ++n)
+    {
+        vsmControl.m_elements[n].m_integrationTimeUs = integrationTimeUs;
+        vsmControl.m_elements[n].m_modulationFreqKhz = modulationFreqKhz;
+        integrationTimeUs += integrationUsIncrement;
+        modulationFreqKhz += mfKhzIncrement;
+    }
+    sensor.setVsm(vsmControl);
+}
+
+static void getVsm(tofcore::Sensor& sensor)
+{
+    auto result = sensor.getVsmSettings();
+
+    if (result)
+    {
+        const VsmControl_T& vsm = *result;
+        std::cout << "VSM Flags: " << vsm.m_vsmFlags << "; ";
+        std::cout << "N: " << (unsigned)vsm.m_numberOfElements << "; ";
+        std::cout << "I: " << (unsigned)vsm.m_vsmIndex << "; ";
+        for (size_t n = 0; n < vsm.m_numberOfElements; ++n)
+        {
+            std::cout << " {";
+            std::cout << vsm.m_elements[n].m_integrationTimeUs << ", "
+                      << vsm.m_elements[n].m_modulationFreqKhz << "} ";
+        }
+        std::cout << std::endl;
+    }
+    else
+    {
+        std::cout << "FAILED read VSM settings" << std::endl;
+    }
+
 }
 
 int main(int argc, char *argv[])
@@ -303,21 +355,31 @@ int main(int argc, char *argv[])
             }
         }
         auto lastTime = steady_clock::now();
+        uint32_t delayCount { 0 };
+
         while (!exitRequested) // wait for ^\ or ^C
         {
             std::this_thread::sleep_until(lastTime + 1000ms);
             lastTime = steady_clock::now();
-            const uint32_t amplitude { amplitudeCount };
-            amplitudeCount = 0;
-            const uint32_t dcs { 4 * dcsCount };
-            dcsCount = 0;
-            const uint32_t distance { distanceCount };
-            distanceCount = 0;
-            const uint32_t grayscale { grayscaleCount };
-            grayscaleCount = 0;
-            std::cout << "RAW FPS: amplitude = " << amplitude << "; dcs = " << dcs
-                      << "; distance = " << distance << "; grayscale = " << grayscale
-                      << "; total = " << (amplitude + dcs + distance + grayscale) << std::endl;
+
+            getVsm(sensor);
+            setVsm(sensor);
+
+            if (++delayCount >= 2)
+            {
+                delayCount = 0;
+                const uint32_t amplitude { amplitudeCount };
+                amplitudeCount = 0;
+                const uint32_t dcs { 4 * dcsCount };
+                dcsCount = 0;
+                const uint32_t distance { distanceCount };
+                distanceCount = 0;
+                const uint32_t grayscale { grayscaleCount };
+                grayscaleCount = 0;
+                std::cout << "RAW FPS: amplitude = " << amplitude << "; dcs = " << dcs << "; distance = " << distance
+                          << "; grayscale = " << grayscale << "; total = " << (amplitude + dcs + distance + grayscale)
+                          << std::endl;
+            }
         }
         std::cout << "Shutting down..." << std::endl;
         sensor.stopStream();

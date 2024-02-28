@@ -62,7 +62,7 @@ struct Sensor::Impl
     {
         this->measurement_command_ = measurement_command;
 #if defined(_WIN32)
-        stream_via_polling_ = true;
+        stream_via_polling_ = (dynamic_cast<SerialConnection*>(this->connection.get()) != nullptr);
 #else
         stream_via_polling_ = false;
 #endif
@@ -131,7 +131,7 @@ Sensor::Sensor(const std::string& uri /*= std::string()*/)
 }
 
 
-Sensor::Sensor(uint16_t protocolVersion, const std::string &portName, uint32_t baudrate) 
+Sensor::Sensor(const std::string &portName, uint32_t baudrate) 
 {
     std::string connection_uri = portName;
     // If no port name given. Find first PreAct device avaiable
@@ -147,12 +147,9 @@ Sensor::Sensor(uint16_t protocolVersion, const std::string &portName, uint32_t b
         connection_uri = devices[0].connector_uri;
     }
 
-    //Add protocol version and baudrate to uri query parameters
+    //Add baudrate to uri query parameters
     connection_uri += "?baudrate=";
     connection_uri += std::to_string(baudrate);
-    connection_uri += ";protocol_version=";
-    connection_uri += std::to_string(protocolVersion);
-
     this->pimpl = std::unique_ptr<Impl>(new Impl(connection_uri));
     pimpl->init();
 }
@@ -163,7 +160,7 @@ Sensor::~Sensor()
     pimpl->serverThread_.join();
 }
 
-std::optional<std::vector<uint16_t>> Sensor::getIntegrationTimes()
+std::optional<uint16_t> Sensor::getIntegrationTime()
 {
     auto result = this->send_receive(COMMAND_GET_INT_TIMES);
 
@@ -173,22 +170,20 @@ std::optional<std::vector<uint16_t>> Sensor::getIntegrationTimes()
     }
     const auto &payload = *result;
     const auto payloadSize = payload.size();
-    const size_t numIntegrationTimes = std::min((payloadSize / sizeof(uint16_t)), TofComm::KLV_NUM_INTEGRATION_TIMES);
-    std::vector<uint16_t> integrationTimes { };
-
-    for (size_t i = 0; i < numIntegrationTimes; ++i)
+    uint16_t integrationTime { 0 };
+    if (payloadSize == sizeof(uint16_t))
     {
-        uint16_t intTime;
-        BE_Get(intTime, &payload[2 * i]);
-        integrationTimes.push_back(intTime);
+        BE_Get(integrationTime, &payload[0]);
     }
-
-    return { integrationTimes };
+    return { integrationTime };
 }
 
 bool Sensor::getLensInfo(std::vector<double>& rays_x, std::vector<double>& rays_y, std::vector<double>& rays_z)
 {
-    auto result = this->send_receive(COMMAND_GET_LENS_INFO, (uint8_t)1);
+    std::byte REQUEST_PIXEL_RAYS {1};
+    auto payload = send_receive_payload_t(&REQUEST_PIXEL_RAYS, 1);
+    //Increased timeout due to larger dataset (takes extra time over Ethernet)
+    auto result = this->send_receive(COMMAND_GET_LENS_INFO, payload, std::chrono::seconds(30));
 
     if (!result)
     {
@@ -338,6 +333,31 @@ bool Sensor::getSettings(std::string& jsonSettings)
     return true;
 }
 
+std::optional<VsmControl_T> Sensor::getVsmSettings()
+{
+    auto result = this->send_receive(COMMAND_GET_VSM);
+    if(result && result->size() == sizeof(VsmControl_T))
+    {
+        VsmControl_T vsmControl {};
+        memcpy((void*)&vsmControl, result->data(), sizeof(vsmControl));
+        vsmEndianConversion(vsmControl);
+        return { vsmControl };
+    }
+    else
+    {
+        return std::nullopt;
+    }
+}
+
+bool Sensor::setVsm(const VsmControl_T& vsmControl)
+{
+    VsmControl_T vsmPayload = vsmControl;
+    vsmEndianConversion(vsmPayload);
+
+    return this->send_receive(COMMAND_SET_VSM,
+                              {reinterpret_cast<std::byte*>(&vsmPayload), sizeof(VsmControl_T)}).has_value();
+}
+
 /**
  * @brief Check if Horizontal flip is active.
  * 
@@ -422,11 +442,6 @@ bool Sensor::setFlipVertically(bool flip)
     return bool{this->send_receive(COMMAND_SET_VERT_FLIP_STATE, data)};
 }
 
-bool Sensor::setHDRMode(uint8_t mode)
-{
-    return this->send_receive(COMMAND_SET_HDR, mode).has_value();
-}
-
 bool Sensor::setIntegrationTime(uint16_t low)
 {
     uint16_t params[] = {native_to_big(low)};
@@ -478,11 +493,6 @@ bool Sensor::setOffset(int16_t offset)
     return this->send_receive(COMMAND_SET_OFFSET, offset).has_value();
 }
 
-bool Sensor::setProtocolVersion(uint16_t version)
-{
-    return pimpl->connection->set_protocol_version(version);
-}
-
 bool Sensor::setSensorLocation(std::string location)
 {
     return this->send_receive(COMMAND_SET_SENSOR_LOCATION, {(std::byte*)location.data(), location.size()}).has_value();
@@ -512,9 +522,32 @@ bool Sensor:: getIPv4Settings(std::array<std::byte, 4>& adrs, std::array<std::by
     }
 }
 
-uint16_t Sensor::getProtocolVersion() const
+bool Sensor::setIPMeasurementEndpoint(std::array<std::byte,4> address, uint16_t dataPort)
 {
-    return pimpl->connection->get_protocol_version();
+    std::byte payload[address.size() + sizeof(dataPort)];
+    std::copy(address.begin(), address.end(), std::begin(payload));
+    BE_Put(payload + address.size(), dataPort);
+    return this->send_receive(COMMAND_SET_DATA_IP_ADDRESS, {payload, sizeof(payload)}).has_value();
+}
+
+
+std::optional<std::tuple<std::array<std::byte, 4>, uint16_t>> Sensor::getIPMeasurementEndpoint()
+{
+    auto result = this->send_receive(COMMAND_GET_DATA_IP_ADDRESS);
+    if(result && result->size() >= 6)
+    {
+        const auto& payload = *result;
+        uint16_t port {};
+        uint32_t address {};
+        BE_Get(address, payload.data());
+        BE_Get(port, &payload[4]);
+
+        auto addr = std::array<std::byte, 4>();
+        std::copy_n((std::byte*)(&address), addr.size(), addr.begin());
+
+        return std::make_optional(std::make_tuple(addr, port));
+    }
+    return std::nullopt;
 }
 
 bool Sensor::stopStream()

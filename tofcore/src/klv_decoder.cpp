@@ -64,25 +64,19 @@ std::optional<std::array<uint8_t, TofComm::KLV_NUM_DLL_BYTES>> decode_dll_settin
 }
 
 
-std::optional<std::array<uint16_t,TofComm::KLV_NUM_INTEGRATION_TIMES>> decode_integration_times(const KLVDecoder& klv)
+std::optional<uint16_t> decode_integration_time(const KLVDecoder& klv)
 {
-    auto data = klv.find(TofComm::KLV_INTEGRATION_TIMES_KEY);
+    auto data = klv.find(TofComm::KLV_INTEGRATION_TIME_KEY);
     auto numTimes = std::distance(data.first, data.second) / sizeof(uint16_t);
     if(data.first == data.second || (numTimes < 1))
     {
         return std::nullopt;
     }
-    // The integration times key value field consist of up to KLV_NUM_INTEGRATION_TIMES
-    // uint16_t big endian values in micro-seconds [int0, int1, int2]
-    std::array<uint16_t, TofComm::KLV_NUM_INTEGRATION_TIMES> values;
-    numTimes = std::min(numTimes, TofComm::KLV_NUM_INTEGRATION_TIMES);
-    for(size_t i = 0; i < numTimes; ++i)
-    {
-        auto temp = uint16_t{0};
-        TofComm::BE_Get(temp, data.first + (i*2));
-        values[i] = temp;
-    }
-    return {values};
+    // The integration time key value field consist of 1
+    // uint16_t big endian values in micro-seconds
+    uint16_t value { 0 };
+    TofComm::BE_Get(value, data.first);
+    return {value};
 }
 
 
@@ -112,25 +106,19 @@ std::optional<TofComm::illuminator_info_t> decode_illuminator_info(const KLVDeco
 }
 
 
-std::optional<std::vector<uint32_t>> decode_modulation_frequencies(const KLVDecoder& klv)
+std::optional<uint32_t> decode_modulation_frequency(const KLVDecoder& klv)
 {
     auto data = klv.find(TofComm::KLV_MODULATION_FREQUENCY_KEY);
-    if(data.first == data.second || std::distance(data.first, data.second) < 4) 
+    if(data.first == data.second || (size_t)std::distance(data.first, data.second) < sizeof(uint32_t))
     {
         return std::nullopt;
     }
-    //The modulation frequency value field consist of: 
-    // - A list of at least 1 uint32_t value representing the mod frequency in HZ. 
-    std::vector<uint32_t> values;
-    for(auto i = data.first; i != data.second; i += sizeof(uint32_t))
-    {
-        uint32_t temp;
-        TofComm::BE_Get(temp, i);
-        values.push_back(temp);
-    }
-    return {values};
+    // The modulation frequency value field consist of 1
+    // uint32_t big endian values in Hz
+    uint32_t value { 0 };
+    TofComm::BE_Get(value, data.first);
+    return {value};
 }
-
 
 std::optional<std::array<float, TofComm::KLV_NUM_TEMPERATURES>> decode_sensor_temperatures(const KLVDecoder& klv)
 {
@@ -155,6 +143,20 @@ std::optional<std::array<float, TofComm::KLV_NUM_TEMPERATURES>> decode_sensor_te
         temp_degC[i] = (raw_value - 0x2000) * 0.134 + normalizedTempDegC;
     }
     return {temp_degC};
+}
+
+
+std::optional<TofComm::VsmControl_T> decode_vsm_info(const KLVDecoder& klv)
+{
+    auto data = klv.find(TofComm::KLV_VSM_KEY);
+    if(data.first == data.second)
+    {
+        return std::nullopt;
+    }
+    TofComm::VsmControl_T vsmControl = *reinterpret_cast<TofComm::VsmControl_T*>(data.first);
+    TofComm::vsmEndianConversion(vsmControl);
+
+    return {vsmControl};
 }
 
 }

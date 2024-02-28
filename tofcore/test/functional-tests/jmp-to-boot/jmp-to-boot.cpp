@@ -19,7 +19,6 @@ constexpr uint16_t FALLBACK_LOADER_TOKEN { 0x04a5 };
 static uint32_t baudRate { DEFAULT_BAUD_RATE };
 static std::string devicePort { DEFAULT_PORT_NAME };
 static volatile bool exitRequested { false };
-static uint16_t protocolVersion { 1 };
 static std::string tokenStr {};
 static uint16_t token = 0;
 
@@ -29,7 +28,6 @@ static void parseArgs(int argc, char *argv[])
     desc.add_options()
         ("help,h", "produce help message")
         ("device-uri,p", po::value<std::string>(&devicePort))
-        ("protocol-version,v", po::value<uint16_t>(&protocolVersion)->default_value(DEFAULT_PROTOCOL_VERSION))
         ("baud-rate,b", po::value<uint32_t>(&baudRate)->default_value(DEFAULT_BAUD_RATE))
         ("fallback-loader,f", "Jump to fallback loader to perform update of the primary loader")
         ("token,t", po::value<std::string>(&tokenStr), "Pass 16bit token value with command to perform special boot-loader operations")
@@ -74,7 +72,7 @@ int main(int argc, char *argv[])
     signal(SIGQUIT, signalHandler);
     #endif
     {
-        tofcore::Sensor sensor { protocolVersion, devicePort, baudRate };
+        tofcore::Sensor sensor { devicePort, baudRate };
         if(0 == token)
         {
             std::cout << "Requesting sensor jump to bootloader with default token" << std::endl;

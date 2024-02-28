@@ -28,7 +28,7 @@ if (NOT CMAKE_BUILD_TYPE)
     "Options are Debug Release RelWithDebInfo MinSizeRel" FORCE)
 endif ()
 
-option (BUILD_SHARED_LIBS "Build as shared library" OFF)
+option (BUILD_SHARED_LIBS "Build as shared library" ON)
 if (NOT BUILD_SHARED_LIBS)
   add_definitions (-DLIBUSBP_STATIC)
   set (PC_MORE_CFLAGS "-DLIBUSBP_STATIC")
@@ -73,7 +73,28 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 endif ()
 
 if (ENABLE_GCOV)
-  set (CMAKE_C_FLAGS "-fprofile-arcs -ftest-coverage ${CMAKE_C_FLAGS}")
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        execute_process(
+            COMMAND ${CMAKE_C_COMPILER} -print-libgcc-file-name --rtlib=compiler-rt
+            OUTPUT_VARIABLE clang_compiler_rt_file
+            ERROR_VARIABLE  clang_cl_stderr
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+            ERROR_STRIP_TRAILING_WHITESPACE
+            RESULT_VARIABLE clang_cl_exit_code
+        )
+        if (NOT "${clang_cl_exit_code}" STREQUAL "0")
+            message(FATAL_ERROR
+                "Unable to invoke clang-cl to find resource dir: ${clang_cl_stderr}")
+        endif()
+        file(TO_CMAKE_PATH "${clang_compiler_rt_file}" clang_compiler_rt_file)
+        get_filename_component(clang_runtime_dir "${clang_compiler_rt_file}" DIRECTORY)
+        if (NOT EXISTS "${clang_runtime_dir}")
+            message(FATAL_ERROR
+                "For Clang, -fprofile-arcs option requires LLVM's compiler-rt")
+        endif()
+    endif()
+
+    set (CMAKE_C_FLAGS "-fprofile-arcs -ftest-coverage ${CMAKE_C_FLAGS}")
 endif ()
 
 if (WIN32)

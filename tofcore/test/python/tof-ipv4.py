@@ -13,13 +13,12 @@ def cleanup_and_exit(sensor:pytofcore.Sensor):
     sys.exit(0)
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--protocol-version', default=pytofcore.Sensor.DEFAULT_PROTOCOL_VERSION, type=int, help="Protocol version to use 0 or 1")
 parser.add_argument('--port-name', default=pytofcore.Sensor.DEFAULT_PORT_NAME, type=str, help="Port name to connect to sensor on.")
 parser.add_argument('ipv4_interface', nargs='?', type=str, default=None, help="Set interface IPv4 address and mask (e.g '10.10.31.80/24`)")
 parser.add_argument('ipv4_gateway', nargs='?', type=str, default=[10, 10, 31, 1], help="Set IPv4 Gateway")
 args = parser.parse_args()
 
-sensor = pytofcore.Sensor(protocol_version=args.protocol_version, port_name=args.port_name)
+sensor = pytofcore.Sensor(port_name=args.port_name)
 
 if args.ipv4_interface is not None:
     if args.ipv4_interface and not args.ipv4_gateway:
