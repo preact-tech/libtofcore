@@ -1,20 +1,25 @@
 /**
  * @file rapid-changes.cpp
  *
- * Copyright 2023 PreAct Technologies
+ * Copyright 2024 PreAct Technologies
  *
  * Test program to make sensor changes as rapidly as possible.
  *
  * See MOS-426
  */
+#include "dbg_out.hpp"
+#include "po_count.hpp"
 #include "tofcore/tof_sensor.hpp"
 #include <csignal>
 #include <iostream>
-#include <boost/program_options.hpp>
 
+using namespace test;
 using namespace tofcore;
 
+static ErrorOutput err_out {};
+
 static uint32_t baudRate { DEFAULT_BAUD_RATE };
+static uint32_t debugLevel { 0 };
 static std::string devicePort { DEFAULT_PORT_NAME };
 static uint32_t repetitions { 100000 };
 
@@ -22,12 +27,12 @@ static volatile bool exitRequested { false };
 
 static void parseArgs(int argc, char *argv[])
 {
-    namespace po = boost::program_options;
     po::options_description desc("Test sensor with rapid changes to settings");
     desc.add_options()
-        ("help,h", "produce help message")
-        ("device-uri,p", po::value<std::string>(&devicePort))
         ("baud-rate,b", po::value<uint32_t>(&baudRate)->default_value(DEFAULT_BAUD_RATE))
+        ("debug,G", new  CountValue(&debugLevel),"Increase debug level of libtofcore")
+        ("device-uri,p", po::value<std::string>(&devicePort))
+        ("help,h", "produce help message")
         ("repeat,r", po::value<uint32_t>(&repetitions)->default_value(100000))
         ;
 
@@ -59,6 +64,8 @@ int main(int argc, char *argv[])
     #endif
     {
         tofcore::Sensor sensor { devicePort, baudRate };
+        sensor.setDebugLevel(debugLevel);
+
         uint32_t setCount { 0 };
         uint32_t integrationOffset { 0 };
 
@@ -67,7 +74,7 @@ int main(int argc, char *argv[])
             ++setCount;
             if (!sensor.setIntegrationTime(100 + integrationOffset))
             {
-                std::cerr << "setIntegration() FAILED on " << setCount << "th attempt" << std::endl;
+                err_out << "setIntegration() FAILED on " << setCount << "th attempt\n";
                 break;
             }
             integrationOffset = (integrationOffset + 1) % 100;

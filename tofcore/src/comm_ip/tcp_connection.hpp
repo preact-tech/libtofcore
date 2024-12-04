@@ -1,6 +1,7 @@
 #ifndef __TOFCORE_TCPCONNECTION_H__
 #define __TOFCORE_TCPCONNECTION_H__
 
+#include "connection.hpp"
 #include "uri.hpp"
 #include <boost/asio.hpp>
 
@@ -14,7 +15,11 @@ namespace tofcore
     class TcpConnection
     {
     public:
-        TcpConnection(boost::asio::io_service &, const uri& uri);
+        TcpConnection(boost::asio::io_service &,
+                      const uri& uri,
+                      log_callback_t log_callback = nullptr,
+                      cmd_descr_callback_t cmd_descr_callback = nullptr);
+
         ~TcpConnection();
 
         uint32_t getIpV4Addr() const
@@ -31,10 +36,12 @@ namespace tofcore
         boost::asio::ip::tcp::resolver resolver;
         on_command_response_callback_t m_on_command_response;
         boost::asio::steady_timer m_response_timer;
+        log_callback_t m_log_callback;
+        cmd_descr_callback_t m_cmd_descr_callback;
         std::vector<std::byte> m_prolog_epilog_buf;
         std::vector<std::byte> m_response_buf;
 
-        //uint16_t m_response_cid { 0 };
+        uint16_t m_response_cid { 0 };
         std::byte m_response_result { 0 };
 
         void send(const std::vector<std::byte> &data);
@@ -52,6 +59,7 @@ namespace tofcore
         void on_receive_prolog(const boost::system::error_code &error);
         void on_receive_payload(const boost::system::error_code &error);
         bool is_valid_response();
+        bool process_error(const boost::system::error_code &error, const char* where);
     };
 
 } // end namespace tofcore

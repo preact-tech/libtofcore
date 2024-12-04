@@ -1,0 +1,14 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+  "name": "libtofcore",
+  "version": "1.0",
+  "dependencies": [
+    "boost-system",
+    "boost-asio",
+    "boost-program-options",
+    "boost-endian",
+    "boost-scope-exit",
+    "boost-signals2"
+  ],
+  "builtin-baseline": "dafef74af53669ef1cc9015f55e0ce809ead62aa"
+}

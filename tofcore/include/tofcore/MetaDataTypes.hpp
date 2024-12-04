@@ -22,6 +22,9 @@ constexpr uint16_t KLV_MODULATION_FREQUENCY_KEY {4};
 constexpr uint16_t KLV_INTEGRATION_TIME_KEY {5};
 constexpr uint16_t KLV_BINNING_KEY {6};
 constexpr uint16_t KLV_VSM_KEY {7};
+constexpr uint16_t KLV_FRAME_TIMESTAMP_KEY {8};
+constexpr uint16_t KLV_FRAME_CRC_KEY {9};
+
 
 constexpr size_t KLV_NUM_DLL_BYTES { 4 };
 constexpr size_t KLV_NUM_TEMPERATURES { 4 };

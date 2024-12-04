@@ -1,8 +1,8 @@
 ###############################################################################
 # CMakeList.txt file for the libtofcore library
-#
+# 
 #  See the links below for the how and why of this CMake file structure
-#  - https://pabloariasal.github.io/2018/02/19/its-time-to-do-cmake-right/ and
+#  - https://pabloariasal.github.io/2018/02/19/its-time-to-do-cmake-right/ and 
 #  - https://github.com/pabloariasal/modern-cmake-sample/tree/master/libjsonutils
 ##
 cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
@@ -16,6 +16,7 @@ include(cmake/tof_options.cmake)
 ###########################
 # Find system dependencies
 set(MIN_BOOST_VERSION 1.70)
+set(Boost_USE_STATIC_LIBS   ON)
 find_package(Boost ${MIN_BOOST_VERSION} REQUIRED COMPONENTS)
 
 find_package(usbp CONFIG QUIET)
@@ -25,7 +26,7 @@ if(NOT TARGET usbp)
 endif()
 ###########################
 
-add_library(tofcore SHARED)
+add_library(tofcore)
 
 #Add an alias so that library can be used inside the build tree, e.g. when testing
 add_library(ToFCore::tofcore ALIAS tofcore)
@@ -37,7 +38,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_compile_options(tofcore PUBLIC -Wall -Wextra)
 endif()
 if(MSVC)
-    target_compile_definitions(tofcore PUBLIC WINVER=0x0A00 _WIN32_WINNT=0x0A00)
+    target_compile_definitions(tofcore PUBLIC WINVER=0x0A00 _WIN32_WINNT=0x0A00 -DLIBUSBP_STATIC)
 endif()
 
 target_compile_features(tofcore PUBLIC cxx_std_17)  # Require C99 and C++17
@@ -58,6 +59,8 @@ target_sources(tofcore
     src/cartesian_transform.cpp
     src/crc32.cpp
     src/klv_decoder.cpp
+    src/IteratorIndexIn.cpp
+    src/IteratorIndexInLut.cpp
 )
 
 target_link_libraries(tofcore PRIVATE Boost::boost)
@@ -169,11 +172,3 @@ include(CPack)
 enable_testing()
 add_subdirectory(test)
 add_subdirectory(wrappers)
-
-# Include HealthCheck module
-include(HealthCheck OPTIONAL RESULT_VARIABLE HEALTHCHECK_FOUND)
-if(HEALTHCHECK_FOUND)
-    set(PREACT_CPPCHECK_EXCLUDE_PATTERN "(cmake|test|wrappers|examples)")
-    list(APPEND PREACT_CPPCHECK_ALT_SOURCE_PATHS "${CMAKE_CURRENT_SOURCE_DIR}")
-    health_check_add_target(tofcore)
-endif()

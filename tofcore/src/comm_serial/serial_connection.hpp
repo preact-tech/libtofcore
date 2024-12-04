@@ -18,7 +18,10 @@ namespace tofcore
 class SerialConnection : public Connection_T
 {
 public:
-    SerialConnection(boost::asio::io_service&, const uri& uri);
+    SerialConnection(boost::asio::io_service&,
+                     const uri& uri,
+                     log_callback_t log_callback = nullptr,
+                     cmd_descr_callback_t cmd_descr_callback = nullptr);
 
     virtual ~SerialConnection();
 

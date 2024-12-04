@@ -2,8 +2,10 @@ find_package(GTest CONFIG
     COMPONENTS
         GTest::gtest
         GTest::gtest_main
+        GTest::gmock
+        GTest::gmock_main
 )
-if (NOT GTest_FOUND)
+if ((NOT TARGET GTest::gtest) OR (NOT TARGET GTest::gmock))
     include(FetchContent)
     FetchContent_Declare(
         googletest
@@ -22,6 +24,9 @@ if (NOT GTest_FOUND)
         add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR} EXCLUDE_FROM_ALL)
     endif()
 endif()
+
+
+add_subdirectory (testStreamingStateCommands)
 
 add_subdirectory (functional-tests)
 add_subdirectory (testUriParsing)
