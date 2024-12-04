@@ -172,8 +172,6 @@ public:
     bool setSensorName(std::string name);
     bool setVsm(const TofComm::VsmControl_T& vsmControl);
     bool sortRawData(const bool sortIt);
-    bool getVled(uint16_t& vledMv);
-    bool setVled(uint16_t vledMv);
 
     bool stopStream();
     bool storeSettings();

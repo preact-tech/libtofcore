@@ -37,11 +37,7 @@ constexpr auto ILLUMINATOR_INFO_DOCSTRING =
   " - temperature_c : Temperature of the illuminator board and LEDs.\n"
   " - vled_v : Voltage applied to the LEDs\n"
   " - photodiode_v : Voltage read from the photodiode sensor near the LEDs.";
-constexpr auto VLED_VOLTAGE_DOCSTRING =
-  "Voltage applied to LEDs during capture\n"
-  "\n"
-  "When property is the voltage set point is changed for the next capture.\n"
-  "when property is read actual voltage is read via ADC";
+
 namespace py = pybind11;
 
 #define PyCollectionsModule (ImportCollections())
@@ -926,38 +922,6 @@ static bool setBinning(tofcore::Sensor& sensor, const bool vertical, const bool 
     return sensor.setBinning(vertical, horizontal);
 }
 
-/// @brief Helper function to set the Vled voltage on a sensor
-/// @param vled_v value in volts to send.
-static void setVled(tofcore::Sensor &sensor, float vled_v)
-{
-    py::gil_scoped_release gsr;
-
-    //covert to mV prior to sending
-    auto vled_mv = static_cast<uint16_t>(std::round(vled_v * 1000));
-    if(!sensor.setVled(vled_mv))
-    {
-        throw std::runtime_error("An error occurred attempting to set VLED voltage");
-    }
-}
-
-/// @brief Helper function to read the active Vled voltage
-/// @return the sensed voltage in volts
-static auto readVled(tofcore::Sensor &sensor)
-{
-    py::gil_scoped_release gsr;
-
-    uint16_t mV {0};
-    if (sensor.getVled(mV))
-    {
-        //convert from mV to V
-        return mV / 1000.0;
-    }
-    else
-    {
-        throw std::runtime_error("An error occurred attempting to read VLED voltage");
-    }
-}
-
 
 PYBIND11_MODULE(pytofcore, m) {
     m.doc() = "Sensor object that represents a connect to a TOF depth sensor.";
@@ -1053,7 +1017,6 @@ PYBIND11_MODULE(pytofcore, m) {
         .def_property_readonly("timestamp", &tofcore::Measurement_T::frame_timestamp, "get the frame timestamp (in ms)")
         .def_property_readonly("vertical_binning", &tofcore::Measurement_T::vertical_binning, "get vertical binning setting used during capture, 0 means no binning, values above 1 indicate the amount of subsampling")
         .def_property_readonly("width", &tofcore::Measurement_T::width, "width in pixels of measurement data")
-        .def_property("vled_voltage", &readVled, &setVled, VLED_VOLTAGE_DOCSTRING, py::call_guard<py::gil_scoped_release>())
         ;
 
 

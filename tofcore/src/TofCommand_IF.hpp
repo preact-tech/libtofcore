@@ -103,8 +103,8 @@ namespace TofComm
    TOF_CORE_CMD(COMMAND_IMU_ACCELEROMETER_SELF_TEST             , 0xD4) \
    TOF_CORE_CMD(COMMAND_IMU_ACCELEROMETER_SET_RANGE             , 0xD5) \
    TOF_CORE_CMD(COMMAND_IMU_GYRO_SELF_TEST                      , 0xD6) \
-   TOF_CORE_CMD(COMMAND_IMU_READ_INFO                           , 0xD7) \
-   TOF_CORE_CMD(COMMAND_GET_VLED                               , 0x83) 
+   TOF_CORE_CMD(COMMAND_IMU_READ_INFO                           , 0xD7)
+
 /*
  * Create an enumeration that has the command names as tags that are associated
  * with the values for those commands.
@@ -146,9 +146,7 @@ constexpr uint32_t HEADER_DATA_FLAGS_INDEX  = 11;       ///<Index of flags descr
 constexpr uint32_t HEADER_TEMPERATURE_INDEX = 21;       ///<Index of the last temperature
 constexpr uint32_t HEADER_DATA_OFFSET_INDEX = 23;       ///<Index of the data offset_INDEX = offset where the measurement data starts
 constexpr uint32_t HEADER_USER_DATA_INDEX   = 25;       ///<Index of the user data (start of KLV data)
-// COMMAND_GET_VLED
-constexpr size_t VLED_DATA_OFFSET                   = 0;
-constexpr size_t VLED_DATA_SIZE                     = 2;
+
 } //end namespace TofComm
 
 namespace tofcore

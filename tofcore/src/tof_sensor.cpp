@@ -1200,26 +1200,6 @@ std::optional<std::tuple<std::array<std::byte, 4>, uint16_t>> Sensor::getIPMeasu
     return std::nullopt;
 }
 
-bool Sensor::setVled(uint16_t vledMv)
-{
-    return this->send_receive(COMMAND_SET_VLED, vledMv).has_value();
-}
-
-bool Sensor::getVled(uint16_t& vledMv)
-{
-    auto result = this->send_receive(COMMAND_GET_VLED);
-
-    auto ok = bool{result};
-    const auto& payload = *result;
-    ok &= (payload.size() == VLED_DATA_SIZE);
-    if (ok)
-    {
-        BE_Get(vledMv, &payload[VLED_DATA_OFFSET]);
-    }
-
-    return ok;
-}
-
 bool Sensor::stopStream()
 {
     this->pimpl->stream_via_polling_ = false;
