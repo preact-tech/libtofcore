@@ -45,6 +45,12 @@ std::optional<std::array<uint8_t, 2>> decode_binning(const KLVDecoder& klv);
 /// @return std::option<[enabled, coarse, fine, finest]> when the data is found
 std::optional<std::array<uint8_t, TofComm::KLV_NUM_DLL_BYTES>> decode_dll_settings(const KLVDecoder& klv);
 
+/// @brief Search the provided KLV data for the frame CRCs
+/// @param klv
+/// @return std::nullopt if the data is not found.
+/// @return std::option<[enabled, coarse, fine, finest]> when the data is found
+std::optional<std::vector<uint32_t>> decode_frame_crcs(const KLVDecoder& klv);
+
 /// @brief Search the provided KLV data for the integration time settings and return the value.
 /// @param klv 
 /// @return std::nullopt if the data is not found.
@@ -75,6 +81,12 @@ std::optional<std::array<float, TofComm::KLV_NUM_TEMPERATURES>> decode_sensor_te
 /// @return std::nullopt if the data is not found.
 /// @return std::option<VsmControl_T> when the data is found
 std::optional<TofComm::VsmControl_T> decode_vsm_info(const KLVDecoder& klv);
+
+/// @brief Search the provided KLV data for the frame timestamp
+/// @param klv
+/// @return std::nullopt if the data is not found.
+/// @return std::option<VsmControl_T> when the data is found
+std::optional<uint32_t> decode_frame_timestamp(const KLVDecoder& klv);
 
 } //end namespace tofcore
 #endif //_TOFCORE_KLV_DECODER_HPP_

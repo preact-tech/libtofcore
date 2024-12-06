@@ -5,24 +5,23 @@ def make_vsm():
     max_size = 16
     for i in range(max_size):
         e = pytofcore.VsmElement()
-        e.m_modulationFreqKhz = 12010
+        e.modulation_frequency = 12010
         if i % 2:
-            e.m_integrationTimeUs = 507
+            e.integration_time = 507
         else:
-            e.m_integrationTimeUs = 609
+            e.integration_time = 609
         new_elements.append(e)
 
     vsm = pytofcore.VsmControl()
-    vsm.m_numberOfElements = max_size
-    vsm.m_elements = new_elements
+    vsm.elements = new_elements
     return vsm
 
 
 def print_vsm(vsm):
     counter = 0
-    for e in vsm.m_elements:
-        print(f"Idx: {counter}, mod_freq: {e.m_integrationTimeUs}")
-        print(f"Idx: {counter}, int_time: {e.m_modulationFreqKhz}")
+    for e in vsm.elements:
+        print(f"Idx: {counter}, mod_freq: {e.modulation_frequency}")
+        print(f"Idx: {counter}, int_time: {e.integration_time}")
         counter += 1
 
 print('initializing sensor')

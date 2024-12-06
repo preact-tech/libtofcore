@@ -21,7 +21,10 @@ class IpConnection : public Connection_T
 public:
     /// @param uri A URI (with scheme tofnet) specifying the IP address (or hostname) and optional port to connect
     ///  to the device. The URI can include optional parameters used to configure the connection and or device.
-    IpConnection(boost::asio::io_service&, const uri& uri);
+    IpConnection(boost::asio::io_service&,
+                 const uri& uri,
+                 log_callback_t log_callback = nullptr,
+                 cmd_descr_callback_t cmd_descr_callback = nullptr);
 
     virtual ~IpConnection() override;
 

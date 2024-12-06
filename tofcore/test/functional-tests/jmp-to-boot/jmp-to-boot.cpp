@@ -1,22 +1,25 @@
 /**
- * @file tof-stat.cpp
+ * @file jmp-to-boot.cpp
  *
- * Copyright 2023 PreAct Technologies
+ * Copyright 2024 PreAct Technologies
  *
- * Test program that uses libt10 to get various sensor values.
+ * Program to command sensor to jump to the bootloader or reset
  */
+#include "dbg_out.hpp"
+#include "po_count.hpp"
 #include "tofcore/tof_sensor.hpp"
 #include <csignal>
 #include <iomanip>
-#include <iostream>
-#include <boost/program_options.hpp>
 
+using namespace test;
 using namespace tofcore;
-namespace po = boost::program_options;
 
 constexpr uint16_t FALLBACK_LOADER_TOKEN { 0x04a5 };
 
+static DebugOutput dbg_out {};
+
 static uint32_t baudRate { DEFAULT_BAUD_RATE };
+static uint32_t debugLevel { 0 };
 static std::string devicePort { DEFAULT_PORT_NAME };
 static volatile bool exitRequested { false };
 static std::string tokenStr {};
@@ -26,10 +29,12 @@ static void parseArgs(int argc, char *argv[])
 {
     po::options_description desc("Command sensor to jump to bootloader");
     desc.add_options()
-        ("help,h", "produce help message")
-        ("device-uri,p", po::value<std::string>(&devicePort))
         ("baud-rate,b", po::value<uint32_t>(&baudRate)->default_value(DEFAULT_BAUD_RATE))
+        ("debug,G", new  CountValue(&debugLevel),"Increase debug level of libtofcore")
+        ("device-uri,p", po::value<std::string>(&devicePort))
         ("fallback-loader,f", "Jump to fallback loader to perform update of the primary loader")
+        ("help,h", "produce help message")
+        ("quiet,q", po::bool_switch(&dbg_out.quiet)->default_value(false), "Disable output")
         ("token,t", po::value<std::string>(&tokenStr), "Pass 16bit token value with command to perform special boot-loader operations")
         ;
 
@@ -37,7 +42,7 @@ static void parseArgs(int argc, char *argv[])
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
     if (vm.count("help")) {
-        std::cout << desc << "\n";
+        dbg_out << desc << "\n";
         exit(0);
     }
 
@@ -73,22 +78,24 @@ int main(int argc, char *argv[])
     #endif
     {
         tofcore::Sensor sensor { devicePort, baudRate };
+        sensor.setDebugLevel(debugLevel);
+
         if(0 == token)
         {
-            std::cout << "Requesting sensor jump to bootloader with default token" << std::endl;
+            dbg_out << "Requesting sensor jump to bootloader with default token\n";
             sensor.jumpToBootloader();
         }
         else
         {
             if (FALLBACK_LOADER_TOKEN == token)
             {
-                std::cout << "Requesting sensor jump to FALLBACK bootloader (token 0x" << std::hex
-                          << std::setw(4) << std::setfill('0') << token << ")" << std::endl;
+                dbg_out << "Requesting sensor jump to FALLBACK bootloader (token 0x" << std::hex
+                          << std::setw(4) << std::setfill('0') << token << ")\n";
             }
             else
             {
-                std::cout << "Requesting sensor jump to bootloader (token 0x" << std::hex
-                          << std::setw(4) << std::setfill('0') << token << ")" << std::endl;
+                dbg_out << "Requesting sensor jump to bootloader (token 0x" << std::hex
+                          << std::setw(4) << std::setfill('0') << token << ")\n";
             }
             sensor.jumpToBootloader(token);
         }

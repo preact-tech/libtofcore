@@ -1,6 +1,26 @@
 #include <iostream>
 #include "tcp_connection.hpp"
 
+#define DBG(m,l)                                        \
+     do                                                 \
+     {                                                  \
+         if (m_log_callback) {                          \
+             std::stringstream ss {};                   \
+             ss << m;                                   \
+             m_log_callback(ss.str(), l);               \
+         }                                              \
+     } while(false)
+
+#define ERR(m)                                          \
+    do                                                  \
+    {                                                   \
+        if (m_log_callback) {                           \
+            std::stringstream ss {};                    \
+            ss << m;                                    \
+            m_log_callback(ss.str(), LOG_LVL_ERROR);    \
+        }                                               \
+    } while(false)
+
 
 namespace tofcore
 {
@@ -14,30 +34,15 @@ namespace tofcore
 
     constexpr uint32_t ANSWER_START_PATTERN = 0xFFFFAA55;   ///< Pattern marking the start of an answer
 
-    #define DBG(l) //std::cout << l << std::endl
-    #define ERR(l) std::cerr << l << std::endl
-
-    bool process_error(const system::error_code &error, const char* where)
-    {
-        if (!error)
-        {
-            DBG("NO ERROR in " << where );
-            return true;
-        }
-        else if((error == boost::asio::error::operation_aborted))
-        {
-            DBG("OPERATION aborted in " << where );
-            return false;
-        }
-        else
-        {
-            ERR("ERROR in " << where << ": " << error.message());
-            return false;
-        }
-    }
-
-    TcpConnection::TcpConnection(boost::asio::io_service &ioService, const uri& uri)
-        : socket(ioService), resolver(ioService), m_response_timer(ioService)
+TcpConnection::TcpConnection(boost::asio::io_service &ioService,
+                             const uri &uri,
+                             log_callback_t log_callback,
+                             cmd_descr_callback_t cmd_descr_callback) :
+            socket(ioService),
+            resolver(ioService),
+            m_response_timer(ioService),
+            m_log_callback(log_callback),
+            m_cmd_descr_callback(cmd_descr_callback)
     {
         auto host = uri.get_host();
         auto port = uri.get_port();
@@ -147,7 +152,7 @@ namespace tofcore
         const uint32_t start_marker = ::ntohl(*reinterpret_cast<const uint32_t *>(m_prolog_epilog_buf.data() + 0));
         if (start_marker != ANSWER_START_PATTERN)
         {
-            DBG("Command response start pattern is incorrect");
+            ERR("Command response start pattern is incorrect");
             //Could be cruft from previous response, try again.
             this->begin_receive_prolog();
             return;
@@ -156,13 +161,13 @@ namespace tofcore
         const uint32_t answerSize = ::ntohl(*reinterpret_cast<const uint32_t *>(m_prolog_epilog_buf.data() + 6));
         if ((answerSize < 3) ||(answerSize > MAX_ANSWER_PAYLOAD_EXPECTED + 3))
         {
-            DBG("Command response too big");
+            ERR("Command response too big");
             //Could have been cruft from previous response, try again.
             this->begin_receive_prolog();
             return;
         }
         const uint32_t payload_size { answerSize - 3 };
-        //this->m_response_cid = ::ntohl(*reinterpret_cast<const uint32_t *>(buf.data() + 10));
+        this->m_response_cid = ::ntohs(*reinterpret_cast<const uint16_t *>(m_prolog_epilog_buf.data() + 10));
         this->m_response_result = *(m_prolog_epilog_buf.data() + 12);
 
         // Now read the payload and final CRC bytes
@@ -172,7 +177,8 @@ namespace tofcore
         {
             this->on_receive_payload(error);
         };
-        auto bufs = std::array<boost::asio::mutable_buffer, 2>{buffer(this->m_response_buf, payload_size), buffer(m_prolog_epilog_buf, 4)};
+        auto bufs = std::array<boost::asio::mutable_buffer, 2>
+            { buffer(this->m_response_buf, payload_size), buffer(m_prolog_epilog_buf, 4) };
         boost::asio::async_read(this->socket, bufs, f);
     }
 
@@ -268,6 +274,25 @@ namespace tofcore
     bool TcpConnection::isDisconnected() const
     {
         return !this->isConnected();
+    }
+
+    bool TcpConnection::process_error(const boost::system::error_code &error, const char* where)
+    {
+        if (!error)
+        {
+            DBG("NO ERROR in " << where, LOG_LVL_DBG_LOW);
+            return true;
+        }
+        else if((error == boost::asio::error::operation_aborted))
+        {
+            DBG("OPERATION aborted in " << where, LOG_LVL_DBG_HI);
+            return false;
+        }
+        else
+        {
+            ERR("ERROR in " << where << ": " << error.message());
+            return false;
+        }
     }
 
 } // end namespace tofcore

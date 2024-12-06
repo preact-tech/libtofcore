@@ -37,16 +37,21 @@ uri parse_as_uri(const std::string& str)
 }
 
 
-std::unique_ptr<Connection_T> Connection_T::create(boost::asio::io_service& io, const std::string& uri_str)
+std::unique_ptr<Connection_T> Connection_T::create(boost::asio::io_service& io,
+                                                   const std::string& uri_str,
+                                                   log_callback_t log_callback,
+                                                   cmd_descr_callback_t cmd_descr_callback)
 {
     auto uri = parse_as_uri(uri_str);
     if(uri.get_scheme() == "tofnet")
     {
-        return std::make_unique<IpConnection>(io, uri);
+        auto result = std::make_unique<IpConnection>(io, uri, log_callback, cmd_descr_callback);
+        return result;
     }
     else if(uri.get_scheme() == "tofserial")
     {
-        return std::make_unique<SerialConnection>(io, uri);
+        auto result = std::make_unique<SerialConnection>(io, uri, log_callback, cmd_descr_callback);
+        return result;
     }
     else
     {

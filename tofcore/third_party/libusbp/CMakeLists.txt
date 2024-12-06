@@ -28,7 +28,7 @@ if (NOT CMAKE_BUILD_TYPE)
     "Options are Debug Release RelWithDebInfo MinSizeRel" FORCE)
 endif ()
 
-option (BUILD_SHARED_LIBS "Build as shared library" ON)
+option (BUILD_SHARED_LIBS "Build as shared library" OFF)
 if (NOT BUILD_SHARED_LIBS)
   add_definitions (-DLIBUSBP_STATIC)
   set (PC_MORE_CFLAGS "-DLIBUSBP_STATIC")

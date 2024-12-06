@@ -12,9 +12,22 @@
 #include <array>
 #include <boost/scope_exit.hpp>
 #include <condition_variable>
+#include <iomanip>
 #include <iostream>
 #include <mutex>
+#include <sstream>
 #include <thread>
+
+/*
+ * END MARK validation is disabled since the protocol was changed to replace
+ * a CRC with a fixed end mark. If the validation was not disabled, then
+ * sensors that had older firmware that still sent CRCs would cause errors
+ * to be generated on every frame. Once it is determined that support for
+ * the older firmware is no longer necessary, this check can be enabled.
+ */
+#if !defined(VALIDATE_END_MARK)
+#   define VALIDATE_END_MARK 0
+#endif
 
 namespace tofcore
 {
@@ -23,18 +36,25 @@ using namespace boost::system;
 using namespace boost::asio;
 using namespace TofComm;
 
-#define DBG(l) //std::cout << l << std::endl
-#define ERR(l) std::cerr << l << std::endl
-/*
- * If CHECK_DATA_CRC is set to 0, CRC errors for streaming data are ignored.
- * Unfortunately this is happening sporadically with the TOFCam660
- */
-#if !defined(CHECK_DATA_CRC)
-#   define CHECK_DATA_CRC 1
-#endif
-#if !defined(DATA_CRC_CHUNKS)
-#   define DATA_CRC_CHUNKS 0
-#endif
+#define DBG(m,l)                                \
+     do                                         \
+     {                                          \
+         if (log_callback_) {                   \
+             std::stringstream ss {};           \
+             ss << m;                           \
+             log_callback_(ss.str(), l);        \
+         }                                      \
+     } while(false)
+
+#define ERR(m)                                  \
+    do                                          \
+    {                                           \
+        if (log_callback_) {                    \
+            std::stringstream ss {};            \
+            ss << m;                            \
+            log_callback_(ss.str(), 0);         \
+        }                                       \
+    } while(false)
 
 /* Framing Format */
 
@@ -54,7 +74,7 @@ constexpr uint32_t CMD_MAX_PAYLOAD_SIZE = 4 * 1024;
 
 /* RESPONSE:
  *  ---------- ---------- ---------- ------------- ---------------- ------------
- * |   0xFB   |   PID    |   TYPE   | Length (BE) |    PAYLOAD     | CRC32 (BE) |
+ * |   0xFB   |   PID    |   TYPE   | Length (BE) |    PAYLOAD     | 0xAA5AA555 |
  * | (1 byte) | (1 byte) | (1 byte) |  (4 bytes)  | (Length bytes) | (4 bytes)  |
  *  ---------- ---------- ---------- ------------- ---------------- ------------
  */
@@ -69,6 +89,8 @@ struct SerialConnection::Impl
 {
     boost::asio::serial_port port_;
     boost::asio::steady_timer response_timer_;
+    log_callback_t log_callback_;
+    cmd_descr_callback_t cmd_descr_callback_;
 
     std::vector<std::byte> payload_{};
     std::array<std::byte, RESP_PROLOG_SIZE> prolog_epilog_buf_ {};
@@ -84,11 +106,16 @@ struct SerialConnection::Impl
     std::function<void(const std::vector<std::byte>&)> on_measurement_data_ {};
     std::function<void(bool, const std::vector<std::byte>&)> on_command_response_ {};
 
-    Impl(io_service &io, const std::string &portName, uint32_t baud_rate) :
-                port_(io, portName), 
-                response_timer_(io) 
+    Impl(io_service &io,
+         const std::string &portName,
+         uint32_t baud_rate,
+         log_callback_t log_callback = nullptr,
+         cmd_descr_callback_t cmd_descr_callback = nullptr) :
+             port_(io, portName),
+             response_timer_(io),
+             log_callback_(log_callback),
+             cmd_descr_callback_(cmd_descr_callback)
     {
-
         this->port_.set_option(serial_port_base::baud_rate(baud_rate));
         this->port_.set_option(serial_port_base::parity(serial_port_base::parity::none));
         this->port_.set_option(serial_port_base::stop_bits(serial_port_base::stop_bits::one));
@@ -99,9 +126,14 @@ struct SerialConnection::Impl
         this->begin_receive_start();
     }
 
-    Impl(io_service &io, const uri& uri) :
-                port_(io, uri.get_path()),
-                response_timer_(io)
+    Impl(io_service &io,
+         const uri &uri,
+         log_callback_t log_callback = nullptr,
+         cmd_descr_callback_t cmd_descr_callback = nullptr) :
+             port_(io, uri.get_path()),
+             response_timer_(io),
+             log_callback_(log_callback),
+             cmd_descr_callback_(cmd_descr_callback)
     {
         auto query_dict = uri.get_query_dictionary();
         uint32_t baud_rate = 115200;
@@ -120,7 +152,6 @@ struct SerialConnection::Impl
         //start a receive operation to receive the start of the next data packet. 
         this->begin_receive_start();
     }
-
 
     void reset_parser();
 
@@ -151,8 +182,11 @@ struct SerialConnection::Impl
  *
  * ========================================================================= */
 
-SerialConnection::SerialConnection(boost::asio::io_service& io, const uri& uri) :
-    pimpl { new Impl(io, uri) }
+SerialConnection::SerialConnection(boost::asio::io_service& io,
+                                   const uri& uri,
+                                   log_callback_t log_callback,
+                                   cmd_descr_callback_t cmd_descr_callback) :
+    pimpl { new Impl(io, uri, log_callback, cmd_descr_callback) }
 {
 }
 
@@ -369,7 +403,7 @@ void SerialConnection::Impl::on_receive_prolog(const system::error_code &error)
     this->response_pid_ = (uint8_t)this->prolog_epilog_buf_[RESP_PROLOG_PID_OFFSET];
     this->response_type_ = this->prolog_epilog_buf_[RESP_PROLOG_TYPE_OFFSET];
     uint32_t payload_length; BE_Get(payload_length, &this->prolog_epilog_buf_[RESP_PROLOG_LENGTH_OFFSET]);
-    DBG("Received type: " << (unsigned)this->response_type_ << "; size: " << payload_length);
+    DBG("Received type: " << (unsigned)this->response_type_ << "; size: " << payload_length, LOG_LVL_DBG_LOW);
     this->begin_receive_payload(payload_length);
 }
 
@@ -390,7 +424,12 @@ void SerialConnection::Impl::on_receive_payload(const system::error_code &error)
     {
         return;
     }
-    this->response_crc_accum_ = updateCrc32(this->response_crc_accum_, (const uint8_t*)&this->payload_[0], this->payload_.size());
+    if (0 == static_cast<unsigned>(this->response_type_)) // CRC is only in protocol for commands, not data
+    {
+        this->response_crc_accum_ = updateCrc32(this->response_crc_accum_,
+                                                (const uint8_t*)&this->payload_[0],
+                                                this->payload_.size());
+    }
     //Now wait for the end bytes before acknowledging the data and passing it off to clients. 
     this->begin_receive_end();
 }
@@ -448,13 +487,14 @@ bool SerialConnection::Impl::is_valid_response()
         uint16_t responseCID; BE_Get(responseCID, &this->payload_[0]);
         if (responseCID != this->cmd_cid_)
         {
-            ERR("CID in response (0X" << std::hex << (unsigned)responseCID << " does not match CID in command (0X" << this->cmd_cid_);
+            ERR("CID in response (0X" << std::hex << (unsigned)responseCID
+                << " does not match CID in command (0X" << this->cmd_cid_);
             isValid = false;
         }
         const auto resultCode { this->payload_[sizeof(uint16_t)] };
         if (resultCode != std::byte{0})
         {
-            DBG("Non-zero result code for CID 0X" << std::hex << responseCID << ": " << (unsigned)resultCode);
+            ERR("Non-zero result code for CID 0X" << std::hex << responseCID << ": " << (unsigned)resultCode);
             isValid = false;
         }
         // Strip the CID/Result code from the version 1 "payload"
@@ -467,7 +507,7 @@ bool SerialConnection::Impl::is_valid_response()
 
 void SerialConnection::Impl::process_response()
 {
-    DBG(__FUNCTION__ << ": type: " << (unsigned)this->response_type_ << "; payload size: " << this->payload_.size());
+    DBG(__FUNCTION__ << ": type: " << (unsigned)this->response_type_ << "; payload size: " << this->payload_.size(), LOG_LVL_DBG_LOW);
     uint32_t response_crc { 0 }; BE_Get(response_crc, &this->prolog_epilog_buf_[0]);
     switch (std::to_integer<uint8_t>(this->response_type_))
     {
@@ -476,7 +516,18 @@ void SerialConnection::Impl::process_response()
             bool isValid { this->response_crc_accum_ == response_crc };
             if (!isValid)
             {
-                ERR("-INVALID COMMAND CRC received: 0X" << std::hex << response_crc << "; stream: 0X" << this->response_crc_accum_ << std::dec);
+                ERR("INVALID COMMAND RESPONSE CRC received. PID = " << std::setw(3) << std::setfill('0')
+                    << (unsigned)response_pid_ << "; Payload Size = " << std::setw(2) << payload_.size()
+                    << "; CID: 0X" << std::hex << std::setw(4) << cmd_cid_
+                    << std::setw(8) << std::setfill('0') << "; stream CRC: 0X" << response_crc
+                    << "; CRC received: 0X"<< this->response_crc_accum_ << std::dec);
+            }
+            else
+            {
+                DBG("Valid command response. PID = " << std::setw(3) << std::setfill('0')
+                    << (unsigned)response_pid_ << "; Payload Size = " << std::setw(2) << payload_.size()
+                    << "; CID: 0X" << std::hex << std::setw(4) << cmd_cid_
+                    << std::setw(8) << std::setfill('0') << "; stream CRC: 0X" << response_crc << std::dec, LOG_LVL_DBG_MID);
             }
             if (this->on_command_response_)
             {
@@ -497,32 +548,21 @@ void SerialConnection::Impl::process_response()
         }
         case 1: //measurement data
         {
-#if CHECK_DATA_CRC
-#   if DATA_CRC_CHUNKS > 0
-            const uint32_t crcOffset = payload_.size();
-            const uint32_t chunkSize { (crcOffset + DATA_CRC_CHUNKS) / DATA_CRC_CHUNKS };
-            uint32_t chunkCrcs[DATA_CRC_CHUNKS] { };
-            uint32_t startOffset { 0 };
-            for (uint32_t chunk = 0; chunk < DATA_CRC_CHUNKS; ++chunk)
+#if VALIDATE_END_MARK
+            constexpr uint32_t DATA_END_MARK = 0xAA5AA555;   ///< End marker for the data (camera to host)
+            if (DATA_END_MARK != response_crc)
             {
-                const uint32_t crcSize { std::min(chunkSize, (crcOffset - startOffset)) }; // last chunk may be smaller
-                chunkCrcs[chunk] = calcCrc32(payload_.data() + startOffset, crcSize);
-                startOffset += chunkSize;
-            }
-            startOffset = 0;
-            ERR("PID " << (unsigned)response_pid_ << " Data chunk CRCs {chunk, offset, CRC}:");
-            for (uint32_t chunk = 0; chunk < DATA_CRC_CHUNKS; ++chunk)
-            {
-                ERR("  {" << chunk << std::hex << ", 0X" << startOffset << ", 0X" << chunkCrcs[chunk] << std::dec << "}");
-                startOffset += chunkSize;
-            }
-#   endif
-            if (this->response_crc_accum_ != response_crc)
-            {
-                ERR("-INVALID DATA CRC received: 0X" << std::hex << response_crc << "; stream: 0X" << this->response_crc_accum_ << std::dec);
+                ERR("INVALID DATA END MARK received. PID = " << std::setw(3) << std::setfill('0')
+                    << (unsigned)response_pid_ << "; Payload Size = " << std::setw(6) << payload_.size()
+                    << std::hex << std::setw(8) << std::setfill('0') << "; END MARK: 0X" << response_crc << std::dec);
             }
             else
 #endif
+            {
+                DBG("Data received. PID = " << std::setw(3) << std::setfill('0')
+                    << (unsigned)response_pid_ << "; Payload Size = "
+                    << std::setw(6) << payload_.size() << std::dec, LOG_LVL_DBG_MID);
+            }
             if (this->on_measurement_data_)
             {
                 this->on_measurement_data_(this->payload_);
@@ -543,7 +583,7 @@ bool SerialConnection::Impl::process_error(const system::error_code &error, cons
     }
     else
     {
-        DBG("NO ERROR in " << where );
+        DBG("NO ERROR in " << where, LOG_LVL_DBG_LOW);
     }
     return true; // continue for now
 }

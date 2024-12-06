@@ -145,7 +145,6 @@ std::optional<std::array<float, TofComm::KLV_NUM_TEMPERATURES>> decode_sensor_te
     return {temp_degC};
 }
 
-
 std::optional<TofComm::VsmControl_T> decode_vsm_info(const KLVDecoder& klv)
 {
     auto data = klv.find(TofComm::KLV_VSM_KEY);
@@ -157,6 +156,42 @@ std::optional<TofComm::VsmControl_T> decode_vsm_info(const KLVDecoder& klv)
     TofComm::vsmEndianConversion(vsmControl);
 
     return {vsmControl};
+}
+
+std::optional<uint32_t> decode_frame_timestamp(const KLVDecoder& klv)
+{
+    auto data = klv.find(TofComm::KLV_FRAME_TIMESTAMP_KEY);
+    if(data.first == data.second)
+    {
+        return std::nullopt;
+    }
+
+    uint32_t value { 0 };
+    TofComm::BE_Get(value, data.first);
+    return {value};
+}
+
+
+std::optional<std::vector<uint32_t>> decode_frame_crcs(const KLVDecoder& klv)
+{
+    auto data = klv.find(TofComm::KLV_FRAME_CRC_KEY);
+    if(data.first == data.second)
+    {
+        return std::nullopt;
+    }
+    std::vector<uint32_t> crcs {};
+    constexpr uint32_t MAX_NUM_RAW_FRAMES { 4 };
+    const uint32_t* u32Ptr = reinterpret_cast<uint32_t*>(data.first);
+    uint32_t numCrcs = *u32Ptr++;
+    if (numCrcs > MAX_NUM_RAW_FRAMES)
+    {
+        numCrcs = MAX_NUM_RAW_FRAMES;
+    }
+    for (uint32_t i = 0; i < numCrcs; ++i)
+    {
+        crcs.push_back(*u32Ptr++);
+    }
+    return {crcs};
 }
 
 }
