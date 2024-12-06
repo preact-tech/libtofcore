@@ -12,12 +12,6 @@ pytofcore: ## install pytofcore (need to run make build first)
 	cd tofcore/wrappers/python && python3 setup.py install --user
 	ln -sf ./build/tofcore/wrappers/python/pytofcore.cpython*.so  
 
-PHONY: pytofcrust
-pytofcrust: ## install pytofcrust (need to run make build first)
-	python3 -m pip uninstall -y pytofcrust
-	cp build/tofcrust/wrappers/python/*.so tofcrust/wrappers/python/pytofcrust
-	cd tofcrust/wrappers/python && python3 setup.py install --user
-	ln -sf ./build/tofcrust/wrappers/python/pytofcrust.cpython*.so  
 
 PHONY: functional_tests
 functional_tests: ## runs python functional tests (needs pytofcore and pytofcrust installed and oasis device connected to PC)
