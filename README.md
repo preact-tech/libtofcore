@@ -3,9 +3,7 @@
 Libraries to interface with the PreAct TOF sensors.
 
 tofcore: For basic average user access to TOF sensors.
-tofcrust: For advanced engineering/production access to TOF sensors. 
 
-_Why tofcrust? because it's a crusty wrapper round the core ;-P (you can thank Lance)_
 
 # Quick start
 
@@ -44,6 +42,7 @@ SUBSYSTEMS=="usb", ATTRS{idVendor}=="35FA", ATTRS{idProduct}=="0D0F", MODE:="066
 ```
 bash
 make build
+make install
 ```
 
 ## Python Bindings installation
@@ -52,12 +51,11 @@ To install the python package into your personal python site-packages directory:
 
 ```
 make pytofcore
-make pytofcrust
 ```
 
 # Testing
 
-To run unit tests verifying behavior when no camera is connected, use the following commnad from
+To run unit tests verifying behavior when no camera is connected, use the following command from
 project's root directory: 
 ```
 python3 -m pytest -m "not functional and not sdram_selftest" -v .
