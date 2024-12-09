@@ -6,9 +6,14 @@ build:   ## build libtofcore
 	cmake -B build
 	cmake --build build
 
+PHONY: install
+install:   ## isntall libtofcore
+	cd build && sudo make install
+
 PHONY: pytofcore
 pytofcore: ## install pytofcore (need to run make build first)
 	python3 -m pip uninstall -y pytofcore
+	cp build/tofcore/wrappers/python/*.so tofcore/wrappers/python/pytofcore
 	cd tofcore/wrappers/python && python3 setup.py install --user
 	ln -sf ./build/tofcore/wrappers/python/pytofcore.cpython*.so  
 
@@ -29,13 +34,10 @@ cpp_unit_test:
 
 PHONY: clean
 clean: ## cleans environment of build artifacts
-	python3 -m pip uninstall -y pytofcrust pytofcore
+	python3 -m pip uninstall -y pytofcore
 	rm -rf build
 	rm -f tofcore/wrappers/python/pytofcore/*.so
-	rm -f tofcrust/wrappers/python/pytofcrust/*.so
 	rm -rf tofcore/wrappers/python/*.egg-info
 	rm -rf tofcore/wrappers/python/build
 	rm -rf tofcore/wrappers/python/dist
-	rm -rf tofcrust/wrappers/python/*.egg-info
-	rm -rf tofcrust/wrappers/python/build
-	rm -rf tofcrust/wrappers/python/dist
+
