@@ -2,7 +2,7 @@
 
 Libraries to interface with the PreAct TOF sensors.
 
-# Environment Setup
+## Environment Setup
 Requirements:
 
 - CMake v3.16
@@ -13,8 +13,9 @@ Requirements:
 - libusbp v1.3 or newer
 
 Python setuptools installation
+(might need Python venv setup)
 ```
-sudo -m pip install setuptools
+sudo pip install setuptools
 ```
 
 Libudev installation
@@ -30,14 +31,20 @@ Create new udev rules file for usb. Example: `etc/udev/rules.d/99-usb-rules.rule
 SUBSYSTEMS=="usb", ATTRS{idVendor}=="35FA", ATTRS{idProduct}=="0D0F", MODE:="0666"
 ```
 
-# Build and Install
+## Build and Install
 
+### Build
 ```
-bash
-make build
+cmake -B build
+cmake --build build
 ```
 
-# Python Bindings Installation
+### Install to local system
+```
+cmake --build build -- install  # Installs to /usr/local on UNIX systems
+```
+
+## Python Bindings Installation
 
 To install the python package into your personal python site-packages directory:
 
@@ -46,38 +53,38 @@ make pytofcore
 make pytofcrust
 ```
 
-# Testing
+## Testing
 
-## Unit Tests
+### Unit Tests
 To run unit tests verifying behavior when no camera is connected, use the following commnad from
 project's root directory: 
 ```
 python3 -m pytest -m "not functional and not sdram_selftest" -v .
 ```
 
-## Functional Tests
+### Functional Tests
 Functional tests with a camera connected to PC can be executed with the following commands:
 
-### For variants without ethernet capabilities
+#### For variants without ethernet capabilities
 ```
 python3 -m pytest -m "functional" -k "not test_ip_measurement_endpoint" -v .
 ```
 
-### For variants with ethernet
+#### For variants with ethernet
 ```
 python3 -m pytest -m "functional" -v .
 ```
 
-### SDRAM self-test
+#### SDRAM self-test
 NOTE: connection with the device will be lost, as the device will reset:
 ```
 python3 -m pytest -m "sdram_selftest" -v .
 ```
 
-### Optional: Specific URI
+#### Optional: Specific URI
 For connecting to a specific connected device.
 
-#### Examples
+##### Examples
 
 Linux serial type device
 ```
