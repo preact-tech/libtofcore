@@ -83,6 +83,7 @@ namespace TofComm
    TOF_CORE_CMD(COMMAND_GET_SENSOR_NAME                         , 0x79) \
    TOF_CORE_CMD(COMMAND_SET_SENSOR_LOCATION                     , 0x7A) \
    TOF_CORE_CMD(COMMAND_GET_SENSOR_LOCATION                     , 0x7B) \
+   TOF_CORE_CMD(COMMAND_ERASE_SETTINGS                          , 0x7C) \
                                                                         \
    TOF_CORE_CMD(COMMAND_GET_INTEG_TIME_LIMITS                   , 0xB0) \
                                                                         \
