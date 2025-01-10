@@ -980,6 +980,7 @@ PYBIND11_MODULE(pytofcore, m) {
         .def("stream_distance_amplitude", &tofcore::Sensor::streamDistanceAmplitude, "Command the sensor to stream distance and amplitude frames", py::call_guard<py::gil_scoped_release>())
         .def("stream_distance", &tofcore::Sensor::streamDistance, "Command the sensor to stream distance frames", py::call_guard<py::gil_scoped_release>())
         .def("subscribe_measurement", &subscribeMeasurement, "Set a function object to be called when new measurement data is received", py::arg("callback"))
+        .def("reset_to_factory_defaults", &tofcore::Sensor::resetSettingsToFactoryDefault, "Reset the sensor to factory defaults", py::call_guard<py::gil_scoped_release>())
 
         .def_property("hflip", &hflip_get, &hflip_set, "State of the image horizontal flip option (default False)")
         .def_property("ip_measurement_endpoint", &getIPMeasurementEndpoint, &setIPMeasurementEndpoint, "The IP address and port measurement data is set to")

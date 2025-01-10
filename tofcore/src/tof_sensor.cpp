@@ -724,6 +724,12 @@ bool Sensor::getSettings(std::string& jsonSettings)
     return true;
 }
 
+bool Sensor::resetSettingsToFactoryDefault()
+{
+    auto result = this->send_receive(COMMAND_ERASE_SETTINGS);
+    return (bool)result;
+}
+
 std::optional<std::tuple<uint16_t, uint16_t, uint16_t>> Sensor::getVledSettingAndLimits()
 {
     auto result = this->send_receive(COMMAND_GET_VLED_LIMITS);

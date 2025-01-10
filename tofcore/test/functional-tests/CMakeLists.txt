@@ -15,6 +15,7 @@ add_subdirectory (tof-imu)
 add_subdirectory (tof-ipv4)
 add_subdirectory (tof-mf-test)
 add_subdirectory (tof-stat)
+add_subdirectory (tof-factory-reset)
 add_subdirectory (tof-vsm)
 add_subdirectory (vsm-streamer)
 
@@ -36,6 +37,7 @@ install(TARGETS
     tof-ipv4
     tof-mf-test
     tof-stat
+    tof-factory-reset
     tof-vsm
     vsm-streamer
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

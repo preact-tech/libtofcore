@@ -27,9 +27,9 @@ class EmptyListWithLength(list):
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
     name=package_name,
-    version="1.2.0",
-    author="Miguel Gonzalez",
-    author_email="miguel.gonzalez@preact-tech.com",
+    version="1.2.1",
+    author="Mike Hansen",
+    author_email="mike.hansen@preact-tech.com",
     description="Module for interfacing with with PreAct ToF devices",
     long_description="",
     ext_modules=EmptyListWithLength(),

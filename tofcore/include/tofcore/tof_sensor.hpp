@@ -172,6 +172,7 @@ public:
     bool setSensorName(std::string name);
     bool setVsm(const TofComm::VsmControl_T& vsmControl);
     bool sortRawData(const bool sortIt);
+    bool resetSettingsToFactoryDefault();
 
     bool stopStream();
     bool storeSettings();
