@@ -42,6 +42,7 @@ cmake --build build
 ### Install to local system
 ```
 cmake --build build -- install  # Installs to /usr/local on UNIX systems
+
 ```
 
 ## Python Bindings Installation
@@ -50,13 +51,13 @@ To install the python package into your personal python site-packages directory:
 
 ```
 make pytofcore
-make pytofcrust
 ```
 
 ## Testing
 
 ### Unit Tests
 To run unit tests verifying behavior when no camera is connected, use the following commnad from
+
 project's root directory: 
 ```
 python3 -m pytest -m "not functional and not sdram_selftest" -v .
